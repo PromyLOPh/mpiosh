@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.5 2002/09/14 07:23:59 crunchy Exp $
+ * $Id: mpiosh.c,v 1.6 2002/09/14 09:55:31 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -132,7 +132,10 @@ void
 mpiosh_readline_init(void)
 {
   rl_readline_name = "mpio";
+  rl_catch_signals = 0;
+  rl_filename_quote_characters = " ";
   rl_attempted_completion_function = mpiosh_readline_completion;
+  rl_event_hook = mpiosh_readline_cancel;
 }
 
 char *
@@ -166,9 +169,6 @@ mpiosh_readline_completion(const char *text, int start, int end)
 
   if (start == 0)
     matches = rl_completion_matches(text, mpiosh_readline_comp_cmd);
-  else {
-    
-  }
   
   return matches;
 }
@@ -333,10 +333,17 @@ mpiosh_command_free_args(char **args)
   free(args);
 }
 
+int
+mpiosh_readline_cancel(void)
+{
+  if (mpiosh_cancel) rl_done = 1;
+  
+  return 0;
+}
+
 void
 mpiosh_signal_handler(int signal)
 {
-  debug("user abort!\n");
   mpiosh_cancel = 1;
 }
 
@@ -362,13 +369,11 @@ main(int argc, char *argv[]) {
   
   sigaction(SIGINT, &sigc, NULL);
   
-/*   signal(SIGINT, SIG_IGN); */
-  
   /* init readline and history */
+  mpiosh_readline_init();
   using_history();
   
   debug_init();
-  mpiosh_readline_init();
   
   mpiosh_init();
   mpiosh.dev = mpio_init();
@@ -389,7 +394,11 @@ main(int argc, char *argv[]) {
   }
 
   while ((line = readline(mpiosh.prompt))) {
-    if (*line == '\0') continue;
+    if ((*line == '\0') || mpiosh_cancel) {
+      rl_clear_pending_input ();
+      mpiosh_cancel = 0;
+      continue;
+    }
 
     cmds = mpiosh_command_split(line);
 
@@ -428,5 +437,3 @@ main(int argc, char *argv[]) {
 
   return 0;
 }
-
-  

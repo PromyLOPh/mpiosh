@@ -1,4 +1,4 @@
-$Id: TODO,v 1.13 2002/09/13 15:20:24 crunchy Exp $
+$Id: TODO,v 1.14 2002/09/14 09:55:31 crunchy Exp $
 
 * Kernel Module
   - the MPIO can no multitasking, so:
@@ -37,7 +37,7 @@ $Id: TODO,v 1.13 2002/09/13 15:20:24 crunchy Exp $
   - use indices for files as possible arguments for put/get
   - use shell-like regular expressions
   - command separator like ';' [DONE]
-  - using stdin for reading command sequences
+  - using stdin for reading command sequences [DONE]
   - fill: uses current local directory to fill the current memory card
     + options: random, best(?)
 

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: mpiosh.h,v 1.3 2002/09/13 15:20:25 crunchy Exp $
+ * $Id: mpiosh.h,v 1.4 2002/09/14 09:55:31 crunchy Exp $
  *
  * Copyright (C) 2002 Andreas Büsching <crunchy@tzi.de>
  *
@@ -46,6 +46,7 @@ void mpiosh_signal_handler(int signal);
 void mpiosh_readline_init(void);
 char **mpiosh_readline_completion(const char *text, int start, int end);
 char *mpiosh_readline_comp_cmd(const char *text, int state);
+int mpiosh_readline_cancel(void);
 
 /* helper functions */
 void mpiosh_init(void);
