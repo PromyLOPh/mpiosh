@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * Driver for USB MPIO-DMG
+ * Driver for USB MPIO
  *
  * Yuji Touya (salmoon@users.sourceforge.net)
  *
@@ -25,15 +25,20 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * */
+
 #include <linux/config.h>
-#include <linux/version.h>
-#include <linux/mm.h>
-#include <linux/modversions.h>
+#if defined(CONFIG_MODVERSIONS) && !defined(MODVERSIONS)
+#   define MODVERSIONS
+#endif
+#if defined(MODVERSIONS) && !defined(__GENKSYMS__)
+#   include <linux/modversions.h>
+#endif
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/signal.h>
 #include <linux/sched.h>
 #include <linux/errno.h>
+#include <linux/miscdevice.h>
 #include <linux/random.h>
 #include <linux/poll.h>
 #include <linux/init.h>
@@ -51,9 +56,9 @@
 /*
  * Version Information
  */
-#define DRIVER_VERSION "v0.1a-pre1"
+#define DRIVER_VERSION "0.0.1"
 #define DRIVER_AUTHOR "Yuji Touya <salmoon@users.sourceforge.net>"
-#define DRIVER_DESC "USB MPIO-DMG driver"
+#define DRIVER_DESC "USB MPIO driver"
 
 #define MPIO_MINOR    70
 
@@ -61,8 +66,8 @@
 #define NAK_TIMEOUT (HZ)
 
 /* Size of the mpio buffer */
-#define IBUF_SIZE 0x10000
-#define OBUF_SIZE 0x10000
+#define IBUF_SIZE 0x10000      /* enough? :salmoon */
+#define OBUF_SIZE 0x10000      /* enough? :salmoon */
 
 struct mpio_usb_data {
         struct usb_device *mpio_dev;    /* init: probe_mpio */
@@ -202,7 +207,7 @@ read_mpio(struct file *file, char *buffer, size_t count, loff_t * ppos)
 	unsigned int partial;
 	int this_read;
 	int result;
-	int maxretry = 10;
+	int maxretry = 5;
 	char *ibuf = mpio->ibuf;
 
         /* Sanity check to make sure mpio is connected, powered, etc */
@@ -283,14 +288,15 @@ static void *probe_mpio(struct usb_device *dev, unsigned int ifnum)
 		return NULL;
 	}
 
-	if (dev->descriptor.idProduct != 0x1 /* MPIO-DMG */ ) {
+	if (dev->descriptor.idProduct != 0x1 /* MPIO all models??? */ ) {
 		warn(KERN_INFO "MPIO player model not supported/tested.");
 		return NULL;
 	}
 
 	info("USB MPIO found at address %d", dev->devnum);
+#ifdef DEBUG
 	usb_show_device(dev); /* Show device info */
-
+#endif
 	mpio->present = 1;
 	mpio->mpio_dev = dev;
 
@@ -339,12 +345,14 @@ file_operations usb_mpio_fops = {
 	release:	close_mpio,
 };
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
 static struct usb_device_id mpio_table [] = {
 	{ USB_DEVICE(0x2735, 1) }, 		/* MPIO-* (all models?) */
 	{ }					/* Terminating entry */
 };
 
 MODULE_DEVICE_TABLE (usb, mpio_table);
+#endif
 
 static struct usb_driver mpio_driver = {
 	name:		"mpio",
@@ -352,7 +360,9 @@ static struct usb_driver mpio_driver = {
 	disconnect:	disconnect_mpio,
 	fops:		&usb_mpio_fops,
 	minor:		MPIO_MINOR,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
 	id_table:	mpio_table,
+#endif
 };
 
 int usb_mpio_init(void)
@@ -377,7 +387,7 @@ void usb_mpio_cleanup(void)
 
 }
 
-
+#ifdef DEBUG
 /* ---------- debugging helpers ----------- */
 
 static void usb_show_endpoint(struct usb_endpoint_descriptor *endpoint)
@@ -565,13 +575,13 @@ void usb_dump_urb (purb_t purb)
 	printk ("complete              :%p\n", purb->complete);
 }
 /* --------- end of helpers ---------- */
-
+#endif /* DEBUG */
 
 module_init(usb_mpio_init);
 module_exit(usb_mpio_cleanup);
 
 MODULE_AUTHOR( DRIVER_AUTHOR );
 MODULE_DESCRIPTION( DRIVER_DESC );
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0) /* Hmm, .... */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,10)
 MODULE_LICENSE("GPL");
 #endif
