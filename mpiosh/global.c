@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.3 2002/10/18 08:39:23 crunchy Exp $
+ * $Id: global.c,v 1.4 2002/10/27 02:45:28 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -105,12 +105,18 @@ mpiosh_cmd_t commands[] = {
     "  dump FAT, directory, spare area and the first 0x100 of the\n"
     "  selected memory card",
     mpiosh_cmd_dump_mem, NULL },
-  { "config", (char *[]) { "conf", NULL }, "-w -r -s",
+  { "config", (char *[]) { "conf", NULL }, "[read|write|show]",
     "  give access to the configuration file of the MPIO player\n"
-    "   -w     write the configuration back to the MPIO player\n"
-    "   -r     read the configuration file and dumps it on the local disc\n"
-    "   -s     show the current configuration",
+    "   read     read the configuration file and dump it on the local disc\n"
+    "   write    write the configuration back to the MPIO player\n"
+    "   show     show the current configuration",
     mpiosh_cmd_config, mpiosh_readline_comp_config },
+  { "channel", (char *[]) { "channels", "chan", NULL }, "[read|write|show]",
+    "  give access to the radio channel file of the MPIO player\n"
+    "   read     read the channel file and dump it on the local disc\n"
+    "   write    write the channel file back to the MPIO player\n"
+    "   show     show the current channel configuration",
+    mpiosh_cmd_channel, mpiosh_readline_comp_config },
   { NULL, NULL, NULL, NULL, NULL, NULL }
 };
 

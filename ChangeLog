@@ -1,3 +1,15 @@
+2002-10-27  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.{c,h}: split mpio_file_{get,put} into several
+	  functions, to allow reading and writing files from/to memory
+	  (needed for handling of config files)
+	* mpiosh/callback.c (mpiosh_cmd_channel): added function/command
+	  channel to handle the radio channel of the *-Plus models
+	* libmpio/directory.c (mpio_dentry_put): 
+	  another fix for the 8.3 handling needed for the config file
+	  (one day this will be bug free ...)
+	* mpiosh/callback.c (mpiosh_cmd_config): implement the function
+
 2002-10-26  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.c (mpio_close): fixed segv

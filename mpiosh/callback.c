@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.27 2002/10/18 08:39:23 crunchy Exp $
+ * $Id: callback.c,v 1.28 2002/10/27 02:45:28 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -628,11 +628,108 @@ mpiosh_cmd_dump_mem(char *args[])
 void
 mpiosh_cmd_config(char *args[])
 {
+  BYTE *config_data, *p;
+  int  size;
+
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
-  UNUSED(args);  
+  if (args[0] != NULL) {
+    if (!strcmp(args[0], "read")) {
+      if ((size = mpio_file_get(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				MPIO_CONFIG_FILE, NULL))<=0) {
+	fprintf(stderr, "Could not read config file\n");
+      } else {
+	printf("done.\n");
+      }
+    } else if (!strcmp(args[0], "write")) {
+      printf("deleting old config file ...\n");
+      mpio_file_del(mpiosh.dev, MPIO_INTERNAL_MEM, 
+		    MPIO_CONFIG_FILE, NULL);
+      printf("writing new config file ...\n");
+      if (mpio_file_put(mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CONFIG_FILE,
+			FTYPE_CONF, NULL)==-1) 
+	mpio_perror("error");
+      mpio_sync(mpiosh.dev, MPIO_INTERNAL_MEM);
+    } else if (!strcmp(args[0], "show")) {
+      if ((size = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				MPIO_CONFIG_FILE, NULL, &config_data))<=0) {
+	fprintf(stderr, "Could not read config file\n");
+      } else {
+	hexdumpn(0, config_data, size);
+	fprintf(stderr, "please implement me!\n");
+	free(config_data);
+      }
+    } else {
+      fprintf(stderr, "unknown config command\n");
+      printf("config [read|write|show] channel\n");
+    }
+  } else {
+    fprintf(stderr, "error: no arguments given\n");
+    printf("config [read|write|show] <\n");
+  }  
+
 }
 
+void
+mpiosh_cmd_channel(char *args[])
+{
+  BYTE *channel_data, *p, name[17];
+  int  size;
+  int  i;
+  int  chan;
+  
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+
+  if (args[0] != NULL) {
+    if (!strcmp(args[0], "read")) {
+      if ((size = mpio_file_get(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				MPIO_CHANNEL_FILE, NULL))<=0) {
+	fprintf(stderr, "Could not read channel file\n");
+      } else {
+	printf("done.\n");
+      }
+    } else if (!strcmp(args[0], "write")) {
+      printf("deleting old config file ...\n");
+      mpio_file_del(mpiosh.dev, MPIO_INTERNAL_MEM, 
+		    MPIO_CHANNEL_FILE, NULL);
+      printf("writing new config file ...\n");
+      if (mpio_file_put(mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CHANNEL_FILE,
+			FTYPE_CHAN, NULL)==-1) 
+	mpio_perror("error");
+      mpio_sync(mpiosh.dev, MPIO_INTERNAL_MEM);
+    } else if (!strcmp(args[0], "show")) {
+      if ((size = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				MPIO_CHANNEL_FILE, NULL, &channel_data))<=0) {
+	fprintf(stderr, "Could not read channel file\n");
+      } else {
+	hexdump(channel_data, size);
+
+	i=0;
+	p=channel_data;
+	while ((i<20) && (*p))
+	  {
+	    memset(name, 0, 17);
+	    strncpy(name, p, 16);
+	    chan = (((p[16] * 0x100) + p[17]) - 0x600)  + 1750;
+	    printf("%2d. %-16s at %7.2f MHz\n", (i+1), 
+		    name, ((float)chan/20));
+	    p+=18;
+	    i++;
+	  }
+	if (!i)
+	  printf("no channel defined!\n");
+
+	free(channel_data);
+      }
+    } else {
+      fprintf(stderr, "unknown channel command\n");
+      printf("channel [read|write|show] channel\n");
+    }
+  } else {
+    fprintf(stderr, "error: no arguments given\n");
+    printf("channel [read|write|show] <\n");
+  }  
+}
 
 void
 mpiosh_cmd_ldir(char *args[])

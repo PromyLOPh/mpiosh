@@ -1,6 +1,6 @@
-/* 
+ /* 
  *
- * $Id: fat.c,v 1.18 2002/10/13 12:03:51 germeier Exp $
+ * $Id: fat.c,v 1.19 2002/10/27 02:45:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -498,7 +498,8 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
 	 (sm->fat[e+0x00] != 0xee)))
       {
 	debug("defective block encountered, abort reading!\n");
-	return 0xaaaaaaaa;
+/* 	return 0xaaaaaaaa; */
+	return 0xffffffff;
       }
     /* this is a special system file! */
     if((sm->fat[e+6] != FTYPE_MUSIC) &&
@@ -507,7 +508,16 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
        (sm->fat[e+9] == 0xff) &&
        (sm->fat[e+10] == 0xff))
       return 0xffffffff;
-
+    /* this is a special system file! */
+    if (sm->fat[e+6] == FTYPE_CONF) 
+      return 0xffffffff;
+    /* this is a special system file! */
+    if((sm->fat[e+6] != FTYPE_MUSIC) &&
+       (sm->fat[e+0x0b] == 0xff) &&
+       (sm->fat[e+0x0c] == 0xff) &&
+       (sm->fat[e+0x0d] == 0xff))
+      return 0xffffffff;
+    
     if((sm->fat[e+7] == 0xff) &&
        (sm->fat[e+8] == 0xff) &&
        (sm->fat[e+9] == 0xff) &&

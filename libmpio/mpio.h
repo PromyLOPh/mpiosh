@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.10 2002/10/26 13:07:43 germeier Exp $
+ * $Id: mpio.h,v 1.11 2002/10/27 02:45:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -75,15 +75,40 @@ BYTE*	mpio_dentry_next(mpio_t *, mpio_mem_t, BYTE *);
 int	mpio_dentry_get(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int,WORD *,
 			BYTE *, BYTE *, BYTE *, BYTE *, DWORD *);
 
+/* 
+ * reading/writing/deleting of files
+ */
+
 /* context, memory bank, filename, callback */
 int	mpio_file_get(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
 
-/* context, memory bank, filename, callback */
+/* context, memory bank, filename, filetype, callback */
 int	mpio_file_put(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_filetype_t,
 		      mpio_callback_t); 
 
 /* context, memory bank, filename, callback */
 int	mpio_file_del(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
+
+/* 
+ * reading/writing files into memory (used for config+font files)
+ */
+
+/* context, memory bank, filename, callback, pointer to memory     */
+/* the needed memory is allocated and the memory pointer is return */
+/* via the "BYTE **"                                               */
+  
+int	mpio_file_get_to_memory(mpio_t *, mpio_mem_t, mpio_filename_t, 
+				mpio_callback_t, BYTE **); 
+
+/* context, memory bank, filename, filetype, callback ... */
+/* ... memory pointer, size of file                       */
+int	mpio_file_put_from_memory(mpio_t *, mpio_mem_t, mpio_filename_t, 
+				  mpio_filetype_t, mpio_callback_t,
+				  BYTE *, int); 
+
+/* 
+ * formating a memory (internal mem or external SmartMedia card)
+ */
 
 /* context, memory bank, callback */
 int	mpio_memory_format(mpio_t *, mpio_mem_t, mpio_callback_t); 

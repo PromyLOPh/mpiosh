@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.8 2002/10/17 22:49:27 germeier Exp $
+ * $Id: directory.c,v 1.9 2002/10/27 02:45:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -525,7 +525,7 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
   f_8_3[12]=0x00;
 
   i=0;
-  while ((i<6) && (filename[i] != '.') && (i<(strlen(filename))))
+  while ((i<8) && (filename[i] != '.') && (i<(strlen(filename))))
     {
       f_8_3[i] = toupper(filename[i]);
       i++;

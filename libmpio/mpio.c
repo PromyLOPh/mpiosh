@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.34 2002/10/26 13:07:43 germeier Exp $
+ * $Id: mpio.c,v 1.35 2002/10/27 02:45:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -46,6 +46,10 @@ void mpio_init_internal(mpio_t *);
 void mpio_init_external(mpio_t *);
 int  mpio_check_filename(mpio_filename_t);
 
+int mpio_file_get_real(mpio_t *, mpio_mem_t, mpio_filename_t, 
+		       mpio_callback_t, BYTE **); 
+int mpio_file_put_real(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_filetype_t,
+		      mpio_callback_t, BYTE *, int);
 
 static BYTE *mpio_model_name[] = {
   "MPIO-DME",
@@ -392,6 +396,20 @@ int
 mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
 	      mpio_callback_t progress_callback)
 {
+  return mpio_file_get_real(m, mem, filename, progress_callback, NULL);
+}
+
+int
+mpio_file_get_to_memory(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+			mpio_callback_t progress_callback, BYTE **memory)
+{
+  return mpio_file_get_real(m, mem, filename, progress_callback, memory);
+}
+
+int
+mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+	      mpio_callback_t progress_callback, BYTE **memory)
+{
   mpio_smartmedia_t *sm;
   BYTE block[BLOCK_SIZE];
   int fd, towrite;
@@ -418,9 +436,14 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   
   if (f && p) {    
     filesize=fsize=mpio_dentry_get_filesize(m, mem, p);
-    
-    unlink(filename);    
-    fd = open(filename, (O_RDWR | O_CREAT), (S_IRWXU | S_IRGRP | S_IROTH));    
+
+    if (memory) 
+      {
+	*memory = malloc(filesize);
+      } else {
+	unlink(filename);    
+	fd = open(filename, (O_RDWR | O_CREAT), (S_IRWXU | S_IRGRP | S_IROTH));
+      }
     
     do
       {
@@ -431,13 +454,19 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 	} else {
 	  towrite = filesize;
 	}    
+
+	if (memory)
+	  {
+	    memcpy((*memory)+(fsize-filesize) , block, towrite);
+	  } else {
+	    if (write(fd, block, towrite) != towrite) {
+	      debug("error writing file data\n");
+	      close(fd);
+	      free (f);
+	      MPIO_ERR_RETURN(MPIO_ERR_WRITING_FILE);
+	    } 
+	  }
 	
-	if (write(fd, block, towrite) != towrite) {
-	  debug("error writing file data\n");
-	  close(fd);
-	  free (f);
-	  MPIO_ERR_RETURN(MPIO_ERR_WRITING_FILE);
-	} 
 	filesize -= towrite;
 	
 	if (progress_callback)
@@ -451,8 +480,11 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     if (merror<0)
       debug("defective block encountered!\n");
   
-    close (fd);    
-    free (f);
+    if(!memory) 
+      {	
+	close (fd);    
+	free (f);
+      }
 
     /* read and copied code from mtools-3.9.8/mcopy.c
      * to make this one right 
@@ -473,6 +505,26 @@ int
 mpio_file_put(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
 	      mpio_filetype_t filetype,
 	      mpio_callback_t progress_callback)
+{
+  return mpio_file_put_real(m, mem, filename, filetype, 
+			    progress_callback, NULL,0);
+}
+
+int
+mpio_file_put_from_memory(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+			  mpio_filetype_t filetype,
+			  mpio_callback_t progress_callback,
+			  BYTE *memory, int memory_size)
+{
+  return mpio_file_put_real(m, mem, filename, filetype, 
+			    progress_callback, memory, memory_size);
+}
+
+int
+mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+		   mpio_filetype_t filetype,
+		   mpio_callback_t progress_callback,
+		   BYTE *memory, int memory_size)
 {
   mpio_smartmedia_t *sm;
   mpio_fatentry_t   *f, current, firstblock, backup; 
