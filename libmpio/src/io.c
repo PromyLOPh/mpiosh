@@ -1,8 +1,8 @@
 /*
- * $Id: io.c,v 1.9 2004/01/13 11:37:34 germeier Exp $
+ * $Id: io.c,v 1.10 2004/04/19 12:19:26 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
- *  Copyright (C) 2002, 2003 Markus Germeier
+ *  Copyright (C) 2002-2004 Markus Germeier
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -157,7 +157,7 @@ blockaddress_decode(BYTE *entry)
     }
   if (p) 
     {
-      debug("parity error found in block address: %2x\n", ba);
+      debug("error: parity error found in block address: %2x\n", ba);
       return MPIO_BLOCK_DEFECT;      
     }
   
@@ -187,7 +187,7 @@ fatentry2hw(mpio_fatentry_t *f, BYTE *chip, DWORD *address)
       sm        = &f->m->external;
       *chip     = MPIO_EXTERNAL_MEM;
       *address  = mpio_zone_block_find_log(f->m, f->mem, f->entry);
-      debugn(3, "mager: %06x (logical: %04x)\n", *address, f->entry);
+      debugn(3, "%06x (logical: %04x)\n", *address, f->entry);
     }
   return;
 }
@@ -410,7 +410,7 @@ mpio_zone_block_find_free_seq(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
 
   if (value != MPIO_BLOCK_NOT_FOUND)
     {
-      debug("logical block numbers is already assigned! (%4x)\n", lblock);
+      debug("logical block numbers is already assigned! (lblock=0x%04x)\n", lblock);
       exit (-1);
     }
 
@@ -433,7 +433,7 @@ mpio_zone_block_find_free_seq(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
       return MPIO_BLOCK_NOT_FOUND;
     }
 
-  debugn(2, "set new sector in zonetable, [%d][%d] = %4x\n", zone, i, block);
+  debugn(2, "set new sector in zonetable, [%d][%d] = 0x%04x\n", zone, i, block);
   
   sm->zonetable[zone][i] = block;
 
@@ -505,22 +505,23 @@ mpio_block_get_blocksize(mpio_t *m, mpio_mem_t mem) {
  */
 int 
 mpio_device_open(mpio_t *m){
-#ifdef HAVE_USB
   struct usb_device *dev;
   struct usb_interface_descriptor *interface;
   struct usb_endpoint_descriptor *ep;
   int ret, i;
-  m->use_libusb=0;
-#endif
+  m->use_libusb=1;
 
+#ifdef USE_KMODULE
+  debugn(2, "trying kernel module\n");
   m->fd = open(MPIO_DEVICE, O_RDWR);
   if (m->fd > 0) {
-    debug ("using kernel module\n");
+    debugn(2, "using kernel module\n");
+    m->use_libusb=0;
     return MPIO_OK;
   }
+#endif
 
-#ifdef HAVE_USB
-  debug("trying libusb\n");
+  debugn(2, "trying libusb\n");
   usb_init();
   usb_find_busses();
   usb_find_devices();
@@ -535,7 +536,7 @@ mpio_device_open(mpio_t *m){
       if (dev->descriptor.idVendor == 0x2735) {
 	if ((dev->descriptor.idProduct != 0x01)  &&
 	    (dev->descriptor.idProduct != 0x71))
-	  debug("Found Product ID %02x, which is unknown. Proceeding anyway.\n",
+	  debugn(2, "Found Product ID %02x, which is unknown. Proceeding anyway.\n",
 		dev->descriptor.idProduct);
 	m->usb_handle = usb_open(dev);
 	if (m->usb_handle) {
@@ -547,10 +548,10 @@ mpio_device_open(mpio_t *m){
 	  
 	  if (ret < 0)
 	    {
-	      debug ("Error claiming device: %d  \"%s\"\n", ret, usb_strerror());
+	      debugn(2, "Error claiming device: %d  \"%s\"\n", ret, usb_strerror());
 	      return MPIO_ERR_PERMISSION_DENIED;
 	    } else {
-	      debug ("claimed interface 0\n");
+	      debugn(2, "claimed interface 0\n");
 	    }
 	  
 	  
@@ -558,47 +559,47 @@ mpio_device_open(mpio_t *m){
 
 	  for (i = 0 ; i < interface->bNumEndpoints; i++) {
 	    ep = &interface->endpoint[i];
-	    debug("USB endpoint #%d (Addr:%02x, Attr:%02x)\n", i, 
+	    debugn(2, "USB endpoint #%d (Addr=0x%02x, Attr=0x%02x)\n", i, 
 		 ep->bEndpointAddress, ep->bmAttributes);
 	    if (ep->bmAttributes == 2) {
 	      if (ep->bEndpointAddress & USB_ENDPOINT_IN) {
-		debug("FOUND incoming USB endpoint (%02x)\n", ep->bEndpointAddress);
+		debugn(2, "FOUND incoming USB endpoint (0x%02x)\n", ep->bEndpointAddress);
 		m->usb_in_ep = ep->bEndpointAddress & ~(USB_ENDPOINT_IN);
 	      } else {
-		debug("FOUND outgoing USB endpoint (%02x)\n", ep->bEndpointAddress);
+		debugn(2, "FOUND outgoing USB endpoint (0x%02x)\n", ep->bEndpointAddress);
 		m->usb_out_ep = ep->bEndpointAddress;
 	      }
 	    }
 	  }
 	  
 	  if (!(m->usb_in_ep && m->usb_out_ep)) {
-	    debug("Did not find USB bulk endpoints");
+	    debugn(2, "Did not find USB bulk endpoints.\n");
 	    return MPIO_ERR_PERMISSION_DENIED;	    
 	  }	  
 	  
-	  m->use_libusb=1;
+	  debugn(2, "using libusb\n");
 	  return MPIO_OK;
-	  
 	}      
       }
     }
   }
-  
-#endif
+
+  m->use_libusb=0;  
   return MPIO_ERR_PERMISSION_DENIED;
 }
 
 int 
 mpio_device_close(mpio_t *m) {
-#ifdef HAVE_USB
   if(m->use_libusb) {
-#endif
+    usb_close(m->usb_handle);
     close(m->fd);
     m->fd=0;
-#ifdef HAVE_USB
-  }  
-  usb_close(m->usb_handle);
-  m->use_libusb = 0;  
+  } 
+#ifdef USE_KMODULE
+  else {
+    close(m->fd);
+    m->fd=0;
+  }
 #endif
   
   return MPIO_OK;
@@ -694,13 +695,16 @@ mpio_io_bulk_write(int fd, BYTE *block, int num_bytes)
 int
 mpio_io_write(mpio_t *m, BYTE *block, int num_bytes)
 {
-#ifdef HAVE_USB
   if (m->use_libusb) {
-    return usb_bulk_write(m->usb_handle, m->usb_out_ep, block, num_bytes, MPIO_USB_TIMEOUT);
-  } else {     
-#endif 
+    int r;  
+    r = usb_bulk_write(m->usb_handle, m->usb_out_ep, block, num_bytes, MPIO_USB_TIMEOUT);
+    if (r < 0)
+      debug("libusb returned error: (%08x) \"%s\"\n", r, usb_strerror());
+    return r;
+  } 
+#ifdef USE_KMODULE
+  else {     
     return mpio_io_bulk_write(m->fd, block, num_bytes);
-#ifdef HAVE_USB
   }  
 #endif
 }
@@ -744,16 +748,20 @@ mpio_io_bulk_read (int fd, BYTE *block, int num_bytes)
 int
 mpio_io_read (mpio_t *m, BYTE *block, int num_bytes)
 {
-#ifdef HAVE_USB
   if (m->use_libusb) {
-    return usb_bulk_read(m->usb_handle, m->usb_in_ep, block, num_bytes, MPIO_USB_TIMEOUT);
-  } else {    
-#endif
+    int r;
+    r = usb_bulk_read(m->usb_handle, m->usb_in_ep, block, num_bytes, MPIO_USB_TIMEOUT);
+    if (r < 0)
+      debug("libusb returned error: (%08x) \"%s\"\n", r, usb_strerror());
+    return r;
+  }
+#ifdef USE_KMODULE
+  else {    
     return mpio_io_bulk_read(m->fd, block, num_bytes);
-#ifdef HAVE_USB
   }
 #endif
 }
+
 
 /*
  * low level functions
@@ -784,7 +792,7 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
 
   if (nwrite != CMD_SIZE) 
     {
-      debug ("Failed to send command.\n\n");
+      debug ("Failed to send command.\n");
       close (m->fd);
       return 0;    
     }
@@ -794,7 +802,7 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
 
   if (nread == -1 || nread != 0x40) 
     {
-      debug ("Failed to read Sector.\n%x\n",nread);
+      debug ("Failed to read Sector.(nread=0x%04x)\n",nread);
       close (m->fd);
       return 0;    
     }
@@ -854,7 +862,7 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
 	}
     }
 
-  debugn (2, "sector: %8x (%06x)\n", index, sector);
+  debugn (2, "sector: (index=0x%8x sector=0x%06x)\n", index, sector);
 
   mpio_io_set_cmdpacket (m, GET_SECTOR, mem, sector, sm->size, 0, cmdpacket);
 
@@ -865,7 +873,7 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
 
   if(nwrite != CMD_SIZE) 
     {
-      debug ("\nFailed to send command.\n\n");
+      debug ("\nFailed to send command.\n");
       close (m->fd);
       return 1;
     }
@@ -875,7 +883,7 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
 
   if(nread != SECTOR_TRANS) 
     {
-      debug ("\nFailed to read Sector.\n%x\n", nread);
+      debug ("\nFailed to read Sector.(nread=0x%04x)\n", nread);
       close (m->fd);
       return 1;
     }
@@ -887,7 +895,7 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
 			      (recvbuff + SECTOR_SIZE + 13)) ||
           mpio_ecc_256_check ((recvbuff + (SECTOR_SIZE / 2)),
 			      (recvbuff + SECTOR_SIZE + 8))    )
-      	debug ("ECC error @ (%02x : %06x)\n", mem, index);
+      	debug ("ECC error @ (mem=0x%02x index=0x%06x)\n", mem, index);
     }
 
   /* This should not be needed:
@@ -986,7 +994,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
 	  
 	  if (pvalue == MPIO_BLOCK_NOT_FOUND)
 	    {
-	      debug ("Oops, this should never happen! (%6x : %6x)\n", 
+	      debug ("Oops, this should never happen! (index=0x%06x block_address=0x%06x)\n", 
 		     index, block_address);
 	      exit (-1);
 	    }      
@@ -1004,7 +1012,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
 
   if(nwrite != CMD_SIZE) 
     {
-      debug ("\nFailed to send command.\n\n");
+      debug ("\nFailed to send command.\n");
       close (m->fd);
       return 1;
     }
@@ -1057,7 +1065,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
 
   if(nwrite != SECTOR_TRANS) 
     {
-      debug ("\nFailed to read Sector.\n%x\n", nwrite);
+      debug ("\nFailed to write Sector.(nwrite=0x%04x)\n", nwrite);
       close (m->fd);
       return 1;
     }
@@ -1095,7 +1103,7 @@ mpio_io_megablock_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *outp
 
   if(nwrite != CMD_SIZE) 
     {
-      debug ("\nFailed to send command.\n\n");
+      debug ("\nFailed to send command.\n");
       close (m->fd);
       return 1;
     }
@@ -1107,7 +1115,7 @@ mpio_io_megablock_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *outp
       
       if(nread != BLOCK_TRANS) 
 	{
-	  debug ("\nFailed to read (sub-)block.\n%x\n",nread);
+	  debug ("\nFailed to read (sub-)block.(nread=0x%04x)\n",nread);
 	  close (m->fd);
 	  return 1;
 	}
@@ -1155,7 +1163,7 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
 
   if(nwrite != CMD_SIZE) 
     {
-      debug ("\nFailed to send command.\n\n");
+      debug ("\nFailed to send command.\n");
       close (m->fd);
       return 1;
     }
@@ -1165,7 +1173,7 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
 
   if(nread != BLOCK_TRANS) 
     {
-      debug ("\nFailed to read Block.\n%x\n",nread);
+      debug ("\nFailed to read Block.(nread=0x%04x)\n",nread);
       close (m->fd);
       return 1;
     }
@@ -1184,7 +1192,7 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
 				 + (SECTOR_SIZE / 2)),
 				((recvbuff +(i * SECTOR_TRANS) 
 				  + SECTOR_SIZE + 8))))
-	  debug ("ECC error @ (%02x : %06x)\n", chip, address);
+	  debug ("ECC error @ (chip=0x%02x address=0x%06x)\n", chip, address);
       }
       
       memcpy(output + (i * SECTOR_SIZE), 
@@ -1237,7 +1245,7 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, WORD size,
       nwrite = mpio_io_write(m, cmdpacket, CMD_SIZE);
       
       if(nwrite != CMD_SIZE) {
-	debug ("\nFailed to send command.\n\n");
+	debug ("\nFailed to send command.\n");
 	close (m->fd);
 	return 1;
       }
@@ -1257,7 +1265,7 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, WORD size,
       
 	  if(nread != CMD_SIZE) 
 	    {
-	      debug ("\nFailed to read Block.\n%x\n",nread);
+	      debug ("\nFailed to read Block.(nread=0x%04x)\n",nread);
 	      close (m->fd);
 	      return 1;
 	    }
@@ -1286,7 +1294,7 @@ mpio_io_block_delete(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
 
   if (address == MPIO_BLOCK_NOT_FOUND)
     {
-      debug("hmm, what happens here? (%4x)\n", f->entry);
+      debug("hmm, what happened here? (%4x)\n", f->entry);
       return 0;
     }
 
@@ -1333,7 +1341,7 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
 
   if (nwrite != CMD_SIZE) 
     {
-      debug ("Failed to send command.\n\n");
+      debug ("Failed to send command.\n");
       close (m->fd);
       return 0;
     }
@@ -1343,7 +1351,7 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
 
   if ((nread == -1) || (nread != CMD_SIZE)) 
     {
-      debug ("Failed to read Response.\n%x\n",nread);
+      debug ("Failed to read Response.(nread=0x%04x)\n",nread);
       close (m->fd);
       return 0;
     }
@@ -1354,10 +1362,10 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
   if (status[0] != CMD_OK) 
     {
       if (status[0] == CMD_ERROR) {
-	debugn (0, "error formatting Block %02x:%06x\n", 
+	debugn (0, "error formatting Block (chip=0x%02x address=0x%06x\n", 
 		chip, address);
       } else {
-	debugn (0,"UNKNOWN error (code: %02x) formatting Block %02x:%06x\n", 
+	debugn (0,"UNKNOWN error (code: %02x) formatting Block (chip=0x%02x address=0x%06x)\n", 
 		status[0], chip, address);
       }
       
@@ -1407,7 +1415,7 @@ mpio_io_megablock_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *dat
 
   if(nwrite != CMD_SIZE) 
     {
-      debug ("\nFailed to send command.\n\n");
+      debug ("\nFailed to send command.\n");
       close (m->fd);
       return 1;
     }
@@ -1435,7 +1443,7 @@ mpio_io_megablock_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *dat
     
     if(nwrite != MEGABLOCK_TRANS_WRITE) 
       {
-	debug ("\nFailed to write block (%d).\n%x\n", i, nwrite);
+	debug ("\nFailed to write block (i=%d nwrite=0x%04x)\n", i, nwrite);
 	close (m->fd);
 	return 1;
       }    
@@ -1531,7 +1539,7 @@ mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
 
   if(nwrite != CMD_SIZE) 
     {
-      debug ("\nFailed to send command.\n\n");
+      debug ("\nFailed to send command.\n");
       close (m->fd);
       return 1;
     }
@@ -1543,7 +1551,7 @@ mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
 
   if(nwrite != BLOCK_TRANS) 
     {
-      debug ("\nFailed to read Block.\n%x\n",nwrite);
+      debug ("\nFailed to read Block.(nwrite=0x%04x\n",nwrite);
       close (m->fd);
       return 1;
     }

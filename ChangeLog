@@ -1,3 +1,19 @@
+2004-04-19  Markus Germeier  <mager@tzi.de>
+	* added hotplug infrastructure to the project
+	  - defaults to root:root 0666
+	  - change with --with-{user,group,perm}=
+	  - minor clean ups
+	* changed version to 0.7.1-pre1
+
+2004-04-19  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/smartmedia.c: 
+	  libmpio/src/io.c: 
+	  fixed debug outputs and copyright notice
+	* removed "#ifdef HAVE_USB"s
+	  libusb is mandatory now!
+	* added "#ifdef USE_KMODULE"	  	    
+	* removed noisy and misleading debug messages
+	
 2004-03-25  Markus Germeier  <mager@tzi.de>
 	* Don't BuildRequire libusb-devel because
 	  it does not exist on SuSE 9.0

@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.32 2004/01/13 11:37:34 germeier Exp $
+ * $Id: defs.h,v 1.33 2004/04/19 12:19:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -32,9 +32,7 @@
 extern "C" {
 #endif
 
-#ifdef HAVE_USB
 #include "usb.h"
-#endif
 
 typedef unsigned char  BYTE;
 typedef unsigned short WORD;
@@ -288,14 +286,12 @@ typedef struct {
   BYTE version[CMD_SIZE];
   
   int fd;
-#ifdef HAVE_USB
   int use_libusb;
   struct usb_bus *usb_busses;
   struct usb_bus *usb_bus;
   struct usb_dev_handle *usb_handle;
   int usb_out_ep;
   int usb_in_ep;
-#endif
   BYTE *charset;                   /* charset used for filename conversion */
 
   BYTE id3;                        /* enable/disable ID3 rewriting support */

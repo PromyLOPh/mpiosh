@@ -1,8 +1,8 @@
 /*
- * $Id: smartmedia.c,v 1.8 2004/02/08 14:45:23 germeier Exp $
+ * $Id: smartmedia.c,v 1.9 2004/04/19 12:19:26 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
- *  Copyright (C) 2002, 2003 Markus Germeier
+ *  Copyright (C) 2002-2004 Markus Germeier
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -80,7 +80,7 @@ mpio_id2mem(BYTE id)
       i=256;
       break;
     default:
-      debug("This should never happen! (id2mem)\n");      
+      debug("This should never happen! (id=0x%02x)\n", id);      
       exit (1);
     }
   return i;
@@ -93,16 +93,16 @@ mpio_id2manufacturer(BYTE id)
   switch(id) 
     {
     case 0xec:
-      m="Samsung (Micronas)";      
+      m="Samsung";      
       break;
     case 0x98:
       m="Toshiba";
       break;
     case 0x13:
-      m="Unknown";
+      m="Unknown 0x13";
       break;
     default:
-      m="unknown";
+      m="Unknown";
     }  
   return m;
 }
@@ -158,7 +158,7 @@ mpio_id2geo(BYTE id, mpio_disk_phy_t *geo)
       *geo = MPIO_DISK_GEO_256;
       break;
     default:
-      debug("This should never happen! (mpio_id2geo)\n");      
+      debug("This should never happen! (id=0x%02x)\n", id);      
       exit (1);      
     }
   

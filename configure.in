@@ -10,7 +10,7 @@ dnl AM_CONFIG_HEADER(src/config.h)
 AC_CANONICAL_SYSTEM()
 AC_MSG_RESULT(Building for a ${host} host.)
 
-AM_INIT_AUTOMAKE(mpio, 0.7.1-1.2004032501)
+AM_INIT_AUTOMAKE(mpio, 0.7.1_pre1-1)
 
 dnl build release variable
 RELEASE=`echo $VERSION | cut -d- -f2`
@@ -47,7 +47,6 @@ AC_DEFUN([TEST_MPLIB],
              [ac_cv_use_mplib=$withval], [ac_cv_use_mplib=yes])
 AC_CACHE_CHECK([whether to use mplib],
                [ac_cv_use_mplib], [ac_cv_use_mplib=yes])])
-
 TEST_MPLIB
 
 if test "$ac_cv_use_mplib" = yes; then
@@ -78,7 +77,6 @@ if test -n "${LIBUSB_CONFIG}"; then
 	    LDFLAGS="$LDFLAGS_orig"])
     CPPFLAGS="$CPPFLAGS_save"
 fi
-set > /tmp/set.foo
 
         # This 'test' call uses non-standard syntax and will fail on most
         # systems, but it's just informational so any warning can be ignored.
@@ -88,6 +86,7 @@ if test "$LIBUSB_VER" \< "0.1.7"; then
 *** http://sourceforge.net/projects/libusb/
 *** If you cannot find the appropriate version, try CVS
 	    ])
+    exit 1
 fi
 
 case "$usb_msg" in
@@ -97,6 +96,50 @@ esac
 
 AC_SUBST(USB_CFLAGS)
 AC_SUBST(USB_LIBS)
+
+dnl --- check/set user and permissions for accessing the player
+
+dnl 1. user
+
+AC_DEFUN([TEST_USER],
+[AC_ARG_WITH([user],
+             AC_HELP_STRING([--with-user=USER],
+                            [user to access the player]),
+             [ac_cv_use_user=$withval], [ac_cv_use_user=root])
+AC_CACHE_CHECK([user to access the player],
+               [ac_cv_use_user], [ac_cv_use_user=root])])
+
+TEST_USER
+MPIOUSER=$ac_cv_use_user
+AC_SUBST(MPIOUSER)
+
+dnl 2. group
+
+AC_DEFUN([TEST_GROUP],
+[AC_ARG_WITH([group],
+             AC_HELP_STRING([--with-group=GROUP],
+                            [group to access the player]),
+             [ac_cv_use_group=$withval], [ac_cv_use_group=root])
+AC_CACHE_CHECK([group to access the player],
+               [ac_cv_use_group], [ac_cv_use_group=root])])
+
+TEST_GROUP
+MPIOGROUP=$ac_cv_use_group
+AC_SUBST(MPIOGROUP)
+
+dnl 3. permissions
+
+AC_DEFUN([TEST_PERM],
+[AC_ARG_WITH([perm],
+             AC_HELP_STRING([--with-perm=PERM],
+                            [permissions for accessing the player]),
+             [ac_cv_use_perm=$withval], [ac_cv_use_perm=0666])
+AC_CACHE_CHECK([permissions for accessing the player],
+               [ac_cv_use_perm], [ac_cv_use_perm=0666])])
+
+TEST_PERM
+MPIOPERM=$ac_cv_use_perm
+AC_SUBST(MPIOPERM)
 
 dnl --- only use deprecated kernel module if requested
 
@@ -158,6 +201,7 @@ if test -z ${KERNEL_INCLUDE}; then
     AC_ERROR(could not find directory of kernel include files)
 else
     AC_MSG_RESULT(Using kernel includes from ${KERNEL_INCLUDE})
+    AC_DEFINE(USE_KMODULE,1,[Whether you want support for the deprecated kernel module])
 fi
 AC_SUBST(KERNEL_INCLUDE)
 
@@ -173,5 +217,7 @@ AC_OUTPUT(
     mpiosh/Makefile
     etc/Makefile
     tools/Makefile
+    hotplug/libmpio
+    hotplug/Makefile
     mpio.spec
 )

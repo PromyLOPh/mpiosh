@@ -1,8 +1,8 @@
 /*
- * $Id: mpio.c,v 1.11 2004/01/13 11:37:34 germeier Exp $
+ * $Id: mpio.c,v 1.12 2004/04/19 12:19:26 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
- *  Copyright (C) 2002, 2003 Markus Germeier
+ *  Copyright (C) 2002-2004 Markus Germeier
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -234,14 +234,6 @@ mpio_init_internal(mpio_t *m)
   sm->cdir = sm->root;
 
   if (sm->version) {
-    printf("*******************************************\n");
-    printf("This is a work-in-progress version, so BEWARE!\n");
-    printf("The assumed status of this code is:\n");
-    printf(" * reading:     assumed working\n");
-    printf(" * deleting:    assumed working, needs further testing\n");
-    printf(" * writing:     assumed working, needs further testing\n");
-    printf(" * formatting:  assumed working, needs further testing\n");
-
     /* special features */
     sm->recursive_directory=1;
   } else {
