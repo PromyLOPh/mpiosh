@@ -1,5 +1,5 @@
 /*
- * $Id: smartmedia.c,v 1.7 2004/01/12 16:50:51 germeier Exp $
+ * $Id: smartmedia.c,v 1.8 2004/02/08 14:45:23 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -72,6 +72,7 @@ mpio_id2mem(BYTE id)
       break;
     case 0x79:
     case 0xf1: /* new chip (Samsung) */
+    case 0x0e: /* new chip (Unknown) */
       i=128;
       break;
     case 0xda: /* new chip (Samsung) */
@@ -79,7 +80,7 @@ mpio_id2mem(BYTE id)
       i=256;
       break;
     default:
-      debug("This should never happen (id2mem)!\n");      
+      debug("This should never happen! (id2mem)\n");      
       exit (1);
     }
   return i;
@@ -149,7 +150,7 @@ mpio_id2geo(BYTE id, mpio_disk_phy_t *geo)
       break;
     case 0x79:
     case 0xf1: /* new chip (Samsung) */
-
+    case 0x0e: /* new chip (Unknown) */
       *geo = MPIO_DISK_GEO_128;
       break;
     case 0xda: /* new chip (Samsung) */
@@ -157,7 +158,7 @@ mpio_id2geo(BYTE id, mpio_disk_phy_t *geo)
       *geo = MPIO_DISK_GEO_256;
       break;
     default:
-      debug("This should never happen!\n");      
+      debug("This should never happen! (mpio_id2geo)\n");      
       exit (1);      
     }
   
@@ -172,6 +173,7 @@ mpio_id2version(BYTE id)
     case 0xf1:   /* 128MB new Samsung */
     case 0xda:   /* 256MB new Samsung */
     case 0x89:   /*  64MB new Unknown */
+    case 0x0e:   /* 128MB new Unknown */
     case 0x25:   /* 256MB new Unknown */
       return 1;      
     default:
