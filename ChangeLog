@@ -1,5 +1,14 @@
 2003-06-27  Andreas Buesching  <crunchy@tzi.de>
 
+	* mpiosh/callback.c (mpiosh_cmd_backup): using the resolved backup
+	directory name as argument for mpio_file_get_as
+	(mpiosh_cmd_restore): same as above s/get/put/
+
+	* mpiosh/config.c (mpiosh_config_check_backup_dir): changed return
+	type to char *. returning the resolved backip directory name
+
+2003-06-27  Andreas Buesching  <crunchy@tzi.de>
+
 	* mpiosh/global.c: add CONFIG_BACKUP defining a user backup
 	directory.
 	(commands): add backup and restore command

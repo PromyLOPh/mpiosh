@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.43 2003/06/27 12:21:21 crunchy Exp $
+ * $Id: callback.c,v 1.44 2003/06/27 13:40:23 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -27,6 +27,8 @@
 #include <grp.h>
 #include <pwd.h>
 #include <regex.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -838,87 +840,114 @@ mpiosh_cmd_backup(char *args[])
 {
   int size;
   char filename[ 1024 ];
+  char *path;
   
   UNUSED(args);
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
-  if ( !mpiosh_config_check_backup_dir( mpiosh.config, TRUE ) ) {
-    fprintf( stderr, "error: could not create backup directory: %s\n",
-	     CONFIG_BACKUP );
-    return;
-  }
+  path = mpiosh_config_check_backup_dir( mpiosh.config, TRUE );
   
-  snprintf( filename, 1024, "%s%s", CONFIG_BACKUP, MPIO_CONFIG_FILE );
+  if ( !path ) {
+    fprintf( stderr, "error: could not create backup directory: %s\n",
+	     path );
+    goto cleanup_backup;
+  }
+
+  printf( "backup %s ...\n", MPIO_CONFIG_FILE );
+  snprintf( filename, 1024, "%s%s", path, MPIO_CONFIG_FILE );
   size = mpio_file_get_as( mpiosh.dev, MPIO_INTERNAL_MEM,
 			   MPIO_CONFIG_FILE, 
 			   filename,
 			   mpiosh_callback_get );
-  if ( size == -1 ) return;
+  if ( size == -1 ) goto cleanup_backup;
   if ( !size )
     debugn (1, "file does not exist: %s\n", MPIO_CONFIG_FILE );
     
-  snprintf( filename, 1024, "%s%s", CONFIG_BACKUP, MPIO_CHANNEL_FILE );
+  
+  if ( mpio_file_exists( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CHANNEL_FILE ) )
+    printf( "backup %s ...\n", MPIO_CHANNEL_FILE );
+  snprintf( filename, 1024, "%s%s", path, MPIO_CHANNEL_FILE );
   size = mpio_file_get_as( mpiosh.dev, MPIO_INTERNAL_MEM, 
 			   MPIO_CHANNEL_FILE,
 			   filename,
 			   mpiosh_callback_get );
-  if ( size == -1 ) return;
+  if ( size == -1 ) goto cleanup_backup;
   if ( !size )
     debugn (2, "file does not exist: %s\n", MPIO_CHANNEL_FILE );
 
-  snprintf( filename, 1024, "%s%s", CONFIG_BACKUP, MPIO_FONT_FON );
+  if ( mpio_file_exists( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_FONT_FON ) )
+    printf( "backup %s ...\n", MPIO_FONT_FON );
+  snprintf( filename, 1024, "%s%s", path, MPIO_FONT_FON );
   size = mpio_file_get_as( mpiosh.dev, MPIO_INTERNAL_MEM, 
 			   MPIO_FONT_FON,
 			   filename,
 			   mpiosh_callback_get );
-  if ( size == -1 ) return;
+  if ( size == -1 ) goto cleanup_backup;
   if ( !size )
     debugn (2, "file does not exist: %s\n", MPIO_FONT_FON );
+
+ cleanup_backup:
+  free( path );
+  printf("\n");
 }
 
 void
 mpiosh_cmd_restore(char *args[])
 {
   int size;
-  char filename[ 1024 ];
-
+  char filename[ 1024 ], answer[ 512 ];
+  char *path;
+  
   UNUSED(args);
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
-  if ( !mpiosh_config_check_backup_dir( mpiosh.config, FALSE ) ) {
-    fprintf( stderr, "error: there is no backup: %s\n",
-	     CONFIG_BACKUP );
-    return;
-  }
+  path = mpiosh_config_check_backup_dir( mpiosh.config, FALSE );
   
-  snprintf( filename, 1024, "%s%s", CONFIG_BACKUP, MPIO_CONFIG_FILE );
-  size = mpio_file_put_as( mpiosh.dev, MPIO_INTERNAL_MEM,
-			   filename,
-			   MPIO_CONFIG_FILE, 
-			   FTYPE_CONF, mpiosh_callback_put );
-  if ( size == -1 ) return;
-  if ( !size )
-    debugn (1, "file does not exist: %s\n", MPIO_CONFIG_FILE );
-    
-  snprintf( filename, 1024, "%s%s", CONFIG_BACKUP, MPIO_CHANNEL_FILE );
-  size = mpio_file_put_as( mpiosh.dev, MPIO_INTERNAL_MEM, 
-			   filename,
-			   MPIO_CHANNEL_FILE,
-			   FTYPE_CHAN, mpiosh_callback_put );
-  if ( size == -1 ) return;
-  if ( !size )
-    debugn (2, "file does not exist: %s\n", MPIO_CHANNEL_FILE );
+  if ( !path ) {
+    fprintf( stderr, "error: there is no backup: %s\n",
+	     path );
+    goto cleanup_restore;
+  }
 
-  snprintf( filename, 1024, "%s%s", CONFIG_BACKUP, MPIO_FONT_FON );
+  printf( "This will destroy the current configuration of your player. "
+	  "Are you sure you want to restore the backup (y/n)? " );
+
+  fgets( answer, 511, stdin );
+  
+  if (answer[0] != 'y' && answer[0] != 'Y')
+    goto cleanup_restore;
+  
+  snprintf( filename, 1024, "%s%s", path, MPIO_FONT_FON );
+  if ( mpio_file_exists( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_FONT_FON ) )
+    mpio_file_del( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_FONT_FON, NULL );
   size = mpio_file_put_as( mpiosh.dev, MPIO_INTERNAL_MEM, 
 			   filename,
 			   MPIO_FONT_FON,
 			   FTYPE_FONT, mpiosh_callback_put );
-  if ( size == -1 ) return;
-  if ( !size )
-    debugn (2, "file does not exist: %s\n", MPIO_FONT_FON );
+  mpio_file_move( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_FONT_FON, NULL );
+
+  snprintf( filename, 1024, "%s%s", path, MPIO_CHANNEL_FILE );
+  if ( mpio_file_exists( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CHANNEL_FILE ) )
+    mpio_file_del( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CHANNEL_FILE, NULL );
+  size = mpio_file_put_as( mpiosh.dev, MPIO_INTERNAL_MEM, 
+			   filename,
+			   MPIO_CHANNEL_FILE,
+			   FTYPE_CHAN, mpiosh_callback_put );
+  mpio_file_move( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CHANNEL_FILE, NULL );
+
+  snprintf( filename, 1024, "%s%s", path, MPIO_CONFIG_FILE );
+  if ( mpio_file_exists( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CONFIG_FILE ) )
+    mpio_file_del( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CONFIG_FILE, NULL );
+  size = mpio_file_put_as( mpiosh.dev, MPIO_INTERNAL_MEM,
+			   filename,
+			   MPIO_CONFIG_FILE, 
+			   FTYPE_CONF, mpiosh_callback_put );  
+  mpio_file_move( mpiosh.dev, MPIO_INTERNAL_MEM, MPIO_CONFIG_FILE, NULL );
+    
+ cleanup_restore:
+  free( path );
 }
 
 

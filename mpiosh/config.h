@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: config.h,v 1.4 2003/06/27 12:21:21 crunchy Exp $
+ * $Id: config.h,v 1.5 2003/06/27 13:40:23 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -47,7 +47,7 @@ const char *mpiosh_config_read_key(struct mpiosh_config_t *config,
 int mpiosh_config_read(struct mpiosh_config_t *config);
 int mpiosh_config_write(struct mpiosh_config_t *config);
 
-int mpiosh_config_check_backup_dir( struct mpiosh_config_t *config,
+char * mpiosh_config_check_backup_dir( struct mpiosh_config_t *config,
 				    int create );
 
 #endif 
