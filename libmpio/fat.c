@@ -1,6 +1,6 @@
  /* 
  *
- * $Id: fat.c,v 1.19 2002/10/27 02:45:28 germeier Exp $
+ * $Id: fat.c,v 1.20 2002/11/14 00:00:59 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -509,8 +509,9 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
        (sm->fat[e+10] == 0xff))
       return 0xffffffff;
     /* this is a special system file! */
-    if (sm->fat[e+6] == FTYPE_CONF) 
-      return 0xffffffff;
+/*     this is not correct!! */
+/*     if (sm->fat[e+6] == FTYPE_CONF)  */
+/*       return 0xffffffff; */
     /* this is a special system file! */
     if((sm->fat[e+6] != FTYPE_MUSIC) &&
        (sm->fat[e+0x0b] == 0xff) &&

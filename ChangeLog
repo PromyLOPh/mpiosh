@@ -9,6 +9,9 @@
 	* libmpio/directory.c (mpio_charset_get, mpio_charset_set): 
 	  added functions to allow changing of charset 
 	* mpiosh/config.c: read charset from config file
+	* libmpio/fat.c (mpio_fatentry_read): 
+	  fixed problem with CONFIG.DAT that only the first block
+	  was read. (what was I thinking there??)
 
 2002-11-04  Andreas Buesching  <crunchy@tzi.de>
 
