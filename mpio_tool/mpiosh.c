@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.5 2002/09/08 17:03:50 germeier Exp $
+ * $Id: mpiosh.c,v 1.6 2002/09/08 22:55:24 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -515,7 +515,7 @@ mpiosh_cmd_mget(char *args[])
 			&year, &month, &day, &hour, &minute, &fsize);
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
-	  printf("getting file \"%s\"\n", fname);
+	  printf("getting '%s' ... \n", fname);
 	  size = mpio_file_get(mpiosh.dev, mpiosh.card,
 			       fname, mpiosh_callback_put);
 	  printf("\n");
@@ -590,7 +590,7 @@ mpiosh_cmd_mput(char *args[])
 	run = dentry;
 	for (j = 0; j < size; j++, run++) {
 	  if (!(error = regexec(&regex, (*run)->d_name, 0, NULL, 0))) {
-	    printf("putting file \"%s\"\n", (*run)->d_name);	    
+	    printf("putting '%s' ... \n", (*run)->d_name));
 	    fsize = mpio_file_put(mpiosh.dev, mpiosh.card,
 				 (*run)->d_name, mpiosh_callback_put);
 	    printf("\n");
