@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.12 2003/04/23 08:34:15 crunchy Exp $
+ * $Id: global.c,v 1.13 2003/06/26 19:53:59 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -129,6 +129,9 @@ struct mpiosh_cmd_t commands[] = {
   { "id3_format", NULL, "[<format>]",
     "  define/show the format line for ID3 rewriting",
     mpiosh_cmd_id3_format, NULL },
+  { "font_upload", NULL, "[<fontfile>]",
+    "  upload the give fontfile to the internal memory",
+    mpiosh_cmd_font_upload, NULL },
   { "dump_memory", NULL, NULL,
     "  dump FAT, directory, spare area and the first 0x100 of the\n"
     "  selected memory card",

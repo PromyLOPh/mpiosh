@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.h,v 1.21 2003/04/27 12:08:20 germeier Exp $
+ * $Id: mpio.h,v 1.22 2003/06/26 19:53:58 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -122,7 +122,12 @@ int	mpio_file_get_to_memory(mpio_t *, mpio_mem_t, mpio_filename_t,
 /* ... memory pointer, size of file                       */
 int	mpio_file_put_from_memory(mpio_t *, mpio_mem_t, mpio_filename_t, 
 				  mpio_filetype_t, mpio_callback_t,
-				  BYTE *, int); 
+				  BYTE *, int);
+
+/* check if file exists on selected memory */
+/* return pointer to file dentry if file exists */
+BYTE   *mpio_file_exists(mpio_t *, mpio_mem_t, mpio_filename_t);
+
 
 /* 
  * rename a file on the MPIO

@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.26 2003/04/27 12:08:20 germeier Exp $
+ * $Id: defs.h,v 1.27 2003/06/26 19:53:58 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -63,7 +63,6 @@ typedef enum { GET_VERSION      = 0x01,
                MODIFY_FIRMWARE  = 0xa0 } mpio_cmd_t; 
 
 /* file types on internal memory */
-/* found in the code of salmoon, are these needed? -mager */
 typedef enum { FTYPE_CHAN  = 0x00,
                FTYPE_MUSIC = 0x01,
                FTYPE_CONF  = 'C',
@@ -79,6 +78,7 @@ typedef enum { FTYPE_CHAN  = 0x00,
 #define MPIO_CONFIG_FILE  "CONFIG.DAT"
 #define MPIO_CHANNEL_FILE "FMCONFIG.DAT"
 #define MPIO_MPIO_RECORD  "MPIO RECORD"
+#define MPIO_FONT_FON     "FONT.FON"
 
 /* type of callback functions */
 typedef BYTE (*mpio_callback_t)(int, int) ; 

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.41 2003/04/19 23:58:02 germeier Exp $
+ * $Id: callback.c,v 1.42 2003/06/26 19:53:58 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -651,8 +651,8 @@ void
 mpiosh_cmd_format(char *args[])
 {
   char answer[512];
-  BYTE *config, *fmconfig, *rconfig;
-  int  csize, fmsize, rsize;
+  BYTE *config, *fmconfig, *rconfig, *fontconfig;
+  int  csize, fmsize, rsize, fontsize;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
@@ -665,10 +665,13 @@ mpiosh_cmd_format(char *args[])
   
   if (answer[0] == 'y' || answer[0] == 'Y') {
     if (mpiosh.card == MPIO_INTERNAL_MEM) {
-      /* save config files and write them back after formatting */
-      config   = NULL;
-      fmconfig = NULL;
-      rconfig  = NULL;
+      printf("read config files from player\n");
+
+      /* save config files and write them back after formatting */      
+      config     = NULL;
+      fmconfig   = NULL;
+      rconfig    = NULL;
+      fontconfig = NULL;
 
       csize = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
 				      MPIO_CONFIG_FILE, NULL, &config);      
@@ -676,7 +679,11 @@ mpiosh_cmd_format(char *args[])
 				       MPIO_CHANNEL_FILE, NULL, &fmconfig);
       rsize = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
 				       MPIO_MPIO_RECORD, NULL, &rconfig);
+      fontsize = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				       MPIO_FONT_FON, NULL, &fontconfig);
     }
+
+    printf("formatting memory...\n");
 
     if (mpio_memory_format(mpiosh.dev, mpiosh.card,
 			   mpiosh_callback_format) == -1)
@@ -685,6 +692,7 @@ mpiosh_cmd_format(char *args[])
       printf("\n");
       
       if (mpiosh.card == MPIO_INTERNAL_MEM) {
+	printf("restoring saved config files\n");
 	/* restore everything we saved */
 	if (config)
 	  if (mpio_file_put_from_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
@@ -700,8 +708,13 @@ mpiosh_cmd_format(char *args[])
 	  if (mpio_directory_make(mpiosh.dev, MPIO_INTERNAL_MEM, 
 				  MPIO_MPIO_RECORD)!=MPIO_OK)
 	    mpio_perror("error");
+	if (fontconfig)
+	  if (mpio_file_put_from_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+					MPIO_FONT_FON, FTYPE_FONT,
+					NULL, fontconfig, fontsize)==-1)
+	    mpio_perror("error");
 
-	if (config || fmconfig || rconfig)
+	if (config || fmconfig || rconfig || fontconfig)
 	  mpio_sync(mpiosh.dev, MPIO_INTERNAL_MEM);
 	if (config)
 	  free(config);
@@ -709,6 +722,8 @@ mpiosh_cmd_format(char *args[])
 	  free(fmconfig);
 	if (rconfig)
 	  free(rconfig);
+	if (fontconfig)
+	  free(fontconfig);
       }
       
     } 
@@ -1097,6 +1112,34 @@ mpiosh_cmd_id3_format(char *args[])
   } else {
     mpio_id3_format_set(mpiosh.dev, args[0]);
   }
+}
+
+void 
+mpiosh_cmd_font_upload(char *args[])
+{ 
+  BYTE * p;
+  int size;
+  
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+  MPIOSH_CHECK_ARG;
+
+  /* check if fonts file already exists */
+  p = mpio_file_exists(mpiosh.dev, MPIO_INTERNAL_MEM, 
+		       MPIO_FONT_FON);
+  if (p) {
+    printf("Fontsfile already exists. Please delete it first!\n");
+    return;
+  }
+
+  printf("writing new font file ...\n");
+  if (mpio_file_put_as(mpiosh.dev, MPIO_INTERNAL_MEM, 
+		       args[0], MPIO_FONT_FON,
+		       FTYPE_FONT, mpiosh_callback_put)==-1) 
+    mpio_perror("error");
+
+  printf("\n");    
+  mpio_sync(mpiosh.dev, MPIO_INTERNAL_MEM);
+  
 }
 
 

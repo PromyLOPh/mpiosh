@@ -1,3 +1,12 @@
+2003-06-26  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/mpio.c (mpio_file_exists): 
+	  added helper function
+	* mpiosh/callback.c (mpiosh_cmd_font_upload): 
+	* libmpio/defs.h (MPIO_FONT_FON): added support for 
+	  font file	
+	* mpiosh/callback.c (mpiosh_cmd_format): 
+	  restore font file if it existed before a format
+	
 2003-06-18  Markus Germeier  <mager@tzi.de>
 	* libmpio/Makefile.am (AM_LDFLAGS): 
 	  added variable to support API versioninging of libmpio

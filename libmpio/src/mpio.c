@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.4 2003/05/19 17:30:58 germeier Exp $
+ * $Id: mpio.c,v 1.5 2003/06/26 19:53:58 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -1159,6 +1159,18 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     
   return MPIO_OK;
 }
+
+BYTE   *
+mpio_file_exists(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename) {
+  BYTE *p;
+  /* find file */
+  p = mpio_dentry_find_name(m, mem, filename);
+  if (!p)
+    p = mpio_dentry_find_name_8_3(m, mem, filename);
+  
+  return p;  
+}
+
 
 int	
 mpio_sync(mpio_t *m, mpio_mem_t mem)
