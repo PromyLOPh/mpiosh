@@ -1,5 +1,5 @@
 /*
- * $Id: smartmedia.c,v 1.3 2003/07/17 16:18:01 germeier Exp $
+ * $Id: smartmedia.c,v 1.4 2003/07/17 18:29:11 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -139,6 +139,7 @@ mpio_id2geo(BYTE id, mpio_disk_phy_t *geo)
     case 0x76:
       *geo = MPIO_DISK_GEO_064;
       break;
+    case 0xf1: /* non-standard ID */
     case 0x79:
       *geo = MPIO_DISK_GEO_128;
       break;
