@@ -21,6 +21,14 @@ use this software and your MPIO mp3 player turns into a useless brick it
 is your own fault. If you use any other device with this library it would
 be a wonder if does _not_ turn into a brick. So if you use do not like your mp3 player just use this software ;-)
 
+- I downloaded a current CVS snapshot but there is no configure script, only
+  a configure.in ! What do I have to do??
+
+configure and a few other files are automagically created using the
+tools aclocal, autoconf and automake. Execute the script "autogen.sh"
+and you should be ready to go. (Of course, you need to have the
+mentioned tools installed ;-)
+
 - How to help us finding bugs and learning more about different models
   of the MPIO mp3 players?
 
