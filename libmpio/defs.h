@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.5 2002/09/15 23:05:25 salmoon Exp $
+ * $Id: defs.h,v 1.6 2002/09/18 20:32:21 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -45,14 +45,6 @@ typedef enum { MPIO_MODEL_DME      = 0x00,
 	       MPIO_MODEL_DMB_PLUS = 0x03,
 	       MPIO_MODEL_DMK      = 0x04,
                MPIO_MODEL_UNKNOWN  = 0x05 } mpio_model_t;
-
-static BYTE *mpio_model_name[] = {
-  "MPIO-DME",
-  "MPIO-DMG",
-  "MPIO-DMB",
-  "MPIO-DMB+",
-  "MPIO-DMK",
-  "unknown" };
 
 /* USB commands */
 typedef enum { GET_VERSION      = 0x01,
@@ -99,6 +91,15 @@ typedef enum { FTYPE_CONF  = 'C',
 #define OFFSET_MBR       0x40       /* always fixed? :salmoon */
 
 #define INFO_LINE        81
+
+/* error codes */
+#define MPIO_ERR_FILE_NOT_FOUND		-1
+#define MPIO_ERR_NOT_ENOUGH_SPACE	-2
+#define MPIO_ERR_FILE_EXISTS		-3
+#define MPIO_ERR_FAT_ERROR		-4
+#define MPIO_ERR_READING_FILE		-5
+#define MPIO_ERR_PERMISSION_DENIED	-6
+#define MPIO_ERR_WRITING_FILE		-7
 
 /* get formatted information, about the MPIO player */
 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.17 2002/09/15 12:03:23 germeier Exp $
+ * $Id: mpio.c,v 1.18 2002/09/18 20:32:22 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -42,6 +42,14 @@
 #include "fat.h"
 
 #define DSTRING 100
+
+static BYTE *mpio_model_name[] = {
+  "MPIO-DME",
+  "MPIO-DMG",
+  "MPIO-DMB",
+  "MPIO-DMB+",
+  "MPIO-DMK",
+  "unknown" };
 
 void mpio_init_internal(mpio_t *);
 void mpio_init_external(mpio_t *);
@@ -275,7 +283,6 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	      BYTE (*progress_callback)(int, int))
 {
   mpio_smartmedia_t *sm;
-  BYTE fname[129];
   BYTE block[BLOCK_SIZE];
   int fd, towrite;
   BYTE   *p;
@@ -288,7 +295,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   /* please fix me sometime */
   /* the system entries are kind of special ! */
   if (strncmp("sysdum", filename, 6) == 0)
-    return 0;  
+    return MPIO_ERR_PERMISSION_DENIED;  
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -323,7 +330,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	  debug("error writing file data\n");
 	  close(fd);
 	  free (f);
-	  return -1;
+	  return MPIO_ERR_WRITING_FILE;
 	} 
 	filesize -= towrite;
 	
@@ -360,7 +367,6 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   mpio_smartmedia_t *sm;
   mpio_fatentry_t   *f, current, firstblock, backup; 
   WORD start;
-  int data_offset;
   BYTE block[BLOCK_SIZE];
   int fd, toread;
   struct stat file_stat;
@@ -374,7 +380,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 
   if (stat((const char *)filename, &file_stat)!=0) {
     debug("could not find file: %s\n", filename);
-    return 0;
+    return MPIO_ERR_FILE_NOT_FOUND;
   }
   fsize=filesize=file_stat.st_size;
   debugn(2, "filesize: %d\n", fsize);
@@ -383,7 +389,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   mpio_memory_free(m, mem, &free);
   if (free*1024<fsize) {
     debug("not enough space left (only %d KB)\n", free);
-    return 0;
+    return MPIO_ERR_NOT_ENOUGH_SPACE;
   }
 
   /* check if filename already exists */
@@ -393,7 +399,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (p) 
     {
       debug("filename already exists\n");
-      return 0;
+      return MPIO_ERR_FILE_EXISTS;
     }
 
   /* find first free sector */
@@ -401,7 +407,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (!f) 
     {
       debug("could not free cluster for file!\n");
-      return 0;	
+      return MPIO_ERR_FAT_ERROR;
     } else {
       memcpy(&firstblock, f, sizeof(mpio_fatentry_t));
       start=f->entry;
@@ -429,7 +435,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (fd==-1) 
     {
       debug("could not open file: %s\n", filename);
-      return 0;
+      return MPIO_ERR_FILE_NOT_FOUND;
     }
 
   while ((filesize>BLOCK_SIZE) && (!abort)) {
@@ -443,7 +449,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
     if (read(fd, block, toread)!=toread) {
       debug("error reading file data\n");
       close(fd);
-      return -1;
+      return MPIO_ERR_READING_FILE;
     }
     filesize -= toread;
 
@@ -473,7 +479,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (read(fd, block, toread)!=toread) {
     debug("error reading file data\n");
     close(fd);
-    return -1;
+    return MPIO_ERR_READING_FILE;
   }
   filesize -= toread;
   
@@ -544,7 +550,6 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
   mpio_smartmedia_t *sm;
   mpio_fatentry_t   *f;
   DWORD clusters;
-  DWORD i;
   BYTE abort = 0;
 
   if (mem == MPIO_INTERNAL_MEM) 
@@ -621,7 +626,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   /* please fix me sometime */
   /* the system entry are kind of special ! */
   if (strncmp("sysdum", filename, 6)==0)
-    return 0;  
+    return MPIO_ERR_PERMISSION_DENIED;  
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -684,7 +689,7 @@ int
 mpio_sync(mpio_t *m, mpio_mem_t mem)
 {
   /* this writes the FAT *and* the root directory */
-  mpio_fat_write(m, mem);  
+  return mpio_fat_write(m, mem);  
 }
 
 int

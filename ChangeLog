@@ -1,3 +1,18 @@
+2002-09-18  Andreas Buesching  <crunchy@tzi.de>
+
+	* libmpio/mpio.c (mpio_file_get, mpio_file_put, mpio_file_del):
+	using new error codes
+
+	* libmpio/defs.h (MPIO_ERR_*): added definitions for possible
+	errors codes
+
+	* libmpio/mpio.c (mpio_model_name): moved model array from def.h;
+	removed some compiler warnings (unused variables, missing return
+	codes)
+
+	* mpiosh/mpiosh.c (mpiosh_command_regex_fix): extented conditions
+	to not replace sequences like ".*" by "\\..*"
+
 2002-09-16  Andreas Buesching  <crunchy@tzi.de>
 
 	* kernel/Makefile.am (install-strip): defined to avoid stripping
