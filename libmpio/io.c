@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.14 2002/09/18 22:18:29 germeier Exp $
+ * $Id: io.c,v 1.15 2002/09/20 20:49:36 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -58,6 +58,7 @@ model2externalmem(mpio_model_t model)
   switch(model) 
     {
     case MPIO_MODEL_DMG:
+    case MPIO_MODEL_DMG_PLUS:
       m = 0x80;
       break;
     default:

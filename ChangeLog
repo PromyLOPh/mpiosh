@@ -1,3 +1,12 @@
+2002-09-20  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.c (mpio_init): 
+	  added code to identify DMG+ (assumed, but should be correct)
+
+	* mpiosh/callback.c (mpiosh_cmd_format, mpiosh_cmd_mem): 
+	  added warning messages for the upcoming release.
+	  (mpiosh_cmd_get, mpiosh_cmd_put): added missing printf
+
 2002-09-20  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/mpiosh.c (mpiosh_command_regex_fix): bug fix for .*

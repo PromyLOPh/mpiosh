@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.7 2002/09/19 20:46:02 crunchy Exp $
+ * $Id: defs.h,v 1.8 2002/09/20 20:49:36 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -41,10 +41,11 @@ typedef enum { MPIO_INTERNAL_MEM = 0x01,
 /* model type */
 typedef enum { MPIO_MODEL_DME      = 0x00,
 	       MPIO_MODEL_DMG      = 0x01,
-	       MPIO_MODEL_DMB      = 0x02,
-	       MPIO_MODEL_DMB_PLUS = 0x03,
-	       MPIO_MODEL_DMK      = 0x04,
-               MPIO_MODEL_UNKNOWN  = 0x05 } mpio_model_t;
+	       MPIO_MODEL_DMG_PLUS = 0x02,
+	       MPIO_MODEL_DMB      = 0x03,
+	       MPIO_MODEL_DMB_PLUS = 0x04,
+	       MPIO_MODEL_DMK      = 0x05,
+               MPIO_MODEL_UNKNOWN  = 0x06 } mpio_model_t;
 
 /* USB commands */
 typedef enum { GET_VERSION      = 0x01,

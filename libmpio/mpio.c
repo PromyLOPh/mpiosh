@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.23 2002/09/19 22:23:01 crunchy Exp $
+ * $Id: mpio.c,v 1.24 2002/09/20 20:49:36 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -46,6 +46,7 @@
 static BYTE *mpio_model_name[] = {
   "MPIO-DME",
   "MPIO-DMG",
+  "MPIO-DMG+",
   "MPIO-DMB",
   "MPIO-DMB+",
   "MPIO-DMK",
@@ -219,6 +220,8 @@ mpio_init(BYTE (*progress_callback)(int, int))
         break ;
       case 'G':
 	new_mpio->model = MPIO_MODEL_DMG;
+	if (new_mpio->version[6] == 'P')
+	  new_mpio->model = MPIO_MODEL_DMG_PLUS; /* should be right */
         break ;
       case 'B':
 	new_mpio->model = MPIO_MODEL_DMB;

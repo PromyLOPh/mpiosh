@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.15 2002/09/19 22:23:01 crunchy Exp $
+ * $Id: callback.c,v 1.16 2002/09/20 20:49:36 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -169,6 +169,10 @@ mpiosh_cmd_mem(char *args[])
     if (mpio_memory_free(mpiosh.dev, MPIO_EXTERNAL_MEM, &free)) {
       mpiosh.card = MPIO_EXTERNAL_MEM;
       mpiosh.prompt = PROMPT_EXT;
+      printf("WARNING\n");
+      printf("Support for external memory is not complete and will"
+	     " probably *not* work !!\n");
+      printf("WARNING\n");
       printf("external memory card is selected\n");
     } else {
       printf("no external memory card is available\n");
@@ -256,6 +260,7 @@ mpiosh_cmd_get(char *args[])
 		    mpiosh_callback_get) == -1) {
     mpio_perror("error");
   } 
+  printf("\n");
 }
 
 void
@@ -337,6 +342,7 @@ mpiosh_cmd_put(char *args[])
   } else {
     mpio_sync(mpiosh.dev, mpiosh.card);
   }
+  printf("\n");
 }
 
 void
@@ -550,6 +556,11 @@ mpiosh_cmd_format(char *args[])
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
   UNUSED(args);
+
+  printf("WARNING\n");
+  printf("Support for formatting memory is not complete and has"
+	 " some known issues!!\n");
+  printf("WARNING\n");
   
   printf("This will destroy all tracks saved on the memory card. "
 	 "Are you sure (y/n)? ");
