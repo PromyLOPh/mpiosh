@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.32 2002/11/13 23:05:28 germeier Exp $
+ * $Id: callback.c,v 1.33 2003/02/26 16:34:45 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -865,10 +865,23 @@ mpiosh_cmd_ldir(char *args[])
 	  pwd = getpwuid(st.st_uid);
 	  grp = getgrgid(st.st_gid);
 	  strftime(time, 12, "%b %2d", localtime(&(st.st_mtime)));
-	  printf("%s %8s %8s %8d %10s %s\n",
-		 rights, pwd->pw_name, grp->gr_name, (int)st.st_size,
-		 time,
-		 (*run)->d_name);
+	  if (pwd && grp) {
+	    printf("%s %8s %8s %8d %10s %s\n",
+		   rights, pwd->pw_name, grp->gr_name, (int)st.st_size,
+		   time, (*run)->d_name);
+	  } else if (pwd) {
+	    printf("%s %8s %8d %8d %10s %s\n",
+		   rights, pwd->pw_name, st.st_gid, (int)st.st_size,
+		   time, (*run)->d_name);
+	  } else if (grp) {
+	    printf("%s %8d %8s %8d %10s %s\n",
+		   rights, st.st_uid, grp->gr_name, (int)st.st_size,
+		   time, (*run)->d_name);
+	  } else {
+	    printf("%s %8d %8d %8d %10s %s\n",
+		   rights, st.st_uid, st.st_gid, (int)st.st_size,
+		   time, (*run)->d_name);
+	  }
 	}
 	free(*run);
       }

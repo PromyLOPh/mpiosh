@@ -53,12 +53,14 @@ AC_SUBST(MODULE_PATH)
 AC_SUBST(SPEC_PATH)
 
 KERNEL_INCLUDE=
-if test -d "/usr/src/linux/include"; then
-    KERNEL_INCLUDE="/usr/src/linux/include"
+if test -d "/lib/modules/${kernel_version}/build/include"; then
+    KERNEL_INCLUDE="/lib/modules/${kernel_version}/build/include"
 elif test -d "/usr/src/linux-2.4/include"; then
     KERNEL_INCLUDE="/usr/src/linux-2.4/include"
 elif test -d "/usr/include/linux"; then
     KERNEL_INCLUDE="/usr/include/linux"
+elif test -d "/usr/src/linux/include"; then
+    KERNEL_INCLUDE="/usr/src/linux/include"
 fi
 
 if test -z ${KERNEL_INCLUDE}; then
