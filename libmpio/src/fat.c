@@ -1,5 +1,5 @@
 /*
- * $Id: fat.c,v 1.3 2003/04/27 12:08:21 germeier Exp $
+ * $Id: fat.c,v 1.4 2003/07/15 08:26:37 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -630,7 +630,7 @@ mpio_fat_internal_find_fileindex(mpio_t *m)
   mpio_fatentry_t *f;
   mpio_smartmedia_t *sm = &m->internal;
   BYTE index[256];
-  BYTE found; /* hmm, ... */
+  WORD found; /* hmm, ... */
 
   memset(index, 1, 256);
 
@@ -646,7 +646,7 @@ mpio_fat_internal_find_fileindex(mpio_t *m)
   while((found<256) && (!index[found]))
     found++;
 
-  if (found==256) 
+  if (found>=256) 
     {
       debug("Oops, did not find a new fileindex!\n"
 	    "This should never happen, aborting now!, Sorry!\n");

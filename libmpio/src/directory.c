@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.10 2003/07/15 07:34:53 germeier Exp $
+ * $Id: directory.c,v 1.11 2003/07/15 08:26:37 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -288,6 +288,11 @@ mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
       parent=0;
     } else {
       current = mpio_dentry_get_startcluster(m, mem, sm->cdir->dentry);
+      if (!current) {
+	debugn(2, "error creating directory");
+	return MPIO_ERR_FAT_ERROR;
+      }
+
       if (mem==MPIO_INTERNAL_MEM)
 	{	  
 	  parent = current->i_index;

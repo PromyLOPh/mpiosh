@@ -2,7 +2,9 @@
 	* libmpio/src/directory.c (mpio_dentry_get_real): 
 	  follow up fix for the broken internal FAT fix
 	  added FTYPE_BROKEN
-
+	* libmpio/src/directory.c (mpio_directory_make): 
+	  another follow up fix for the broken internal FAT fix
+	
 2003-07-14  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/directory.c (mpio_dentry_get_startcluster): 
 	  fixed a bug Yury stumbled across
