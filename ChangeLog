@@ -1,5 +1,8 @@
 2002-09-21  Andreas Buesching  <crunchy@tzi.de>
 
+	* mpio.spec.in (CFLAGS): add 'depmod -a' call to post install
+	instructions
+
 	* kernel/Makefile.am: add target clean and fixed the install
 	target to not strip the kernel module
 

@@ -32,6 +32,7 @@ make DESTDIR=$RPM_BUILD_ROOT install-strip
 %post
 mkmpiodev
 ldconfig
+depmod -a
 
 %preun
 mkmpiodev -r
