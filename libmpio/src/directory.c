@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.12 2003/10/19 21:06:35 germeier Exp $
+ * $Id: directory.c,v 1.13 2004/04/23 19:21:07 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -231,6 +231,8 @@ mpio_directory_open(mpio_t *m, mpio_mem_t mem)
       return NULL;
     }
   } else {    
+    if (!m->internal.size)
+      return NULL;
     out = m->internal.cdir->dir;
   }
 

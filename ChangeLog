@@ -1,6 +1,7 @@
 2004-04-23  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/mpio.c (mpio_close): 
 	  - fixed a stupid bug while closing the device
+	* don't dump core if internal memory is not available
 
 2004-04-23  Markus Germeier  <mager@tzi.de>
 	* remove all files from CVS which can be automagically

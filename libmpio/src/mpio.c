@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.13 2004/04/23 18:17:56 germeier Exp $
+ * $Id: mpio.c,v 1.14 2004/04/23 19:21:07 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
@@ -108,6 +108,8 @@ static mpio_error_t mpio_errors[] = {
     "Requested file is a directory!" },
   { MPIO_ERR_USER_CANCEL ,
     "Operation canceled by user!" },
+  { MPIO_ERR_MEMORY_NOT_AVAIL ,
+    "Selected memory is not available!" },
   { MPIO_ERR_INT_STRING_INVALID,
     "Internal Error: Supported is invalid!" } 	
 };
@@ -590,6 +592,9 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
+  if (!sm->size)
+    MPIO_ERR_RETURN(MPIO_ERR_MEMORY_NOT_AVAIL);
+
   block_size = mpio_block_get_blocksize(m, mem);
   
   if(as==NULL) {
@@ -731,6 +736,9 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
   
   if (mem==MPIO_INTERNAL_MEM) sm=&m->internal;  
   if (mem==MPIO_EXTERNAL_MEM) sm=&m->external;
+
+  if (!sm->size)
+    MPIO_ERR_RETURN(MPIO_ERR_MEMORY_NOT_AVAIL);
 
   block_size = mpio_block_get_blocksize(m, mem);
 
@@ -1047,6 +1055,9 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
       data_offset = 0x02;
     }
 
+  if (!sm->size)
+    MPIO_ERR_RETURN(MPIO_ERR_MEMORY_NOT_AVAIL);
+
   clusters = sm->size*128;
 
   
@@ -1167,6 +1178,9 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
+  if (!sm->size)
+    MPIO_ERR_RETURN(MPIO_ERR_MEMORY_NOT_AVAIL);
+
   block_size = mpio_block_get_blocksize(m, mem);
 
   if ((strcmp(filename, "..") == 0) ||
@@ -1286,6 +1300,8 @@ mpio_health(mpio_t *m, mpio_mem_t mem, mpio_health_t *r)
     {
       sm = &m->internal;
       r->num = sm->chips;
+      if (!sm->size)
+	return MPIO_ERR_MEMORY_NOT_AVAIL;
 
       r->block_size = mpio_block_get_blocksize(m, mem) / 1024;
       
@@ -1313,7 +1329,9 @@ mpio_health(mpio_t *m, mpio_mem_t mem, mpio_health_t *r)
 
   if (mem == MPIO_EXTERNAL_MEM) 
     {
-      sm = &m->external;      
+      sm = &m->external;
+      if (!sm->size)
+	return MPIO_ERR_MEMORY_NOT_AVAIL;
 
       zones = sm->max_cluster / MPIO_ZONE_LBLOCKS + 1;
       r->num = zones;
@@ -1350,6 +1368,9 @@ mpio_memory_dump(mpio_t *m, mpio_mem_t mem)
 
   if (mem == MPIO_INTERNAL_MEM) 
     {      
+      if (!m->internal.size)
+	return 0;
+
       hexdump(m->internal.fat, m->internal.max_blocks*0x10);
       hexdump(m->internal.root->dir, DIR_SIZE);
       if (m->internal.version) {
@@ -1371,6 +1392,9 @@ mpio_memory_dump(mpio_t *m, mpio_mem_t mem)
   
   if (mem == MPIO_EXTERNAL_MEM) 
     {      
+      if (!m->external.size)
+	return 0;
+
       hexdump(m->external.spare, m->external.max_blocks*0x10);
       hexdump(m->external.fat,   m->external.fat_size*SECTOR_SIZE);
       hexdump(m->external.root->dir, DIR_SIZE);

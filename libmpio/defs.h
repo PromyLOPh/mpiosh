@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.33 2004/04/19 12:19:20 germeier Exp $
+ * $Id: defs.h,v 1.34 2004/04/23 19:21:07 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -166,6 +166,7 @@ typedef struct {
 #define MPIO_ERR_DIR_RECURSION         -16
 #define MPIO_ERR_FILE_IS_A_DIR         -17
 #define MPIO_ERR_USER_CANCEL           -18
+#define MPIO_ERR_MEMORY_NOT_AVAIL      -19
 /* internal errors, occur when UI has errors! */
 #define MPIO_ERR_INT_STRING_INVALID	-101
 

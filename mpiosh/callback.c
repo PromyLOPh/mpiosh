@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.47 2003/10/19 21:06:35 germeier Exp $
+ * $Id: callback.c,v 1.48 2004/04/23 19:21:08 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -834,13 +834,16 @@ void
 mpiosh_cmd_health(char *args[])
 {
   mpio_health_t health;
-  int i, lost;
+  int i, lost, r;
   
   UNUSED(args);
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
   
-  mpio_health(mpiosh.dev, mpiosh.card, &health);
+  if ((r=mpio_health(mpiosh.dev, mpiosh.card, &health)) != MPIO_OK) {
+    printf("error: %s\n", mpio_strerror(r));
+    return;
+  }
   
   if (mpiosh.card == MPIO_INTERNAL_MEM) {
     lost=0;
