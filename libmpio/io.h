@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.h,v 1.7 2002/09/18 22:18:29 germeier Exp $
+ * $Id: io.h,v 1.8 2002/09/23 22:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -54,6 +54,6 @@ int	mpio_io_block_delete(mpio_t *, BYTE, mpio_fatentry_t *);
 
 /* */
 int	mpio_io_spare_read  (mpio_t *, BYTE, DWORD, BYTE, BYTE, BYTE *, int,
-			     BYTE (*)(int, int));
+			     mpio_callback_init_t);
 
 #endif /* _MPIO_IO_H_ */

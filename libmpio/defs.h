@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.8 2002/09/20 20:49:36 germeier Exp $
+ * $Id: defs.h,v 1.9 2002/09/23 22:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -66,6 +66,14 @@ typedef enum { FTYPE_CONF  = 'C',
                FTYPE_WAV   = 'V',
                FTYPE_ENTRY = 'R' } mpio_file_t;
 
+/* type of callback functions */
+typedef BYTE (*mpio_callback_t)(int, int) ; 
+typedef BYTE (*mpio_callback_init_t)(mpio_mem_t, int, int) ;
+
+/* filenames */
+#define MPIO_FILENAME_LEN    129
+typedef BYTE mpio_filename_t[MPIO_FILENAME_LEN];
+
 #ifndef NULL
 #define NULL             0
 #endif
@@ -106,6 +114,8 @@ typedef struct {
 #define MPIO_ERR_READING_FILE		-5
 #define MPIO_ERR_PERMISSION_DENIED	-6
 #define MPIO_ERR_WRITING_FILE		-7
+/* internal errors, occur when UI has errors! */
+#define MPIO_ERR_INT_STRING_INVALID	-101
 
 /* get formatted information, about the MPIO player */
 
@@ -165,6 +175,12 @@ typedef struct {
   int  fat_size;               /* # sectors for FAT */  
   int  fat_nums;               /* # of FATs */
   BYTE * fat;                  /* *real FAT (like in block allocation :-) */
+
+  /* how many physical blocks are available
+   * for internal memory is this value equal to max_cluster
+   */
+  int max_blocks;
+  BYTE * spare;
 
   /* seems to be a fixed size according to the 
      Samsung documentation */

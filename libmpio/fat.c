@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.11 2002/09/18 22:18:29 germeier Exp $
+ * $Id: fat.c,v 1.12 2002/09/23 22:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -259,7 +259,8 @@ mpio_fatentry_plus_plus(mpio_fatentry_t *f)
 
 /* read "fat_size" sectors of fat into the provided buffer */
 int
-mpio_fat_read (mpio_t *m, mpio_mem_t mem, BYTE (*progress_callback)(int, int))
+mpio_fat_read (mpio_t *m, mpio_mem_t mem, 
+	       mpio_callback_init_t progress_callback)
 {
   mpio_smartmedia_t *sm;
   BYTE recvbuff[SECTOR_SIZE];
@@ -292,17 +293,24 @@ mpio_fat_read (mpio_t *m, mpio_mem_t mem, BYTE (*progress_callback)(int, int))
 int
 mpio_fatentry_free(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
 {
-  int e;
+  int e,i ;
   mpio_smartmedia_t *sm;  
   
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
     e  = f->entry * 0x10;
 
-    if((sm->fat[e+0] == 0xff) &&
-       (sm->fat[e+1] == 0xff) &&
-       (sm->fat[e+2] == 0xff))
-      return 1;
+    /* be more strict to avoid writing
+     * to defective blocks!
+     */
+    i=0;
+    while (i<0x10) 
+      {
+	if (sm->fat[e+i] == 0xff)
+	  return 0;
+	i++;
+      }
+    return 1;
   }
 
   if (mem == MPIO_EXTERNAL_MEM) {    
@@ -323,8 +331,17 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
   
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
-    e  = f->entry;    
-    e  = e * 0x10 + 7;
+    e  = f->entry * 0x10;    
+    /* check if this block became defective */
+    if ((sm->fat[e+0x0e] != 'P') ||
+        (sm->fat[e+0x0f] != 'C') ||
+	((sm->fat[e+0x00] != 0xaa) &&
+	 (sm->fat[e+0x00] != 0xee)))
+      {
+	debug("defective block encountered, abort reading!\n");
+	return 0xaaaaaaaa;
+      }
+      e  += 7;    
     if((sm->fat[e+0] == 0xff) &&
        (sm->fat[e+1] == 0xff) &&
        (sm->fat[e+2] == 0xff) &&
@@ -528,6 +545,9 @@ mpio_fatentry_next_entry(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
   DWORD endvalue;
 
   value    = mpio_fatentry_read(m, mem, f);
+
+  if (value == 0xaaaaaaaa)
+    return -1;
   
   if (mem == MPIO_INTERNAL_MEM) 
     {

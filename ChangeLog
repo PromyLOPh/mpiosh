@@ -1,3 +1,16 @@
+2002-09-24  Markus Germeier  <mager@tzi.de>
+	* a lot of little changes and updates
+	* mpiosh/callback.c (mpiosh_cmd_dump_mem): 
+	  renamed function from debug_memory to dump_memory
+	  (mpiosh_callback_init): display progress of internal and
+	  external memory
+	* libmpio/mpio.c (mpio_check_filename): added function
+	  to check for string zero termination (more to check??)
+	  (mpio_memory_dump): dump all relevant memory areas
+	  (mpio_init): read spare area for external memory
+	* libmpio/defs.h: added mpio_callback_t, mpio_callback_init_t
+	  and mpio_filename_t
+
 2002-09-22  Andreas Buesching  <crunchy@tzi.de>
 
 	* configure.in (SPEC_PATH): needed for the spec file to find the

@@ -1,7 +1,7 @@
-/* -*- linux-c -*- */
+#/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.7 2002/09/19 22:23:01 crunchy Exp $
+ * $Id: mpio.h,v 1.8 2002/09/23 22:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -45,7 +45,7 @@
  *init and shutdown 
  */
 
-mpio_t *mpio_init(BYTE (*)(int, int));
+mpio_t *mpio_init(mpio_callback_init_t);
 void	mpio_close(mpio_t *);
 
 /*
@@ -72,16 +72,16 @@ int	mpio_dentry_get(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int,WORD *,
 			BYTE *, BYTE *, BYTE *, BYTE *, DWORD *);
 
 /* context, memory bank, filename, callback */
-int	mpio_file_get(mpio_t *, mpio_mem_t, BYTE *, BYTE (*)(int, int)); 
+int	mpio_file_get(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
 
 /* context, memory bank, filename, callback */
-int	mpio_file_put(mpio_t *, mpio_mem_t, BYTE *, BYTE (*)(int, int)); 
+int	mpio_file_put(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
 
 /* context, memory bank, filename, callback */
-int	mpio_file_del(mpio_t *, mpio_mem_t, BYTE *, BYTE (*)(int, int));
+int	mpio_file_del(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
 
 /* context, memory bank, callback */
-int	mpio_memory_format(mpio_t *, mpio_mem_t, BYTE (*)(int, int)); 
+int	mpio_memory_format(mpio_t *, mpio_mem_t, mpio_callback_t); 
 
 /* mpio_sync has to be called after every set of mpio_file_{del,put}
  * operations to write the current state of FAT and root directory.
@@ -92,7 +92,7 @@ int	mpio_memory_format(mpio_t *, mpio_mem_t, BYTE (*)(int, int));
 int	mpio_sync(mpio_t *, mpio_mem_t); 
 
 /* context, memory bank */
-int	mpio_memory_debug(mpio_t *, mpio_mem_t); 
+int	mpio_memory_dump(mpio_t *, mpio_mem_t); 
 
 /* 
  * error handling

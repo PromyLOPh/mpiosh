@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.15 2002/09/20 20:49:36 germeier Exp $
+ * $Id: io.c,v 1.16 2002/09/23 22:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -663,27 +663,30 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
  */
 
 int
-mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
+mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, BYTE size,
 		   BYTE wsize, BYTE *output, int toread,
-		   BYTE (*progress_callback)(int, int))
+		   mpio_callback_init_t progress_callback)
 {
+  mpio_smartmedia_t *sm;
   int i;
   int nwrite, nread;
   int chip = 0;
   int chips = 0;
   BYTE cmdpacket[CMD_SIZE];
 
-  if (area != MPIO_INTERNAL_MEM) {
-    debug("Something fishy happened, aborting!n");
-    exit(1);
-  }
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
-  chips = m->internal.chips;  
+  chips = sm->chips;  
   
   for (chip = 1; chip <= chips; chip++) 
-    {    
-      mpio_io_set_cmdpacket(m, GET_SPARE_AREA, chip, index, size, 
-			    wsize, cmdpacket);
+    {
+      if (mem == MPIO_INTERNAL_MEM) 
+	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, chip, index, size, 
+			      wsize, cmdpacket);
+      if (mem == MPIO_EXTERNAL_MEM) 
+	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, mem, index, size, 
+			      wsize, cmdpacket);
       debugn(5, "\n>>> MPIO\n");
       hexdump(cmdpacket, sizeof(cmdpacket));
       
@@ -704,7 +707,7 @@ mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
 				     CMD_SIZE);
 
 	  if ((progress_callback) && (i % 256))
-	    (*progress_callback)((i*CMD_SIZE), toread);
+	    (*progress_callback)(mem, (i*CMD_SIZE), toread);
       
 	  if(nread != CMD_SIZE) 
 	    {
@@ -718,7 +721,7 @@ mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
 	}
     }
   if (progress_callback)
-    (*progress_callback)(toread, toread);
+    (*progress_callback)(mem, toread, toread);
   
   return 0;  
 }

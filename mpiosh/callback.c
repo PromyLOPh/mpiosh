@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.17 2002/09/21 22:17:15 germeier Exp $
+ * $Id: callback.c,v 1.18 2002/09/23 22:38:03 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -31,7 +31,6 @@
 #include <unistd.h>
 
 #include "mpiosh.h"
-
 #include "libmpio/debug.h"
 
 /* commands */
@@ -230,9 +229,21 @@ mpiosh_cmd_quit(char *args[])
 }
 
 BYTE
-mpiosh_callback_init(int read, int total) 
+mpiosh_callback_init(mpio_mem_t mem, int read, int total) 
 {
-  printf("\rinitialized %.2f %%", ((double) read / total) * 100.0 );
+  switch(mem) 
+    {
+    case MPIO_INTERNAL_MEM:
+      printf("\rinternal memory: " );
+      break;
+    case MPIO_EXTERNAL_MEM:
+      printf("\rexternal memory: " );
+      break;
+    default:
+      printf("\runknown  memory: " );
+    }
+  
+  printf("initialized %.2f %% ", ((double) read / total) * 100.0 );
   fflush(stdout);
 
   return mpiosh_cancel; // continue
@@ -597,14 +608,14 @@ mpiosh_cmd_switch(char *args[])
 }
 
 void
-mpiosh_cmd_debug_mem(char *args[])
+mpiosh_cmd_dump_mem(char *args[])
 {
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
   UNUSED(args);
   
-  mpio_memory_debug(mpiosh.dev, mpiosh.card);
+  mpio_memory_dump(mpiosh.dev, mpiosh.card);
 
 }
 

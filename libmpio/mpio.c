@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.25 2002/09/21 22:17:15 germeier Exp $
+ * $Id: mpio.c,v 1.26 2002/09/23 22:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -41,7 +41,10 @@
 #include "smartmedia.h"
 #include "fat.h"
 
-#define DSTRING 100
+void mpio_init_internal(mpio_t *);
+void mpio_init_external(mpio_t *);
+int  mpio_check_filename(mpio_filename_t);
+
 
 static BYTE *mpio_model_name[] = {
   "MPIO-DME",
@@ -67,7 +70,9 @@ static mpio_error_t mpio_errors[] = {
   { MPIO_ERR_PERMISSION_DENIED,
     "There are not enough rights to access the file/directory." },
   { MPIO_ERR_WRITING_FILE,
-    "There are no permisson to write to the selected file." }
+    "There are no permisson to write to the selected file." },
+  { MPIO_ERR_INT_STRING_INVALID,
+    "Internal Error: Supported is invalid!" } 	
 };
 
 static const int mpio_error_num = sizeof mpio_errors / sizeof(mpio_error_t);
@@ -76,8 +81,26 @@ static int _mpio_errno = 0;
 
 #define MPIO_ERR_RETURN(err) { _mpio_errno = err; return -1 ; }
 
-void mpio_init_internal(mpio_t *);
-void mpio_init_external(mpio_t *);
+#define MPIO_CHECK_FILENAME(filename) \
+  if (!mpio_check_filename(filename)) { \
+    MPIO_ERR_RETURN(MPIO_ERR_INT_STRING_INVALID); \
+  }
+
+int
+mpio_check_filename(mpio_filename_t filename)
+{
+  BYTE *p=filename;
+  
+  while (p < (filename+MPIO_FILENAME_LEN))
+    {
+      if (*p)
+	return 1;
+      p++;
+    }
+
+  return 0;
+}
+
 
 void 
 mpio_init_internal(mpio_t *m)
@@ -120,6 +143,7 @@ mpio_init_internal(mpio_t *m)
 
   /* read FAT information from spare area */  
   sm->max_cluster  = sm->size/16*1024;      /* 1 cluster == 16 KB */
+  sm->max_blocks   = sm->max_cluster;
   debugn(2,"max_cluster: %d\n", sm->max_cluster);
                                             /* 16 bytes per cluster */
   sm->fat_size     = sm->max_cluster*16/SECTOR_SIZE;   
@@ -173,13 +197,18 @@ mpio_init_external(mpio_t *m)
       sm->fat = malloc(SECTOR_SIZE*sm->fat_size);
       mpio_fat_read(m, MPIO_EXTERNAL_MEM, NULL);
       mpio_rootdir_read(m, MPIO_EXTERNAL_MEM);
+
+      /* for reading the spare area later! */
+      sm->max_blocks  = sm->size/16*1024;      /* 1 cluster == 16 KB */
+      sm->spare       = malloc(sm->max_blocks * 0x10);
     }
 }
 
 mpio_t *
-mpio_init(BYTE (*progress_callback)(int, int)) 
+mpio_init(mpio_callback_init_t progress_callback) 
 {
   mpio_t *new_mpio;
+  mpio_smartmedia_t *sm;  
 
   new_mpio = malloc(sizeof(mpio_t));
   if (!new_mpio) {
@@ -241,6 +270,12 @@ mpio_init(BYTE (*progress_callback)(int, int))
   /* read FAT/spare area */
   if (new_mpio->internal.id)
     mpio_fat_read(new_mpio, MPIO_INTERNAL_MEM, progress_callback);
+  
+  /* read the spare area (for block mapping) */
+  sm = &new_mpio->external;  
+  mpio_io_spare_read(new_mpio, MPIO_EXTERNAL_MEM, 0,
+		     sm->size, 0, sm->spare,
+		     (sm->max_blocks * 0x10), progress_callback);
 
   return new_mpio;  
 }
@@ -330,8 +365,8 @@ mpio_get_info(mpio_t *m, mpio_info_t *info)
 }
 
 int
-mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename, 
-	      BYTE (*progress_callback)(int, int))
+mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+	      mpio_callback_t progress_callback)
 {
   mpio_smartmedia_t *sm;
   BYTE block[BLOCK_SIZE];
@@ -342,7 +377,10 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   long mtime;
   DWORD filesize, fsize;
   BYTE abort = 0;
-  
+  int merror;
+
+  MPIO_CHECK_FILENAME(filename);
+
   /* please fix me sometime */
   /* the system entries are kind of special ! */
   if (strncmp("sysdum", filename, 6) == 0) 
@@ -390,8 +428,11 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	if (abort)
 	  debug("aborting operation");	
 
-      } while ((mpio_fatentry_next_entry(m, mem, f) && (filesize>0)) &&
-	       (!abort));
+      } while ((((merror=(mpio_fatentry_next_entry(m, mem, f)))>0) && 
+		(filesize>0)) && (!abort));
+
+    if (merror<0)
+      debug("defective block encountered!\n");
   
     close (fd);    
     free (f);
@@ -412,8 +453,8 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 }
 
 int
-mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename, 
-	      BYTE (*progress_callback)(int, int))
+mpio_file_put(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+	      mpio_callback_t progress_callback)
 {
   mpio_smartmedia_t *sm;
   mpio_fatentry_t   *f, current, firstblock, backup; 
@@ -425,6 +466,8 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   BYTE *p=NULL;
   DWORD filesize, fsize, free, blocks;
   BYTE abort=0;
+
+  MPIO_CHECK_FILENAME(filename);
   
   if (mem==MPIO_INTERNAL_MEM) sm=&m->internal;  
   if (mem==MPIO_EXTERNAL_MEM) sm=&m->external;
@@ -665,14 +708,16 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
 }
 
 int 
-mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename, 
-	      BYTE (*progress_callback)(int, int))
+mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+	      mpio_callback_t progress_callback)
 {
   BYTE *p;
   mpio_smartmedia_t *sm;
   mpio_fatentry_t   *f, backup;
   DWORD filesize, fsize;
   BYTE abort=0;
+
+  MPIO_CHECK_FILENAME(filename);
 
   /* please fix me sometime */
   /* the system entry are kind of special ! */
@@ -752,10 +797,23 @@ mpio_sync(mpio_t *m, mpio_mem_t mem)
 }
 
 int
-mpio_memory_debug(mpio_t *m, mpio_mem_t mem)
+mpio_memory_dump(mpio_t *m, mpio_mem_t mem)
 {
   BYTE block[BLOCK_SIZE];
   int i;
+
+  if (mem == MPIO_INTERNAL_MEM) 
+    {      
+      hexdump(m->internal.fat, m->internal.max_blocks*0x10);
+      hexdump(m->internal.dir, DIR_SIZE);
+    }
+  
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {      
+      hexdump(m->external.spare, m->external.max_blocks*0x10);
+      hexdump(m->external.fat,   m->external.fat_size*SECTOR_SIZE);
+      hexdump(m->external.dir, DIR_SIZE);
+    }
   
   for (i = 0 ; i<=0x100 ; i++) 
     mpio_io_sector_read(m, mem, i, block);
