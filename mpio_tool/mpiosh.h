@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: mpiosh.h,v 1.1 2002/08/28 16:10:52 salmoon Exp $
+ * $Id: mpiosh.h,v 1.2 2002/09/01 16:07:10 crunchy Exp $
  *
  * Copyright (C) 2002 Andreas Büsching <crunchy@tzi.de>
  *
@@ -78,6 +78,9 @@ void mpiosh_cmd_dump(char *args[]);
 void mpiosh_cmd_free(char *args[]);
 void mpiosh_cmd_format(char *args[]);
 void mpiosh_cmd_switch(char *args[]);
+
+void mpiosh_cmd_ldir(char *args[]);
+void mpiosh_cmd_lcd(char *args[]);
 
 /* progress callbacks */
 BYTE mpiosh_callback_get(int read, int total);

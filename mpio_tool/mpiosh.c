@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: mpiosh.c,v 1.2 2002/09/01 16:07:10 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -25,8 +25,10 @@
  *
  * */
 
+#include <dirent.h>
 #include <signal.h>
 #include <stdio.h>
+#include <sys/types.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -56,6 +58,8 @@ static mpiosh_cmd_t commands[] = {
   { "free",	mpiosh_cmd_free,	NO },
   { "format",	mpiosh_cmd_format,	NO },
   { "switch",	mpiosh_cmd_switch,	YES },
+  { "ldir",	mpiosh_cmd_ldir,	YES },
+  { "lcd",	mpiosh_cmd_lcd,		YES },
   { NULL, NULL, NO }
 };
 
@@ -607,6 +611,28 @@ mpiosh_cmd_switch(char *args[])
   }
 
   UNUSED(args);
+}
+
+void
+mpiosh_cmd_ldir(char *args[])
+{
+  char		dir_buf[NAME_MAX];
+  DIR *		dir;
+  dirent **	dentry;
+
+  getcwd(dir_buf, NAME_MAX);
+  dir = opendir(dir_buf);
+  
+  if (dir) {
+    int count = scandir(dir, &dentry, alphasort, NULL);
+    
+  }
+  
+}
+
+void
+mpiosh_cmd_lcd(char *args[])
+{
 }
 
 int
