@@ -1,4 +1,4 @@
-INCLUDES=-I/usr/src/linux/include
+INCLUDES=-I@KERNEL_INCLUDE@
 KCFLAGS=-D__KERNEL__ -I$(INCLUDE) -Wall -Wstrict-prototypes -O2 \
 	-fomit-frame-pointer -pipe -DMODULE
 

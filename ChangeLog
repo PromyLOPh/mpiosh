@@ -1,5 +1,8 @@
 2002-10-12  Andreas Buesching  <crunchy@tzi.de>
 
+	* configure.in: changed version to 0.6.0 for the next release;
+	add check for a usable path to the kernel header files
+
 	* mpiosh/global.c (commands): removed commands 'put', 'get', 'del'
 	and 'exit' and add these to the alias lists of 'mput', 'mget',
 	'mdel' and 'quit'. Also add some more aliases to some other

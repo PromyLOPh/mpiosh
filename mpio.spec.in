@@ -1,5 +1,6 @@
+# -*- rpm-spec -*-
 %define version @VERSION@
-%define release 2
+%define release 1
 %define name    mpio
 
 Version: %version
