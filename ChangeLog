@@ -1,3 +1,10 @@
+2003-07-01  Markus Germeier  <mager@tzi.de>
+	* mpiosh/callback.c(mpiosh_ftyp2ascii): added function
+	* mpiosh/callback.c(mpiosh_cmd_dir): 
+	* libmpio/src/directory.c (mpio_dentry_get_real): 
+	  return/display file type/tag for files from internal memory
+	  (as requested by Markus)
+
 2003-06-27  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_backup): using the resolved backup

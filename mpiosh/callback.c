@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.44 2003/06/27 13:40:23 crunchy Exp $
+ * $Id: callback.c,v 1.45 2003/07/01 09:06:11 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -36,6 +36,31 @@
 #include "command.h"
 
 #include "libmpio/debug.h"
+
+/* helper */
+BYTE
+mpiosh_ftype2ascii(BYTE ftype) {
+  switch(ftype) 
+    {
+    case FTYPE_CONF:
+    case FTYPE_FONT:
+    case FTYPE_OTHER:
+    case FTYPE_MEMO:
+    case FTYPE_WAV:
+    case FTYPE_ENTRY:
+    case FTYPE_DIR:
+    case FTYPE_PLAIN:
+      return ftype;
+    case FTYPE_CHAN:
+      return 'c';
+    case FTYPE_MUSIC:
+      return '-';
+    default:
+      return '?';
+    }
+  return '?';
+}
+
 
 /* commands */
 void
@@ -142,7 +167,8 @@ mpiosh_cmd_dir(char *args[])
 		    &type);
 
     printf ("%02d.%02d.%04d %02d:%02d  %9d %c %s\n",
-	    day, month, year, hour, minute, fsize, type, fname);
+	    day, month, year, hour, minute, fsize, 
+	    mpiosh_ftype2ascii(type), fname);
 
     p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
   }  

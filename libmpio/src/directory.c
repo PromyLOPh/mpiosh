@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.6 2003/06/26 19:53:58 germeier Exp $
+ * $Id: directory.c,v 1.7 2003/07/01 09:06:11 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -690,6 +690,7 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
   int slots = 0;
   int in = 0, out = 0, iconv_return;
   mpio_dir_entry_t *dentry;
+  mpio_fatentry_t  *f;
   mpio_dir_slot_t  *slot;
   BYTE *unicode = 0;
   BYTE *uc;
@@ -801,6 +802,10 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
     *type = FTYPE_DIR;
   } else {
     *type = FTYPE_PLAIN;
+    if (mem == MPIO_INTERNAL_MEM) {
+      f = mpio_dentry_get_startcluster(m, mem, buffer);
+      *type = m->internal.fat[f->entry * 0x10 + 0x06];
+    }    
   }
 
   return(((BYTE *)dentry) - buffer);
