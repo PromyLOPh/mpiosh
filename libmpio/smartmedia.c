@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: smartmedia.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
+ * $Id: smartmedia.c,v 1.3 2003/04/21 09:17:38 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -32,13 +32,14 @@
 #include "smartmedia.h"
 #include "debug.h"
 
+mpio_disk_phy_t MPIO_DISK_GEO_001={ 125, 4,  4,   2000 };
 mpio_disk_phy_t MPIO_DISK_GEO_002={ 125, 4,  8,   4000 };
 mpio_disk_phy_t MPIO_DISK_GEO_004={ 250, 4,  8,   8000 };
 mpio_disk_phy_t MPIO_DISK_GEO_008={ 250, 4, 16,  16000 };
 mpio_disk_phy_t MPIO_DISK_GEO_016={ 500, 4, 16,  32000 };
-mpio_disk_phy_t MPIO_DISK_GEO_032={ 500, 4, 16,  64000 };
-mpio_disk_phy_t MPIO_DISK_GEO_064={ 500, 4, 32, 128000 };
-mpio_disk_phy_t MPIO_DISK_GEO_128={ 500, 4, 32, 256000 };
+mpio_disk_phy_t MPIO_DISK_GEO_032={ 500, 8, 16,  64000 };
+mpio_disk_phy_t MPIO_DISK_GEO_064={ 500, 8, 32, 128000 };
+mpio_disk_phy_t MPIO_DISK_GEO_128={ 500,16, 32, 256000 };
 
 /* This comes from the Samsung documentation files */
 
