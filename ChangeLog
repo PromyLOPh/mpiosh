@@ -1,5 +1,14 @@
 2002-09-15  Andreas Buesching  <crunchy@tzi.de>
 
+	* mpiosh/callback.c (mpiosh_cmd_ldir): checking more return values
+	to avoid segmentation faults.
+
+	* mpiosh/mpiosh.c: removed all references to the not implemented
+	switch command (just for the next release)
+
+	* configure.in (MODULE_PATH): checking for the right module
+	directory and use it to install the mpio module
+
 	* kernel/Makefile.am (install): the kernel module is now installed
 	into the determinated module directory of the current kernel
 	version.

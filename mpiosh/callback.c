@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.7 2002/09/15 12:03:23 germeier Exp $
+ * $Id: callback.c,v 1.8 2002/09/15 20:07:10 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -558,27 +558,31 @@ mpiosh_cmd_ldir(char *args[])
       run = dentry;
       rights[10] = '\0';
       for (i = 0; i < count; i++, run++) {
-	stat((*run)->d_name, &st);
+	if (stat((*run)->d_name, &st) == -1) {
+	  perror("stat");
+	} else {
+	  rights[0] = *("?pc?dnb?-?l?s???" + (st.st_mode >> 12 & 0xf));
+	  for (j = 0; j < 9; j++) {
+	    if (st.st_mode & 1 << (8 - j))
+	      rights[j + 1] = "rwxrwxrwx"[j];
+	    else
+	      rights[j + 1] = '-';
+	  }
 
-	rights[0] = *("?pc?dnb?-?l?s???" + (st.st_mode >> 12 & 0xf));
-	for (j = 0; j < 9; j++) {
-	  if (st.st_mode & 1 << (8 - j))
-            rights[j + 1] = "rwxrwxrwx"[j];
-	  else
-            rights[j + 1] = '-';
+	  pwd = getpwuid(st.st_uid);
+	  grp = getgrgid(st.st_gid);
+	  strftime(time, 12, "%b %2d", localtime(&(st.st_mtime)));
+	  printf("%s %8s %8s %8d %10s %s\n",
+		 rights, pwd->pw_name, grp->gr_name, (int)st.st_size,
+		 time,
+		 (*run)->d_name);
 	}
-
-	pwd = getpwuid(st.st_uid);
-	grp = getgrgid(st.st_gid);
-	strftime(time, 12, "%b %2d", localtime(&(st.st_mtime)));
-	printf("%s %8s %8s %8d %10s %s\n",
-	       rights, pwd->pw_name, grp->gr_name, (int)st.st_size,
-	       time,
-	       (*run)->d_name);
 	free(*run);
       }
       free(dentry);
-    }    
+    } else {
+      perror("scandir");
+    }
   }
 }
 
