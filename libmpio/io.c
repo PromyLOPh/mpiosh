@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.9 2002/09/11 00:18:34 germeier Exp $
+ * $Id: io.c,v 1.10 2002/09/11 11:55:37 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -45,6 +45,7 @@
 #include "ecc.h"
 
 WORD index2blockaddress(WORD);
+WORD cluster2blockaddress(DWORD, BYTE);
 int  cluster2block(int mem, int sector);
 void fatentry2hw(mpio_fatentry_t *, BYTE *, DWORD *);
 
@@ -128,7 +129,8 @@ cluster2block(int mem, int sector)
   return a;
 }
 
-WORD index2blockaddress(WORD ba)
+WORD 
+index2blockaddress(WORD ba)
 {
   WORD addr;
   BYTE p = 0, c = 0;
@@ -157,6 +159,49 @@ WORD index2blockaddress(WORD ba)
 
   return addr;
 }
+
+WORD 
+cluster2blockaddress(DWORD index, BYTE size)
+{
+  DWORD ba;
+  WORD  block_address;
+  
+  if (index<0x40) 
+    {
+      block_address=0;
+    } else {  
+      if (index >= 0x8000) 
+	{	  
+	  ba = ((index % 0x8000) / 0x20);
+	  /* I'm so large in *not* knowing! */
+	  /* these are the same jumps as found in cluster2block */
+	  if (size == 64)
+	    {
+	      if (index >= 0x1d5e0)
+		ba--;	      
+	    }
+	} else {       
+	  ba = (index / 0x20) - 2;
+	  /* I'm so large in *not* knowing! */
+	  /* these are the same jumps as found in cluster2block */
+	  if (size == 32) 
+	    {
+	      if (ba >= 0x33f)
+		ba--;	      
+	    }	  
+	  if (size == 64)
+	    {
+	      if (ba >= 0x05b)
+		ba--;	      
+	    }	  
+	}
+      block_address= index2blockaddress(ba);
+      debugn(2, "block-foo: %06x %04x %04x\n", index, ba, block_address);
+    }
+  
+  return block_address;
+}
+
 
 /*
  * low-low level functions
@@ -462,17 +507,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
   memcpy(sendbuff, input, SECTOR_SIZE);
   
   if (mem==MPIO_EXTERNAL_MEM) 
-    if (index<0x40) 
-      {
-	block_address=0;
-      } else {  
-	ba= (index / 0x20) - 2;
-	if (ba > 0x8000)
-	  ba %= 0x8000;
-	debugn(2, "sector-foo: %4x\n", ba);
-	block_address= index2blockaddress(ba);
-	debugn(2, "sector-foo: %4x\n", block_address);
-      }
+    block_address = cluster2blockaddress(index, sm->size);
   
     {    
       /* generate ECC information for spare area ! */
@@ -522,6 +557,7 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
   BYTE  chip;
   DWORD address;
   BYTE cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
+  DWORD block_address, ba;
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -567,6 +603,17 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
 				((recvbuff +(i * SECTOR_TRANS) 
 				  + SECTOR_SIZE + 8))))
 	  debug ("ECC error @ (%02x : %06x)\n", chip, address);
+
+	if (i==0) 
+	  {	    
+	    block_address = cluster2blockaddress(address, sm->size);
+	    
+	    ba = recvbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] * 0x100 + 
+	         recvbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x07] ;
+	    if (block_address != ba)
+	      debugn(2,"different block_addresses during read: %04x vs. %04x\n",
+		     block_address, ba);
+	  }
 	
       }
       
@@ -728,23 +775,8 @@ mpio_io_block_write(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *data)
       /* fill in block information */
       if (mem == MPIO_EXTERNAL_MEM) 
 	{      
-	  if (address < 0x40) 
-	    {
-	      block_address = 0;
-	    } else {  
-	      debugn(2, "block-foo-1: %06x\n", address);
-	      /* block address is relativ to zone */
-	      if (address >= 0x8000) 
-		{		  
-		  ba = (address % 0x8000) / 0x20;
-		} else {
-		  ba = (address / 0x20) - 2;
-		}	      
-	      debugn(2, "block-foo-2: %4x\n", ba);
-	      block_address = index2blockaddress(ba);
-	      debugn(2, "block-foo-3: %4x\n", block_address);
-	    }
-	  
+	  block_address = cluster2blockaddress(address, sm->size);
+
 	  ba = (block_address / 0x100) & 0xff;
 	  sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] = ba;
 	  sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0b] = ba;

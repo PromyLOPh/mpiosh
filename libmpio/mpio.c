@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.9 2002/09/11 00:18:34 germeier Exp $
+ * $Id: mpio.c,v 1.10 2002/09/11 11:55:38 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -285,7 +285,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
     
     do
       {
-	debugn(2, "sector: %4x\n", f->entry);	    
+	debugn(2, "entry: %4x\n", f->entry);	    
     
 	mpio_io_block_read(m, mem, f, block);
 
