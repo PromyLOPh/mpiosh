@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.14 2002/09/13 17:01:34 germeier Exp $
+ * $Id: mpio.c,v 1.15 2002/09/14 16:14:46 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -461,6 +461,9 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 
   close(fd);
 
+  if (progress_callback)
+    (*progress_callback)((fsize-filesize), fsize);
+
   if (abort) 
     {    /* delete the just written blocks, because the user
 	  * aborted the operation
@@ -491,6 +494,17 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	}
       mpio_io_block_delete(m, mem, &backup);
       mpio_fatentry_set_free(m, mem, &backup);      
+
+      if (filesize > BLOCK_SIZE) 
+	{
+	  filesize -= BLOCK_SIZE;
+	} else {
+	  filesize -= filesize;
+	}	
+      
+      if (progress_callback)
+	(*progress_callback)((fsize-filesize), fsize);
+      
     } else {
       mpio_dentry_put(m, mem,
 		      filename, strlen(filename),
