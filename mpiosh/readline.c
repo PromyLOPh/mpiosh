@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: readline.c,v 1.6 2003/04/06 23:09:20 germeier Exp $
+ * $Id: readline.c,v 1.7 2003/04/23 08:34:16 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -36,6 +36,29 @@ mpiosh_readline_init(void)
   rl_filename_quote_characters = " \"\' ";
   rl_attempted_completion_function = mpiosh_readline_completion;
   rl_event_hook = mpiosh_readline_cancel;
+}
+
+char *
+mpiosh_readline_comp_onoff(const char *text, int state)
+{
+  static const char * states[] = { "on", "off", NULL };
+  static const char ** st = states;
+  const char * ret = NULL;
+
+  if (state == 0) {
+    st = states;
+  }
+  
+  while (*st) {
+    if (!strncmp(text, *st, strlen(text))) {
+      ret = *st;
+      st++;
+      break;
+    }
+    st++;
+  }
+  
+  return (ret ? strdup(ret) : NULL);
 }
 
 char *

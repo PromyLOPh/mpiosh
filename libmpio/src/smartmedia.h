@@ -1,6 +1,8 @@
+/* -*- linux-c -*- */
+
 /* 
  *
- * $Id: cis.h,v 1.2 2002/10/26 13:07:42 germeier Exp $
+ * $Id: smartmedia.h,v 1.1 2003/04/23 08:34:15 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -23,20 +25,23 @@
  *
  * */
 
-#ifndef _MPIO_CIS_H_
-#define _MPIO_CIS_H_
+#ifndef _MPIO_SMARTMEDIA_H_
+#define _MPIO_SMARTMEDIA_H_
 
 #include "defs.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
-/* generate and return a fresh CIS block */
-BYTE	*mpio_cis_gen();
+/* get our configuration for SmartMedia cards right */
+int	mpio_id2mem (BYTE);
+BYTE *	mpio_id2manufacturer(BYTE);
+void	mpio_id2geo(BYTE, mpio_disk_phy_t *);
+BYTE	mpio_id_valid(BYTE);
 
 #ifdef __cplusplus
 }
 #endif 
 
-#endif
+#endif /* _MPIO_SMARTMEDIA_H_ */

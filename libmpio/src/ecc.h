@@ -1,8 +1,6 @@
-/* -*- linux-c -*- */
-
 /* 
  *
- * $Id: smartmedia.h,v 1.2 2002/10/26 13:07:43 germeier Exp $
+ * $Id: ecc.h,v 1.1 2003/04/23 08:34:15 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -25,8 +23,8 @@
  *
  * */
 
-#ifndef _MPIO_SMARTMEDIA_H_
-#define _MPIO_SMARTMEDIA_H_
+#ifndef _MPIO_ECC_H_
+#define _MPIO_ECC_H_
 
 #include "defs.h"
 
@@ -34,14 +32,13 @@
 extern "C" {
 #endif
 
-/* get our configuration for SmartMedia cards right */
-int	mpio_id2mem (BYTE);
-BYTE *	mpio_id2manufacturer(BYTE);
-void	mpio_id2geo(BYTE, mpio_disk_phy_t *);
-BYTE	mpio_id_valid(BYTE);
+/* 256 Bytes Data, 3 Byte ECC to generate */
+int	mpio_ecc_256_gen(BYTE *, BYTE *);
+/* 256 Bytes Data, 3 Bytes ECC to check and possibly correct */
+int	mpio_ecc_256_check(BYTE *, BYTE*);
 
 #ifdef __cplusplus
 }
 #endif 
 
-#endif /* _MPIO_SMARTMEDIA_H_ */
+#endif

@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.18 2003/04/19 23:58:02 germeier Exp $
+ * $Id: mpio.h,v 1.1 2003/04/23 08:34:15 crunchy Exp $
  *
  * Library for USB MPIO-*
  *

@@ -3,13 +3,8 @@
 # autogen.sh 
 #
 # Andreas Buesching  <crunchy@tzi.de>
-# $ID$
-
-cd mplib
-./autogen.sh
-cd ..
+# $id$
 
 aclocal && autoconf && automake -a && ./configure $@
-
 
 # end of autogen.sh 

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: readline.h,v 1.2 2002/10/18 08:39:23 crunchy Exp $
+ * $Id: readline.h,v 1.3 2003/04/23 08:34:16 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -38,6 +38,7 @@ void mpiosh_readline_pipe(void);
 int mpiosh_readline_cancel(void);
 
 char *mpiosh_readline_comp_cmd(const char *text, int state);
+char *mpiosh_readline_comp_onoff(const char *text, int state);
 char *mpiosh_readline_comp_mpio_file(const char *text, int state);
 char *mpiosh_readline_comp_config(const char *text, int state);
 

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.11 2003/04/19 23:58:02 germeier Exp $
+ * $Id: global.c,v 1.12 2003/04/23 08:34:15 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -125,7 +125,7 @@ struct mpiosh_cmd_t commands[] = {
     mpiosh_cmd_health, NULL },
   { "id3", NULL, "[<on|off>]",
     "  enable/disable ID3 rewriting support",
-    mpiosh_cmd_id3, NULL },
+    mpiosh_cmd_id3, mpiosh_readline_comp_onoff },
   { "id3_format", NULL, "[<format>]",
     "  define/show the format line for ID3 rewriting",
     mpiosh_cmd_id3_format, NULL },

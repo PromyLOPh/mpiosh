@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: ecc.h,v 1.2 2002/10/26 13:07:43 germeier Exp $
+ * $Id: cis.h,v 1.1 2003/04/23 08:34:14 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -23,19 +23,17 @@
  *
  * */
 
-#ifndef _MPIO_ECC_H_
-#define _MPIO_ECC_H_
+#ifndef _MPIO_CIS_H_
+#define _MPIO_CIS_H_
 
 #include "defs.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif 
 
-/* 256 Bytes Data, 3 Byte ECC to generate */
-int	mpio_ecc_256_gen(BYTE *, BYTE *);
-/* 256 Bytes Data, 3 Bytes ECC to check and possibly correct */
-int	mpio_ecc_256_check(BYTE *, BYTE*);
+/* generate and return a fresh CIS block */
+BYTE	*mpio_cis_gen();
 
 #ifdef __cplusplus
 }

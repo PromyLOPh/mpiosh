@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: ecc.c,v 1.3 2002/10/13 14:37:41 germeier Exp $
+ * $Id: ecc.c,v 1.1 2003/04/23 08:34:14 crunchy Exp $
  *
  * Library for USB MPIO-*
  *

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: smartmedia.c,v 1.3 2003/04/21 09:17:38 germeier Exp $
+ * $Id: smartmedia.c,v 1.1 2003/04/23 08:34:15 crunchy Exp $
  *
  * Library for USB MPIO-*
  *

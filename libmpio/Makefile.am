@@ -2,29 +2,36 @@ INCLUDES=@MPLIB_INCLUDE@
 AM_CFLAGS=@MPLIB_CFLAGS@ 
 
 lib_LTLIBRARIES=libmpio.la 
-libmpio_la_LIBADD=@MPLIB_LIBADD@
 
 libmpio_la_SOURCES= \
-		mpio.c \
-		io.c \
-		debug.c \
-		smartmedia.c \
-		directory.c \
-		fat.c \
-		ecc.c \
-		cis.c \
-		id3.c
+		src/mpio.c \
+		src/io.c \
+		src/debug.c \
+		src/smartmedia.c \
+		src/directory.c \
+		src/fat.c \
+		src/ecc.c \
+		src/cis.c \
+		src/id3.c \
+		mplib/mplib.c \
+		mplib/mplib_paas.c \
+		mplib/mplib_s.c \
+		mplib/xmalloc.c
 
 pkginclude_HEADERS= \
-		mpio.h \
-		defs.h
+		src/mpio.h \
+		src/defs.h
 
 noinst_HEADERS= \
-		io.h \
-		debug.h \
-		smartmedia.h \
-		directory.h \
-		fat.h \
-		ecc.h \
-		cis.h \
-		id3.h
+		src/io.h \
+		src/debug.h \
+		src/smartmedia.h \
+		src/directory.h \
+		src/fat.h \
+		src/ecc.h \
+		src/cis.h \
+		src/id3.h \
+		mplib/mplib.h \
+		mplib/mplib_s.h \
+		mplib/xmalloc.h
+

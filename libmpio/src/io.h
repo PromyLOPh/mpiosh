@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.h,v 1.13 2003/04/04 22:03:05 germeier Exp $
+ * $Id: io.h,v 1.1 2003/04/23 08:34:15 crunchy Exp $
  *
  * Library for USB MPIO-*
  *

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: cis.c,v 1.1 2002/10/06 21:19:50 germeier Exp $
+ * $Id: cis.c,v 1.1 2003/04/23 08:34:14 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
