@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.3 2002/09/01 18:27:49 crunchy Exp $
+ * $Id: mpiosh.c,v 1.4 2002/09/04 07:55:08 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -28,6 +28,7 @@
 #include <dirent.h>
 #include <grp.h>
 #include <pwd.h>
+#include <regex.h>
 #include <signal.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -56,7 +57,9 @@ static mpiosh_cmd_t commands[] = {
   { "quit",	mpiosh_cmd_quit,	NO },
   { "exit",	mpiosh_cmd_quit,	NO },
   { "get",	mpiosh_cmd_get,		YES },
+  { "mget",	mpiosh_cmd_mget,	YES },
   { "put",	mpiosh_cmd_put,		YES },
+  { "mput",	mpiosh_cmd_mput,	YES },
   { "del",	mpiosh_cmd_del,		YES },
   { "dump",	mpiosh_cmd_dump,	NO },
   { "free",	mpiosh_cmd_free,	NO },
@@ -302,8 +305,14 @@ mpiosh_cmd_help(char *args[])
 	 "  display amount of available bytes of current memory card\n");
   printf("put <filename>\n"
 	 "  write <filename> to memory card\n");
+  printf("mput <regexp>\n"
+	 "  write all local files matching the regular expression\n"
+	 "  to the selected memory card\n");
   printf("get <filename>\n"
 	 "  read <filename> from memory card\n");
+  printf("mput <regexp>\n"
+	 "  read all files matching the regular expression\n"
+	 "  from the selected memory card\n");
   printf("del <filename>\n"
 	 "  deletes <filename> from memory card\n");
   printf("exit, quit\n"
@@ -471,6 +480,49 @@ mpiosh_cmd_get(char *args[])
   printf("\n");
 }
 
+void
+mpiosh_cmd_mget(char *args[])
+{
+  BYTE *	p;
+  int		size, i = 0;
+  regex_t	regex;
+  BYTE		fname[100];
+  BYTE		month, day, hour, minute;
+  WORD		year;  
+  DWORD		fsize;  
+
+  if (mpiosh.dev == NULL) {
+    printf("connection to MPIO player already closed\n");
+    return;
+  }
+  
+  if (args[0] == NULL) {
+    printf("error: no argument given\n");
+    return;
+  }
+  
+  while (args[i] != NULL) {
+    if (regcomp(&regex, args[i], REG_EXTENDED | REG_ICASE)) {
+      fprintf(stderr, "error in regular expression: %s\n", args[i]);
+      continue;
+    }
+
+    p = mpio_directory_open(mpiosh.dev, mpiosh.card);
+    while (p != NULL) {
+      memset(fname, '\0', 100);
+      mpio_dentry_get(mpiosh.dev, p, fname, 100,
+		      &year, &month, &day, &hour, &minute, &fsize);
+      
+      if (!regexec(&regex, fname, 0, NULL, 0)) {
+	size = mpio_file_get(mpiosh.dev, mpiosh.card,
+			     fname, mpiosh_callback_put);
+      }
+      p = mpio_dentry_next(mpiosh.dev, p);
+    }
+    i++;
+  }
+}
+
 BYTE
 mpiosh_callback_put(int read, int total) 
 {
@@ -497,6 +549,46 @@ mpiosh_cmd_put(char *args[])
   size = mpio_file_put(mpiosh.dev, mpiosh.card, args[0], mpiosh_callback_put);
 
   printf("\n");
+}
+
+void
+mpiosh_cmd_mput(char *args[])
+{
+  char			dir_buf[NAME_MAX];
+  int			size, j, i = 0;
+  struct dirent **	dentry, **run;
+
+  regex_t	regex;
+  if (mpiosh.dev == NULL) {
+    printf("connection to MPIO player already closed\n");
+    return;
+  }
+  
+  if (args[0] == NULL) {
+    printf("error: no argument given\n");
+    return;
+  }
+  
+  getcwd(dir_buf, NAME_MAX);
+  while (args[i] != NULL) {
+    if (regcomp(&regex, args[i], REG_EXTENDED | REG_ICASE)) {
+      fprintf(stderr, "error in regular expression: %s\n", args[i]);
+      continue;
+    }
+
+    if ((size = scandir(dir_buf, &dentry, NULL, alphasort)) != -1) {
+      run = dentry;
+      for (j = 0; j < size; j++, run++) {
+	if (!regexec(&regex, (*run)->d_name, 0, NULL, 0)) {
+	  size = mpio_file_put(mpiosh.dev, mpiosh.card,
+			       (*run)->d_name, mpiosh_callback_put);
+	}
+	free(*run);
+      }
+      free(dentry);
+    }
+    i++;
+  }
 }
 
 BYTE
@@ -637,7 +729,7 @@ mpiosh_cmd_ldir(char *args[])
   getcwd(dir_buf, NAME_MAX);
   if (dir_buf != '\0') {
     if ((count = scandir(dir_buf, &dentry, NULL, alphasort)) != -1) {
-      int		j, i, len = 0;
+      int		j, i;
       struct stat	st;
       struct passwd *	pwd;
       struct group *	grp;
@@ -660,8 +752,8 @@ mpiosh_cmd_ldir(char *args[])
 	pwd = getpwuid(st.st_uid);
 	grp = getgrgid(st.st_gid);
 	strftime(time, 12, "%b %2d", localtime(&(st.st_mtime)));
-	printf("%s %08s %08s %8d %10s %s\n",
-	       rights, pwd->pw_name, grp->gr_name, st.st_size,
+	printf("%s %8s %8s %8d %10s %s\n",
+	       rights, pwd->pw_name, grp->gr_name, (int)st.st_size,
 	       time,
 	       (*run)->d_name);
 	free(*run);
