@@ -1,5 +1,5 @@
 /*
- * $Id: smartmedia.c,v 1.2 2003/04/30 07:17:01 germeier Exp $
+ * $Id: smartmedia.c,v 1.3 2003/07/17 16:18:01 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -69,6 +69,10 @@ mpio_id2mem(BYTE id)
       i=64;      
       break;
     case 0x79:
+      i=128;
+      break;
+    case 0xf1:
+      debug("Oops, non-standard chip ID, assuming chip is 128MB");
       i=128;
       break;
     default:

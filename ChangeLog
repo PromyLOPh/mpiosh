@@ -1,3 +1,7 @@
+2003-07-17  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/smartmedia.c (mpio_id2mem): 
+	  added non-standard SmartMedia chip ID, as reported by Andreas
+
 2003-07-15  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/directory.c (mpio_dentry_get_real): 
 	  follow up fix for the broken internal FAT fix
