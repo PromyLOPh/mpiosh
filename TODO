@@ -1,4 +1,4 @@
-$Id: TODO,v 1.2 2002/09/02 22:25:47 germeier Exp $
+$Id: TODO,v 1.3 2002/09/04 07:22:42 crunchy Exp $
 
 * Kernel Module
   - the MPIO can no multitasking, so:
@@ -22,3 +22,9 @@ $Id: TODO,v 1.2 2002/09/02 22:25:47 germeier Exp $
 * mpio_tool [is deprecated, use mpiosh]
 
 * mpiosh
+  - more completion functions
+    + command completion [DONE]
+    + correct completion of filenames (quoting)
+  - handle regexps in command arguments
+  - use indices for files as possible arguments for put/get
+
