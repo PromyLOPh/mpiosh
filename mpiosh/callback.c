@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.35 2003/04/06 23:09:20 germeier Exp $
+ * $Id: callback.c,v 1.36 2003/04/11 21:42:58 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -518,9 +518,10 @@ void
 mpiosh_cmd_mdel(char *args[])
 {
   BYTE *	p;
-  int		size, i = 0;
+  int		i = 0;
   int           error;
   regex_t	regex;
+  int           r;
   BYTE		fname[100];
   BYTE          errortext[100];
   BYTE		month, day, hour, minute, type;
@@ -543,19 +544,27 @@ mpiosh_cmd_mdel(char *args[])
 	mpio_dentry_get(mpiosh.dev, mpiosh.card, p, fname, 100,
 			&year, &month, &day, &hour, &minute, &fsize, &type);
 	
-	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
+	if ((!(error = regexec(&regex, fname, 0, NULL, 0))) &&
+	    (strcmp(fname, "..")) && (strcmp(fname, ".")))
+	  {
 	  /* this line has to be above the del, or we won't write
 	   * the FAT and directory in case of an abort!!!
 	   */
 	  deleted=1;
 	  printf("deleting '%s' ... \n", fname);
-	  size = mpio_file_del(mpiosh.dev, mpiosh.card,
+	  r = mpio_file_del(mpiosh.dev, mpiosh.card,
 			       fname, mpiosh_callback_del);
 	  printf("\n");
 	  if (mpiosh_cancel) break;
 	  /* if we delete a file, start again from the beginning, 
 	     because the directory has changed !! */
-	  p = mpio_directory_open(mpiosh.dev, mpiosh.card);
+	  if (r != MPIO_OK)
+	    {
+	      printf("ERROR: %s\n", mpio_strerror(r));
+	      p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
+	      break;
+	    }
+	    p = mpio_directory_open(mpiosh.dev, mpiosh.card);
 	} else {
 	  regerror(error, &regex, errortext, 100);
 	  debugn (2, "file does not match: %s (%s)\n", fname, errortext);
@@ -630,8 +639,8 @@ void
 mpiosh_cmd_format(char *args[])
 {
   char answer[512];
-  BYTE *config, *fmconfig;
-  int  csize, fmsize;
+  BYTE *config, *fmconfig, *rconfig;
+  int  csize, fmsize, rsize;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
@@ -647,11 +656,14 @@ mpiosh_cmd_format(char *args[])
       /* save config files and write them back after formatting */
       config   = NULL;
       fmconfig = NULL;
+      rconfig  = NULL;
 
       csize = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
 				      MPIO_CONFIG_FILE, NULL, &config);      
       fmsize = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
 				       MPIO_CHANNEL_FILE, NULL, &fmconfig);
+      rsize = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				       MPIO_MPIO_RECORD, NULL, &rconfig);
     }
 
     if (mpio_memory_format(mpiosh.dev, mpiosh.card,
@@ -672,13 +684,19 @@ mpiosh_cmd_format(char *args[])
 					MPIO_CHANNEL_FILE, FTYPE_CHAN,
 					NULL, fmconfig, fmsize)==-1)
 	    mpio_perror("error");
+	if (rconfig)
+	  if (mpio_directory_make(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				  MPIO_MPIO_RECORD)!=MPIO_OK)
+	    mpio_perror("error");
 
-	if (config || fmconfig)
+	if (config || fmconfig || rconfig)
 	  mpio_sync(mpiosh.dev, MPIO_INTERNAL_MEM);
 	if (config)
 	  free(config);
 	if (fmconfig)
 	  free(fmconfig);
+	if (rconfig)
+	  free(rconfig);
       }
       
     } 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.16 2003/04/06 23:09:20 germeier Exp $
+ * $Id: directory.c,v 1.17 2003/04/11 21:42:57 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -155,6 +155,23 @@ mpio_directory_read(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
   return 0;
 }
 
+BYTE
+mpio_directory_is_empty(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
+{
+  mpio_dir_entry_t *dentry;
+  BYTE r;
+
+  dentry = (mpio_dir_entry_t *)dir->dir;
+  dentry += 2;
+
+  r = MPIO_OK;
+  if (dentry->name[0] != 0x00) 
+    r = !r;
+  
+  return r;
+}
+
+  
 int     
 mpio_directory_write(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
 {
@@ -180,7 +197,7 @@ mpio_directory_write(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
       /* set type to directory */
       f->i_fat[0x06] = FTYPE_ENTRY;
 
-      hexdumpn(0, f->i_fat, 16);
+      hexdumpn(2, f->i_fat, 16);
     }
   
   mpio_io_block_delete(m, mem, f);
@@ -223,6 +240,7 @@ mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
   mpio_fatentry_t   *f, *current;
   WORD self, parent;
   struct tm tt;
+  time_t curr;
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -257,7 +275,7 @@ mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
       /* only one block needed for directory */
       f->i_fat[0x02]=0;
       f->i_fat[0x03]=1;
-      hexdumpn(0, f->i_fat, 16);
+      hexdumpn(2, f->i_fat, 16);
     }
 
   if (sm->cdir == sm->root) 
@@ -279,6 +297,8 @@ mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
 
   mpio_fatentry_set_eof(m ,mem, f);
   mpio_io_block_write(m, mem, f, new->dir);
+  time(&curr);
+  tt = * localtime(&curr);
   mpio_dentry_put(m, mem,
 		  dir, strlen(dir),
 		      mktime(&tt), 
@@ -668,6 +688,32 @@ mpio_rootdir_clear (mpio_t *m, mpio_mem_t mem)
   return 0;
 }
 
+BYTE    
+mpio_dentry_is_dir(mpio_t *m, mpio_mem_t mem, BYTE *p)
+{
+  int s;
+  mpio_dir_entry_t *dentry;
+  BYTE r;
+
+  s  = mpio_dentry_get_size(m, mem, p);
+  s -= DIR_ENTRY_SIZE ;
+
+  dentry = (mpio_dir_entry_t *)p;
+  
+  while (s != 0) {
+    dentry++;
+    s -= DIR_ENTRY_SIZE ;
+  }
+
+  if (dentry->attr & 0x10) {
+    r = MPIO_OK;
+  } else {
+    r= !MPIO_OK;
+  }
+
+  return r;
+}
+
 int
 mpio_dentry_get_filesize(mpio_t *m, mpio_mem_t mem, BYTE *p)
 {
@@ -869,15 +915,22 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
       i++;
     }
 
+  /* if we do not find any points we set the value ridiculously high,
+     then everything falls into place */
+  if (!points)
+    points=1024*1024;
+
   i=j=0;
   while ((j<8) && (points) && (i<(strlen(filename))))
     {
       if (filename[i] == '.') 
 	{
 	  points--;
-	} else {	  
-	  f_8_3[j] = toupper(filename[i]);
-	  j++;
+	} else {
+	  if (filename[i]!=' ') {
+	    f_8_3[j] = toupper(filename[i]);
+	    j++;
+	  }
 	}
       i++;
     }
@@ -896,6 +949,13 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
       f_8_3[i] = toupper(filename[j]);
       i++;
       j++;
+    }
+
+  /* This seems like a special case to me! */
+  if (strcmp(MPIO_MPIO_RECORD, filename)==0)
+    {
+        f_8_3[6]='~';
+        f_8_3[7]='0';
     }
 
   if (mpio_dentry_find_name_8_3(m, mem, f_8_3))

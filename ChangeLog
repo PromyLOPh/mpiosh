@@ -1,3 +1,15 @@
+2003-04-11  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/directory.c (mpio_directory_make): 
+	  libmpio/mpio.c (mpio_file_put_real): 
+	  fix timestamp generation as suggested by Sebastian. Thanks!
+	  (mpio_directory_is_empty,mpio_dentry_is_dir): 
+	  added functions
+	  (mpio_dentry_put): another 8.3 generation fix,
+	  special treatment for "MPIO RECORD" dir.
+	* mpiosh/callback.c (mpiosh_cmd_format): 
+	  mkdir "MPIO RECORD" dir if it existed before the format
+	
 2003-04-07  Markus Germeier  <mager@tzi.de>
 	*  Mega-Update all over the place
 	   initial support for directories

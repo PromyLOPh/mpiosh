@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.48 2003/04/06 23:09:20 germeier Exp $
+ * $Id: mpio.c,v 1.49 2003/04/11 21:42:57 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -89,6 +89,8 @@ static mpio_error_t mpio_errors[] = {
     "The selected directory is not a directory." },
   { MPIO_ERR_DIR_NAME_ERROR,
     "The selected directory name is not allowed." },
+  { MPIO_ERR_DIR_NOT_EMPTY,
+    "The selected directory is not empty." },
   { MPIO_ERR_INT_STRING_INVALID,
     "Internal Error: Supported is invalid!" } 	
 };
@@ -648,6 +650,7 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
   int fd, toread;
   struct stat file_stat;
   struct tm tt;
+  time_t curr;
 
   BYTE *p = NULL;
   DWORD filesize, fsize, free, blocks;
@@ -665,7 +668,6 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
   if (memory)
     {
       fsize=filesize=memory_size;
-      tt = (struct tm){ 0, 0, 0, 0, 0, 0, 0, 0, 0};
     } else {      
       if (stat((const char *)i_filename, &file_stat)!=0) {
 	debug("could not find file: %s\n", i_filename);
@@ -840,6 +842,11 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
 	(*progress_callback)((fsize-filesize), fsize);
       
     } else {
+      if (memory) 
+	{
+	  time(&curr);
+	  tt = * localtime(&curr);
+	}
       mpio_dentry_put(m, mem,
 		      o_filename, strlen(o_filename),
 		      ((memory)?mktime(&tt):file_stat.st_ctime), 
@@ -1058,6 +1065,19 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     f = mpio_dentry_get_startcluster(m, mem, p);      
   
   if (f && p) {    
+    if (mpio_dentry_is_dir(m, mem, p) == MPIO_OK) 
+      {
+	/* ugly */
+	mpio_directory_cd(m, mem, filename);
+	if (mpio_directory_is_empty(m, mem, sm->cdir) != MPIO_OK)
+	  {
+	    mpio_directory_cd(m, mem, "..");
+	    return MPIO_ERR_DIR_NOT_EMPTY;      
+	  } else {	    
+	    mpio_directory_cd(m, mem, "..");
+	  }
+      }
+
     filesize=fsize=mpio_dentry_get_filesize(m, mem, p);    
     do
       {
@@ -1099,8 +1119,8 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   }
 
   mpio_dentry_delete(m, mem, filename);
-  
-  return (fsize-filesize);
+    
+  return MPIO_OK;
 }
 
 int	

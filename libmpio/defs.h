@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.18 2003/04/06 23:09:20 germeier Exp $
+ * $Id: defs.h,v 1.19 2003/04/11 21:42:57 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -80,6 +80,7 @@ typedef enum { FTYPE_CHAN  = 0x00,
 /* fixed filenames */
 #define MPIO_CONFIG_FILE  "CONFIG.DAT"
 #define MPIO_CHANNEL_FILE "FMCONFIG.DAT"
+#define MPIO_MPIO_RECORD  "MPIO RECORD"
 
 /* type of callback functions */
 typedef BYTE (*mpio_callback_t)(int, int) ; 
@@ -143,6 +144,7 @@ typedef struct {
 #define MPIO_ERR_DIR_NOT_FOUND          -9
 #define MPIO_ERR_DIR_NOT_A_DIR         -10
 #define MPIO_ERR_DIR_NAME_ERROR        -11
+#define MPIO_ERR_DIR_NOT_EMPTY         -12
 /* internal errors, occur when UI has errors! */
 #define MPIO_ERR_INT_STRING_INVALID	-101
 
