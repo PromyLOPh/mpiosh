@@ -2,7 +2,9 @@
 
 	* libmpio/id3.c (mpio_id3_copy_tag): 
 	  remove trailing spaces as suggested by Thomas
-
+	* kernel/Makefile.am: 
+	  removed unnecessary -I$(INCLUDE) as spotted by Yury
+	
 2003-04-20  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/directory.c (mpio_dentry_filename_write): 

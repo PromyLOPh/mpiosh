@@ -1,5 +1,5 @@
 INCLUDES=-I@KERNEL_INCLUDE@
-KCFLAGS=-D__KERNEL__ -I$(INCLUDE) -Wall -Wstrict-prototypes -O2 \
+KCFLAGS=-D__KERNEL__ -Wall -Wstrict-prototypes -O2 \
 	-fomit-frame-pointer -pipe -DMODULE
 
 EXTRA_DIST=mpio.c
