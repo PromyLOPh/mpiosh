@@ -1,3 +1,7 @@
+2002-09-21  Yuji Touya  <salmoon@users.sourceforge.net>
+
+	* README: Add a few lines about Hot plug for 2.4.x
+
 2002-09-20  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.c (mpio_init): 
