@@ -1,3 +1,13 @@
+2002-09-19  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.c (mpio_init_internal): 
+	  added code to check if the internal memory is available
+	  (don't ask! :-)
+	  (mpio_sync): check if selected memory is available
+	* mpiosh/callback.c (mpiosh_cmd_mem): 
+	  fixed external mem check
+	  
+
 2002-09-18  Markus Germeier  <mager@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_mem): 

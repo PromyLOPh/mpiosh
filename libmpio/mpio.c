@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.19 2002/09/18 22:18:29 germeier Exp $
+ * $Id: mpio.c,v 1.20 2002/09/18 23:17:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -63,8 +63,18 @@ mpio_init_internal(mpio_t *m)
   /* init main memory parameters */
   sm->manufacturer = m->version[i_offset];
   sm->id           = m->version[i_offset+1];
-  sm->size         = mpio_id2mem(sm->id);
   sm->chips        = 1;
+  if (mpio_id_valid(m->version[i_offset])) 
+    {      
+      sm->size         = mpio_id2mem(sm->id);
+    } else {
+      sm->manufacturer = 0;
+      sm->id           = 0;
+      sm->size         = 0;
+      debug("WARNING: no internal memory found\n");
+      return;
+    }
+  
   
   /* look for a second installed memory chip */
   if (mpio_id_valid(m->version[i_offset+2]))
@@ -202,7 +212,8 @@ mpio_init(BYTE (*progress_callback)(int, int))
   mpio_init_external(new_mpio);
 
   /* read FAT/spare area */
-  mpio_fat_read(new_mpio, MPIO_INTERNAL_MEM, progress_callback);
+  if (new_mpio->internal.id)
+    mpio_fat_read(new_mpio, MPIO_INTERNAL_MEM, progress_callback);
 
   return new_mpio;  
 }
@@ -217,6 +228,10 @@ int
 mpio_memory_free(mpio_t *m, mpio_mem_t mem, int *free)
 {
   if (mem==MPIO_INTERNAL_MEM) {    
+    if (!m->internal.size) {
+      *free=0;
+      return 0;
+    }    
     *free=mpio_fat_free_clusters(m, mem);    
     return (m->internal.geo.SumSector 
 	    * SECTOR_SIZE / 1000 * m->internal.chips);    
@@ -259,16 +274,21 @@ mpio_get_info(mpio_t *m, mpio_info_t *info)
 	   m->firmware.day, m->firmware.month, m->firmware.year);
   snprintf(info->model, max, "%s", mpio_model_name[m->model]);
   
-  if (m->internal.chips == 1) 
-    {    
-      snprintf(info->mem_internal, max, "%3dMB (%s)", 
-	       mpio_id2mem(m->internal.id), 
-	       mpio_id2manufacturer(m->internal.manufacturer));
-    } else {
-      snprintf(info->mem_internal, max, "%3dMB (%s) - %d chips", 
-	       mpio_id2mem(m->internal.id)*m->internal.chips, 
-	       mpio_id2manufacturer(m->internal.manufacturer),
-	       m->internal.chips);
+  if (!m->internal.id) 
+    {
+      snprintf(info->mem_internal, max, "not available");
+    } else {      
+      if (m->internal.chips == 1) 
+	{    
+	  snprintf(info->mem_internal, max, "%3dMB (%s)", 
+		   mpio_id2mem(m->internal.id), 
+		   mpio_id2manufacturer(m->internal.manufacturer));
+	} else {
+	  snprintf(info->mem_internal, max, "%3dMB (%s) - %d chips", 
+		   mpio_id2mem(m->internal.id)*m->internal.chips, 
+		   mpio_id2manufacturer(m->internal.manufacturer),
+		   m->internal.chips);
+	}
     }
   
   if (m->external.id)
@@ -692,6 +712,14 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 int	
 mpio_sync(mpio_t *m, mpio_mem_t mem)
 {
+  mpio_smartmedia_t *sm;
+  
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  if (!sm->size)
+    return 0;
+
   /* this writes the FAT *and* the root directory */
   return mpio_fat_write(m, mem);  
 }

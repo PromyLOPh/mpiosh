@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.10 2002/09/18 22:18:29 germeier Exp $
+ * $Id: callback.c,v 1.11 2002/09/18 23:17:03 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -166,7 +166,7 @@ mpiosh_cmd_mem(char *args[])
   MPIOSH_CHECK_ARG;
 
   if (!strcmp(args[0], "e")) {
-    if (mpio_memory_free(mpiosh.dev, mpiosh.card, &free)) {
+    if (mpio_memory_free(mpiosh.dev, MPIO_EXTERNAL_MEM, &free)) {
       mpiosh.card = MPIO_EXTERNAL_MEM;
       mpiosh.prompt = PROMPT_EXT;
       printf("external memory card is selected\n");
