@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.4 2002/09/15 12:03:23 germeier Exp $
+ * $Id: defs.h,v 1.5 2002/09/15 23:05:25 salmoon Exp $
  *
  * Library for USB MPIO-*
  *
@@ -61,13 +61,16 @@ typedef enum { GET_VERSION      = 0x01,
                DEL_BLOCK        = 0x04,
                GET_SECTOR       = 0x06,
                GET_SPARE_AREA   = 0x07,
-               PUT_BLOCK        = 0x08 } mpio_cmd_t;
+               PUT_BLOCK        = 0x08,
+               MODIFY_FIRMWARE  = 0xa0 } mpio_cmd_t; 
 
 /* file types on internal memory */
 /* found in the code of salmoon, are these needed? -mager */
 typedef enum { FTYPE_CONF  = 'C',
 	       FTYPE_FONT  = 'F',
                FTYPE_OTHER = 'H',
+               FTYPE_MEMO  = 'M',
+               FTYPE_WAV   = 'V',
                FTYPE_ENTRY = 'R' } mpio_file_t;
 
 #ifndef NULL
@@ -80,7 +83,7 @@ typedef enum { FTYPE_CONF  = 'C',
 #define SECTOR_ECC       0x040
 #define SECTOR_TRANS     (SECTOR_SIZE + SECTOR_ECC)
 
-#define BLOCK_SECTORS    0x20
+#define BLOCK_SECTORS    0x20     /*  0x10  8MB Smartmedia :salmoon */
 #define BLOCK_SIZE       (SECTOR_SIZE * BLOCK_SECTORS)
 #define BLOCK_TRANS      (BLOCK_SIZE + (SECTOR_ECC * BLOCK_SECTORS))
 
@@ -92,8 +95,8 @@ typedef enum { FTYPE_CONF  = 'C',
 
 #define CMD_SIZE         0x40
 
-#define OFFSET_CIS       0x20
-#define OFFSET_MBR       0x40
+#define OFFSET_CIS       0x20       /* always fixed? :salmoon */
+#define OFFSET_MBR       0x40       /* always fixed? :salmoon */
 
 #define INFO_LINE        81
 

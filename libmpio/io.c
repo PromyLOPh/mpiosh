@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.12 2002/09/15 12:03:23 germeier Exp $
+ * $Id: io.c,v 1.13 2002/09/15 23:05:25 salmoon Exp $
  *
  * Library for USB MPIO-*
  *
@@ -54,15 +54,16 @@ BYTE
 model2externalmem(mpio_model_t model)
 {
   BYTE m;
-  
+
   switch(model) 
     {
     case MPIO_MODEL_DMG:
       m = 0x80;
+      break;
     default:
       m = 0x10;
     }
-  
+
   return m;
 }      
 
