@@ -10,7 +10,7 @@ dnl AM_CONFIG_HEADER(src/config.h)
 AC_CANONICAL_SYSTEM()
 AC_MSG_RESULT(Building for a ${host} host.)
 
-AM_INIT_AUTOMAKE(mpio, 0.6.0)
+AM_INIT_AUTOMAKE(mpio, 0.7.0RC1)
 
 dnl Checks for programs.
 

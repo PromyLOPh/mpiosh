@@ -1,3 +1,10 @@
+2003-06-14  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/directory.c (mpio_dentry_filename_write): 
+	  added/fixed vfat 8.3 checksum to make "real" vfat 
+	  drivers happy
+	* configure.in: increased version to 0.7.0RC1 for upcoming 
+	  release
+
 2003-06-12  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/id3.c (mpio_id3_do): fixed debug output
 	* libmpio/src/ecc.c: fixed debug output

@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.4 2003/06/12 08:32:32 germeier Exp $
+ * $Id: directory.c,v 1.5 2003/06/16 10:25:03 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -439,6 +439,7 @@ mpio_dentry_filename_write(mpio_t *m, mpio_mem_t mem, BYTE *p,
   int count = 0;
   BYTE index;
   BYTE f_8_3[13];
+  BYTE alias_check;
   mpio_dir_slot_t  *slot;
   mpio_dir_entry_t *dentry;
   DWORD i, j;
@@ -466,32 +467,6 @@ mpio_dentry_filename_write(mpio_t *m, mpio_mem_t mem, BYTE *p,
   count = filename_size / 13;
   if (filename_size % 13)
     count++;
-
-  slot = (mpio_dir_slot_t *)p;
-
-  index = 0x40 + count;
-  while (count > 0) {
-    mpio_dentry_copy_to_slot(back + ((count - 1) * 26), slot);
-    hexdump((char *)back + ((count - 1) * 26), 0x20);
-    slot->id = index;
-    slot->attr = 0x0f;
-    slot->reserved = 0x00;
-    slot->start[0] = 0x00;
-    slot->start[1] = 0x00;
-    /* FIXME: */
-    slot->alias_checksum = 0x00;   // checksum for 8.3 alias 
-
-    hexdump((char *)slot, 0x20);
-    
-    slot++;
-    count--;
-    index = count;
-  }
-
-/*   memcpy(p, m->internal.dir+0x220, 0x20); */
-
-/*   p+=0x20; */
-  dentry = (mpio_dir_entry_t *)slot;
 
   /* find uniq 8.3 filename */
   memset(f_8_3, 0x20, 12);
@@ -544,30 +519,48 @@ mpio_dentry_filename_write(mpio_t *m, mpio_mem_t mem, BYTE *p,
       j++;
     }
 
-  /* This seems like a special case to me! */
-  if (strcmp(MPIO_MPIO_RECORD, filename)==0)
-    {
-        f_8_3[6]='~';
-        f_8_3[7]='0';
-    }
-
-  if (mpio_dentry_find_name_8_3(m, mem, f_8_3))
-    {
-        f_8_3[6]='~';
-        f_8_3[7]='1';
-    }
+  f_8_3[6]='~';
+  f_8_3[7]='0';
 
   while(mpio_dentry_find_name_8_3(m, mem, f_8_3))
     f_8_3[7]++;
-
   
-/*   memcpy(dentry->name,"AAAAAAAA",8); */
-/*   memcpy(dentry->ext,"MP3",3); */
+  hexdumpn(5, f_8_3, 13);
 
-/*   hexdumpn(0, f_8_3, 13); */
+  /* calculate checksum for 8.3 alias */
+  alias_check = 0;
+  for (i = 0; i < 12; i++) {
+    if (i!=8) /* yuck */
+      alias_check = (((alias_check & 0x01)<<7)|
+		     ((alias_check & 0xfe)>>1)) + f_8_3[i];
+  }
+
+  slot = (mpio_dir_slot_t *)p;
+
+  index = 0x40 + count;
+  while (count > 0) {
+    mpio_dentry_copy_to_slot(back + ((count - 1) * 26), slot);
+    hexdump((char *)back + ((count - 1) * 26), 0x20);
+    slot->id = index;
+    slot->attr = 0x0f;
+    slot->reserved = 0x00;
+    slot->start[0] = 0x00;
+    slot->start[1] = 0x00;
+    slot->alias_checksum = alias_check;   // checksum for 8.3 alias 
+
+    hexdumpn(5, (char *)slot, 0x20);
+    
+    slot++;
+    count--;
+    index = count;
+  }
+
+  dentry = (mpio_dir_entry_t *)slot;
 
   memcpy(dentry->name, f_8_3, 8);
   memcpy(dentry->ext, f_8_3+9, 3);
+
+  hexdumpn(5, (char *)dentry, 0x20);
 
   free(unicode);
   free(fname);
