@@ -1,6 +1,11 @@
-2003-03-08    <mager@tzi.de>
+2003-03-08  Markus Germeier  <mager@tzi.de>
 
 	* mpio.spec.in, etc/Makefile.am: fixed packaging problems
+	* libmpio/mpio.c (mpio_init): re-added memset, this time at the
+	  correct location
+	* mpiosh/callback.c (mpiosh_cmd_mem): removes warning messages
+	  (this should hopefully work now ;-)
+	  (mpiosh_cmd_dump): fixed core dump in "dump" command
 
 2003-02-21    <crunchy@tzi.de>
 

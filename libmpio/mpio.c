@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.39 2003/02/21 18:28:55 crunchy Exp $
+ * $Id: mpio.c,v 1.40 2003/03/08 17:28:19 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -179,6 +179,8 @@ mpio_init_external(mpio_t *m)
     } else {
       sm->manufacturer = 0;
       sm->id = 0;
+      sm->chips = 0;
+      sm->size = 0;
     }  
 
   /* init memory parameters if external memory is found */
@@ -212,11 +214,11 @@ mpio_init(mpio_callback_init_t progress_callback)
   int id_offset;
 
   new_mpio = malloc(sizeof(mpio_t));
-
   if (!new_mpio) {
     debug ("Error allocating memory for mpio_t");
     return NULL;
   }  
+  memset(new_mpio, 0, sizeof(mpio_t));
 
   new_mpio->fd = open(MPIO_DEVICE, O_RDWR);
 

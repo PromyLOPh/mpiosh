@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.33 2003/02/26 16:34:45 crunchy Exp $
+ * $Id: callback.c,v 1.34 2003/03/08 17:28:20 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -177,13 +177,6 @@ mpiosh_cmd_mem(char *args[])
     if (mpio_memory_free(mpiosh.dev, MPIO_EXTERNAL_MEM, &free)) {
       mpiosh.card = MPIO_EXTERNAL_MEM;
       mpiosh.prompt = PROMPT_EXT;
-      printf("WARNING\n");
-      printf("Support for external memory is work in progress!!\n");
-      printf("Assumed status:\n");
-      printf("reading   : works (untested)\n");
-      printf("deleting  : works (untested)\n");
-      printf("writing   : works (untested)\n");
-      printf("formatting: complete (untested)\n");
       printf("external memory card is selected\n");
     } else {
       printf("no external memory card is available\n");
@@ -552,11 +545,11 @@ mpiosh_cmd_dump(char *args[])
   
   UNUSED(args);
   
-  arg[0] = fname;
   arg[1] = NULL;
   
   p = mpio_directory_open(mpiosh.dev, mpiosh.card);
   while ((p != NULL) && (!mpiosh_cancel)) {
+    arg[0] = fname; /* is this a memory leak?? -mager */
     memset(fname, '\0', 256);
     
     mpio_dentry_get(mpiosh.dev, mpiosh.card, p,
