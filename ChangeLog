@@ -1,3 +1,9 @@
+2003-04-06  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/directory.c (mpio_dentry_put): Another 8.3 filename fix
+	  This time: try to get the extension right for filenames with
+	  more than one '.'
+
 2003-03-26  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.c (mpio_file_put_real): 

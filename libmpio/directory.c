@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.14 2003/03/13 23:05:22 germeier Exp $
+ * $Id: directory.c,v 1.15 2003/04/06 12:54:27 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -485,7 +485,7 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
   int count = 0;
   BYTE index;
   BYTE f_8_3[13];
-  int i, j;
+  int i, j, points;
   BYTE *p;
   mpio_dir_entry_t *dentry;
   mpio_dir_slot_t  *slot;
@@ -565,17 +565,36 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
   f_8_3[12]=0x00;
 
   i=0;
-  while ((i<8) && (filename[i] != '.') && (i<(strlen(filename))))
+  points=0;
+  /* count points to later find the correct file extension */
+  while (i<(strlen(filename))) 
     {
-      f_8_3[i] = toupper(filename[i]);
+      if (filename[i] == '.')
+	points++;
+      i++;
+    }
+
+  i=j=0;
+  while ((j<8) && (points) && (i<(strlen(filename))))
+    {
+      if (filename[i] == '.') 
+	{
+	  points--;
+	} else {	  
+	  f_8_3[j] = toupper(filename[i]);
+	  j++;
+	}
       i++;
     }
 
   j=i;
-  while((filename[j] != '.') && (j<(strlen(filename))))
-    j++;
+  while((points) && (j<(strlen(filename))))
+    {
+      if (filename[j] == '.') 
+	points--;
+      j++;
+    }  
   
-  j++;
   i=9;
   while ((i<12) && (j<(strlen(filename))))
     {
