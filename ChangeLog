@@ -1,8 +1,9 @@
 2002-10-12  Andreas Buesching  <crunchy@tzi.de>
 
-	* mpiosh/global.c (commands): removed commands 'put', 'get' and
-	'del' and add these to the alias lists of 'mput', 'mget' and
-	'mdel'. Also add some more alias to some other commands
+	* mpiosh/global.c (commands): removed commands 'put', 'get', 'del'
+	and 'exit' and add these to the alias lists of 'mput', 'mget',
+	'mdel' and 'quit'. Also add some more aliases to some other
+	commands
 
 	* mpiosh/readline.c (mpiosh_readline_comp_cmd): add aliases to
 	completion list
