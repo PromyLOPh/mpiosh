@@ -1,5 +1,5 @@
 /*
- * $Id: io.c,v 1.5 2003/06/06 09:05:36 germeier Exp $
+ * $Id: io.c,v 1.6 2003/09/23 18:12:14 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -57,6 +57,8 @@ model2externalmem(mpio_model_t model)
     case MPIO_MODEL_DMG:
     case MPIO_MODEL_DMG_PLUS:
     case MPIO_MODEL_FD100:
+    case MPIO_MODEL_FY100:
+    case MPIO_MODEL_VP_01:
       m = 0x80;
       break;
     default:

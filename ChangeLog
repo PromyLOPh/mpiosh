@@ -1,3 +1,8 @@
+2003-09-23  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/io.c (model2externalmem): added FY100 and VP-01 to
+	  the list, the external memory of these is now supported.
+	  (Thanks to John for providing the information!)
+
 2003-09-22  Markus Germeier  <mager@tzi.de>
 	* added Johns patch to support the VirginPulse
 	  VP-01 player. (Thanks!)
