@@ -43,6 +43,8 @@ echo "%defattr(644,root,root)" >> /tmp/mpio-files.lst
 echo "/lib/modules/$KVERSION/%{spec_path}/mpio.o" >> /tmp/mpio-files.lst
 echo "%defattr(644,root,root)" >> /tmp/mpio-files.lst
 echo "%sysconfdir/mpio/mpioshrc" >> /tmp/mpio-files.lst
+echo "%prefix/include/mpio/mpio.h" >> /tmp/mpio-files.lst
+echo "%prefix/include/mpio/defs.h" >> /tmp/mpio-files.lst
 
 make DESTDIR=$RPM_BUILD_ROOT install
 

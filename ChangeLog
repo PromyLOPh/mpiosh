@@ -1,3 +1,9 @@
+2003-03-14  Andreas Buesching <crunchy@tzi.de>
+
+	* mpio.spec.in: 
+	  add mpio.h and defs.h to the rpm.
+	  creating a devel rpm would be oversized
+	  
 2003-03-14  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/directory.c (mpio_dentry_put): 
