@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.4 2002/09/13 19:06:30 crunchy Exp $
+ * $Id: callback.c,v 1.5 2002/09/14 11:19:30 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -253,6 +253,8 @@ mpiosh_cmd_mget(char *args[])
 
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
+
+  mpiosh_command_regex_fix(args);
   
   while (args[i] != NULL) {
     if ((error = regcomp(&regex, args[i], REG_NOSUB))) {
@@ -323,6 +325,7 @@ mpiosh_cmd_mput(char *args[])
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
   
+  mpiosh_command_regex_fix(args);
   getcwd(dir_buf, NAME_MAX);
   while (args[i] != NULL) {
     if ((error = regcomp(&regex, args[i], REG_NOSUB))) {
@@ -396,6 +399,7 @@ mpiosh_cmd_mdel(char *args[])
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
   
+  mpiosh_command_regex_fix(args);
   while (args[i] != NULL) {
     if ((error = regcomp(&regex, args[i], REG_NOSUB))) {
       regerror(error, &regex, errortext, 100);

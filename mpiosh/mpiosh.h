@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: mpiosh.h,v 1.4 2002/09/14 09:55:31 crunchy Exp $
+ * $Id: mpiosh.h,v 1.5 2002/09/14 11:19:30 crunchy Exp $
  *
  * Copyright (C) 2002 Andreas Büsching <crunchy@tzi.de>
  *
@@ -51,8 +51,9 @@ int mpiosh_readline_cancel(void);
 /* helper functions */
 void mpiosh_init(void);
 mpiosh_cmd_t *mpiosh_command_find(char *line);
-char **mpiosh_command_split(char *line);
+char **mpiosh_command_split_line(char *line);
 char **mpiosh_command_get_args(char *line);
+void mpiosh_command_regex_fix(char *argv[]);
 void mpiosh_command_free_args(char **args);
 
 /* global structures */

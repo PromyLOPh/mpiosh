@@ -6,7 +6,7 @@ dnl AM_CONFIG_HEADER(src/config.h)
 AC_CANONICAL_SYSTEM()
 AC_MSG_RESULT(Building for a ${host} host.)
 
-AM_INIT_AUTOMAKE(mpio, 0.0.1)
+AM_INIT_AUTOMAKE(mpio, 0.5.0)
 
 dnl Checks for programs.
 
@@ -41,6 +41,8 @@ AC_OUTPUT(
     Makefile
     kernel/Makefile
     libmpio/Makefile
-    mpiosh/Makefile )
+    mpiosh/Makefile
+    mpio.spec
+)
 
 

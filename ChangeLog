@@ -1,9 +1,14 @@
 2002-09-14  Andreas Buesching  <crunchy@tzi.de>
 
+	* mpiosh/callback.c (mpiosh_callback_mget, mpiosh_callback_mput) 
+	(mpiosh_callback_mdel): calling new function mpiosh_command_regex_fix
+
 	* mpiosh/mpiosh.c: fixed output of none interactive mode
 	(mpiosh_signal_handler, mpiosh_readline_cancel) 
 	(mpiosh_noredisplay): functions added to get a expected handling
 	of C-c (SIGINT)
+	(mpiosh_command_regex_fix): add function. tries to map regular
+	expressions to shell expressions. mapping '*' -> ".*" and '.' -> "\."
 
 2002-09-13  Markus Germeier  <mager@tzi.de>
 

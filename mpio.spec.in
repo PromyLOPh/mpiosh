@@ -1,0 +1,47 @@
+# @configure_input@
+
+Version: @VERSION@
+Summary: MPIO - providing access to MPIO mp3 players
+Name: mpio
+Release: 1
+Copyright: see COPYING
+Group: Applications/MultiMedia
+Source: http://download.sourceforge.net/mpio/
+Prefix: /usr
+Buildroot: /var/tmp/mpio-%version-buildroot/
+Packager: Andreas Büsching <crunchy@tzi.de>
+
+%define confdir /etc
+
+%description
+This is a project for using Digitalway/Adtec digital audio player MPIO
+(DMG, DMK, DME) under Linux. It provides Linux kernel module driver,
+userspace library and utility.
+
+%prep
+%setup
+CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=%prefix
+
+%build
+make
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make DESTDIR=$RPM_BUILD_ROOT install-strip
+
+%files
+# %attr(750,root,news) %dir %confdir/
+# %attr(640,root,news) %confdir/config.example
+# %defattr(755,root,root)
+# %prefix/bin/newsq
+# %defattr(755,root,root)
+# %prefix/sbin/*
+# %defattr(644,root,root)
+# %doc %_mandir/man1/*
+# %doc %_mandir/man8/*
+
+%doc COPYING ChangeLog INSTALL NEWS
+%doc README TODO
+
+%clean
+rm -rf $RPM_BUILD_ROOT
