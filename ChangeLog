@@ -1,3 +1,11 @@
+2003-03-15  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.c (mpio_init_internal): detect up to four
+	  internal memory chips
+	* libmpio/fat.c (mpio_fatentry_hw2entry, mpio_fatentry_entry2hw): 
+	  libmpio/io.c (mpio_io_block_delete_phys, mpio_io_spare_read): 
+	  changes to support four internal chips
+	
 2003-03-14  Andreas Buesching <crunchy@tzi.de>
 
 	* mpio.spec.in: 

@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.15 2003/03/11 01:45:30 germeier Exp $
+ * $Id: defs.h,v 1.16 2003/03/15 13:24:58 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -179,7 +179,7 @@ typedef struct {
   BYTE		size;		/* MB */    
   BYTE          chips;          /* this is the hack for
                                    MPIO internal representation, because
-				   there might be two chips involved */
+				   there might be up to four chips involved */
   
   /*  only needed for external SmartMedia cards */
   mpio_disk_phy_t geo;

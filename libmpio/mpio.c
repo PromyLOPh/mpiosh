@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.41 2003/03/11 01:45:30 germeier Exp $
+ * $Id: mpio.c,v 1.42 2003/03/15 13:24:59 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -42,6 +42,7 @@
 #include "smartmedia.h"
 #include "fat.h"
 
+void mpio_bail_out(void);
 void mpio_init_internal(mpio_t *);
 void mpio_init_external(mpio_t *);
 int  mpio_check_filename(mpio_filename_t);
@@ -92,6 +93,13 @@ static int _mpio_errno = 0;
     MPIO_ERR_RETURN(MPIO_ERR_INT_STRING_INVALID); \
   }
 
+void
+mpio_bail_out(void){
+  printf("I'm utterly confused and aborting now, sorry!");
+  printf("Please report this to: mpio-devel@lists.sourceforge.net\n");
+  exit(1);	  
+}
+  
 int
 mpio_check_filename(mpio_filename_t filename)
 {
@@ -129,19 +137,29 @@ mpio_init_internal(mpio_t *m)
     }
   
   
-  /* look for a second installed memory chip */
-  if (mpio_id_valid(m->version[i_offset + 2]))
+  /* look for further installed memory chips 
+   * models with 1, 2 and 4 chips are known
+   * (there _really_ shouldn't be any other versions out there ...)
+   */
+  while ((sm->chips < 4) && 
+	 (mpio_id_valid(m->version[i_offset + (2 * sm->chips)])))
     {    
-      if(mpio_id2mem(sm->id) != mpio_id2mem(m->version[i_offset + 3]))
+      if(mpio_id2mem(sm->id) != 
+	 mpio_id2mem(m->version[i_offset + (2 * sm->chips) + 1]))
 	{
-	  printf("Found a MPIO with two chips with different size!");
-	  printf("I'm utterly confused and aborting now, sorry!");
-	  printf("Please report this to: mpio-devel@lists.sourceforge.net\n");
-	  exit(1);	  
+	  printf("Found a MPIO with internal chips of different sizes!");
+	  mpio_bail_out();
 	}
-    sm->size  = 2 * mpio_id2mem(sm->id);
-    sm->chips = 2;
-  }
+      sm->chips++;
+    }
+	 
+  if ((sm->chips == 3) || (sm->chips > 4)) 
+    {
+      printf("Found a MPIO with %d internal chips", sm->chips);
+      mpio_bail_out();
+    }
+  
+  sm->size  = sm->chips * mpio_id2mem(sm->id);
 
   /* used for size calculations (see mpio_memory_free) */
   mpio_id2geo(sm->id, &sm->geo);

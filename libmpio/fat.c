@@ -1,6 +1,6 @@
- /* 
+/* 
  *
- * $Id: fat.c,v 1.20 2002/11/14 00:00:59 germeier Exp $
+ * $Id: fat.c,v 1.21 2003/03/15 13:24:58 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -241,7 +241,7 @@ void
 mpio_fatentry_hw2entry(mpio_t *m,  mpio_fatentry_t *f)
 {
   mpio_smartmedia_t *sm;  
-  BYTE chip;
+  BYTE chip, t;
   DWORD value;
 
   if (f->mem == MPIO_INTERNAL_MEM) 
@@ -252,11 +252,15 @@ mpio_fatentry_hw2entry(mpio_t *m,  mpio_fatentry_t *f)
 	return ;
 
       value  = f->hw_address;
-      chip   = value >> 24;
+      t      = value >> 24;
+      chip   = 0;
+      
+      while(t/=2)
+	chip++;
 
       value &= 0xffffff;
       value /= 0x20;
-      value += (chip-1) * (sm->max_cluster / sm->chips);
+      value += chip * (sm->max_cluster / sm->chips);
       
       f->entry = value;
 
@@ -284,7 +288,7 @@ mpio_fatentry_entry2hw(mpio_t *m,  mpio_fatentry_t *f)
       chip     = f->entry /  (sm->max_cluster / sm->chips);
       cluster  = f->entry - ((sm->max_cluster / sm->chips) * chip);
       cluster *= 0x20;
-      cluster += 0x01000000 * (chip+1);
+      cluster += 0x01000000 * (chip^2);
       
       f->hw_address=cluster;
 

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.21 2002/10/23 00:03:42 germeier Exp $
+ * $Id: io.c,v 1.22 2003/03/15 13:24:58 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -982,8 +982,8 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, BYTE size,
   for (chip = 1; chip <= chips; chip++) 
     {
       if (mem == MPIO_INTERNAL_MEM) 
-	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, chip, index, size, 
-			      wsize, cmdpacket);
+	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, ((chip-1)^2), 
+			      index, size, wsize, cmdpacket);
       if (mem == MPIO_EXTERNAL_MEM) 
 	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, mem, index, size, 
 			      wsize, cmdpacket);
@@ -1059,8 +1059,12 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
   /*  Send command packet to MPIO  */
   
   if (chip == MPIO_INTERNAL_MEM) sm = &m->internal;
-  /* uhoh, this breaks if we have more than two internal chips! */
+  /* hack to support 2+4 internal chips
+   * who ever allowed me to write code??? -mager
+   */
   if (chip == (MPIO_INTERNAL_MEM+1)) sm = &m->internal;
+  if (chip == (MPIO_INTERNAL_MEM+3)) sm = &m->internal;
+  if (chip == (MPIO_INTERNAL_MEM+7)) sm = &m->internal;
   if (chip == MPIO_EXTERNAL_MEM) 
     {
       sm = &m->external;
