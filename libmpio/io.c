@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.5 2002/09/09 15:49:01 germeier Exp $
+ * $Id: io.c,v 1.6 2002/09/09 17:31:25 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -45,7 +45,36 @@
 #include "ecc.h"
 
 WORD index2blockaddress(WORD);
-int cluster2block(int mem, int sector);
+int  cluster2block(int mem, int sector);
+void fatentry2hw(mpio_fatentry_t *, BYTE *, DWORD *);
+
+void 
+fatentry2hw(mpio_fatentry_t *f, BYTE *chip, DWORD *address)
+{
+  mpio_smartmedia_t *sm;
+  
+  if (f->mem == MPIO_INTERNAL_MEM) 
+    {
+      sm       = &f->m->internal;
+      /*       hexdump((char *)&f->entry, 4); */
+      /*       hexdump((char *)&f->hw_address, 4); */
+      *chip    = f->hw_address / 0x1000000;    
+      *address = f->hw_address & 0x0ffffff;
+    }
+  if (f->mem == MPIO_EXTERNAL_MEM) 
+    {
+      sm        = &f->m->external;
+      *chip     = MPIO_EXTERNAL_MEM;
+      *address  = cluster2block(sm->size, f->entry);
+      *address *= BLOCK_SECTORS;
+
+      /* add offset to start of "data" area! */
+      *address += (sm->dir_offset + DIR_NUM - (2 * BLOCK_SECTORS));	
+    }
+  return;
+}
+
+
 
 /*
  * HELP!
@@ -486,29 +515,14 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
   int i=0;
   int nwrite, nread;
   mpio_smartmedia_t *sm;
-  BYTE  chip=0;
+  BYTE  chip;
   DWORD address;
   BYTE cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
 
-  if (mem == MPIO_INTERNAL_MEM) 
-    {
-      sm = &m->internal;
-      hexdump((char *)&f->entry, 4);
-      hexdump((char *)&f->hw_address, 4);
-      chip    = f->hw_address / 0x1000000;    
-      address = f->hw_address & 0x0ffffff;
-    }
-  if (mem == MPIO_EXTERNAL_MEM) 
-    {
-      sm = &m->external;
-      chip    = MPIO_EXTERNAL_MEM;
-      address = cluster2block(sm->size, f->entry);
-      address *= BLOCK_SECTORS;
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
-      /* add offset to start of "data" area! */
-      address += (sm->dir_offset + DIR_NUM - (2 * BLOCK_SECTORS));      
-	
-    }
+  fatentry2hw(f, &chip, &address);
 
   mpio_io_set_cmdpacket(GET_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
@@ -634,25 +648,10 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
   BYTE  chip=0;
   DWORD address;
 
-  if (mem == MPIO_INTERNAL_MEM) 
-    {
-      sm = &m->internal;
-      hexdump((char *)&f->entry, 4);
-      hexdump((char *)&f->hw_address, 4);
-      chip    = f->hw_address / 0x1000000;    
-      address = f->hw_address & 0x0ffffff;
-    }
-  if (mem == MPIO_EXTERNAL_MEM) 
-    {
-      sm = &m->external;
-      chip    = MPIO_EXTERNAL_MEM;
-      address = cluster2block(sm->size, f->entry);
-      address *= BLOCK_SECTORS;
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
-      /* add offset to start of "data" area! */
-      address += (sm->dir_offset + DIR_NUM - (2 * BLOCK_SECTORS));      
-	
-    }
+  fatentry2hw(f, &chip, &address);
 
 /*  Send command packet to MPIO  */
 

@@ -1,5 +1,11 @@
 2002-09-09  Markus Germeier  <mager@tzi.de>
 
+	* libmpio/io.c (fatentry2hw): added function
+	(mpio_io_block_read, mpio_io_block_delete): 
+	  use fatentry2hw
+
+2002-09-09  Markus Germeier  <mager@tzi.de>
+
 	* libmpio/mpio.c (mpio_memory_format): 
 	  updated code to format external SmartMedia cards
 	* libmpio/fat.c (mpio_fatentry_plus_plus, mpio_bootblocks_read): 
