@@ -1,3 +1,7 @@
+2003-07-14  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/directory.c (mpio_dentry_get_startcluster): 
+	  fixed a bug Yury stumbled across
+
 2003-07-07  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/directory.c (mpio_dentry_filename_write): 
 	  fixed one of my "famous" 8.3 filename handling "fixes" :-(

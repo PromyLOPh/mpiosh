@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.8 2003/07/07 21:54:19 germeier Exp $
+ * $Id: directory.c,v 1.9 2003/07/14 21:29:09 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -930,7 +930,7 @@ mpio_fatentry_t *
 mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
 {
   int s;
-  DWORD cluster;
+  int cluster;
   BYTE i_index;
   mpio_dir_slot_t *dentry;
   mpio_fatentry_t *new;
