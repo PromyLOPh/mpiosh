@@ -1,3 +1,7 @@
+2003-05-19  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/mpio.c (mpio_file_put_real): 
+	  fixed strncat bug found by Sergey. Thanks!
+
 2003-04-30  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/ecc.c: cleaned up ECC code
 
