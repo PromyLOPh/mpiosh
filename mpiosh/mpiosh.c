@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.14 2002/09/18 22:18:29 germeier Exp $
+ * $Id: mpiosh.c,v 1.15 2002/09/19 21:02:45 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -256,13 +256,13 @@ mpiosh_command_regex_fix(char *argv[])
     new_pos = buffer;
     *new_pos++ = '^';
     while (*help != '\0') {
-      if (*help == '*' && ((help = *walk) || (*(help - 1) != '.'))) {
+      if (*help == '*' && ((help == *walk) || (*(help - 1) != '.'))) {
 	*new_pos++ = '.';
 	*new_pos = *help;
       } else if ((*help == '.') && (*help != '*')) {
 	*new_pos++ = '\\';
 	*new_pos = *help;
-      } else if (*help == '?' && ((help = *walk) || (*(help - 1) != '\\'))) {
+      } else if (*help == '?' && ((help == *walk) || (*(help - 1) != '\\'))) {
 	*new_pos = '.';
       } else {
 	*new_pos = *help;

@@ -1,5 +1,8 @@
 2002-09-19  Andreas Buesching  <crunchy@tzi.de>
 
+	* mpiosh/mpiosh.c (mpiosh_command_regex_fix): hopefully fixed a
+	bug (Sorry Markus)
+
 	* mpiosh/callback.c (mpiosh_cmd_mput): using new error handling
 	functions
 
