@@ -1,3 +1,8 @@
+2003-04-07  Markus Germeier  <mager@tzi.de>
+	*  Mega-Update all over the place
+	   initial support for directories
+	   [BEWARE: this might have broken some things!!!]
+	
 2003-04-06  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/directory.c (mpio_dentry_put): Another 8.3 filename fix

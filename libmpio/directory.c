@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.15 2003/04/06 12:54:27 germeier Exp $
+ * $Id: directory.c,v 1.16 2003/04/06 23:09:20 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -104,7 +104,90 @@ mpio_charset_set(mpio_t *m, BYTE *charset)
   return r;
 }
 
+int     
+mpio_directory_init(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir,
+		    WORD self, WORD parent)
+{
+  mpio_dir_entry_t *dentry;
+  
+  memset(dir->dir,         0, BLOCK_SIZE);
+  memset(dir->dir,      0x20, 11);
+  memset(dir->dir+0x20, 0x20, 11);
 
+  dentry = (mpio_dir_entry_t *)dir->dir;
+  
+  strncpy(dentry->name, ".       ", 8);
+  strncpy(dentry->ext, "   ", 3);
+  dentry->start[0] = self & 0xff;
+  dentry->start[1] = self / 0x100;
+  dentry->attr = 0x10;
+  
+  dentry++;
+  strncpy(dentry->name, "..      ", 8);
+  strncpy(dentry->ext, "   ", 3);
+  dentry->start[0] = parent & 0xff;
+  dentry->start[1] = parent / 0x100;
+  dentry->attr = 0x10;
+
+  hexdumpn(2, dir->dir, 64);
+
+  return 0;
+}
+
+
+int     
+mpio_directory_read(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
+{
+  mpio_fatentry_t *f = 0;
+  
+  f = mpio_dentry_get_startcluster(m, mem, dir->dentry);
+
+  if (!f) 
+    {      
+      debug("something bad has happened here!");
+      exit (-1);      
+    }
+
+  mpio_io_block_read(m, mem, f, dir->dir);
+
+  hexdumpn(5, dir->dir, DIR_SIZE);	
+
+  return 0;
+}
+
+int     
+mpio_directory_write(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
+{
+  mpio_fatentry_t *f = 0;
+  
+  f = mpio_dentry_get_startcluster(m, mem, dir->dentry);
+  if (!f) 
+    {      
+      debug("something bad has happened here!");
+      exit (-1);      
+    }
+
+  if (mem==MPIO_INTERNAL_MEM) 
+    {
+      f->i_fat[0x01]= f->i_index;
+      if (m->model >= MPIO_MODEL_FD100) 
+	f->i_fat[0x0e] = f->i_index;	
+
+      /* only one block needed for directory */
+      f->i_fat[0x02]=0;
+      f->i_fat[0x03]=1;
+
+      /* set type to directory */
+      f->i_fat[0x06] = FTYPE_ENTRY;
+
+      hexdumpn(0, f->i_fat, 16);
+    }
+  
+  mpio_io_block_delete(m, mem, f);
+  mpio_io_block_write(m, mem, f, dir->dir);
+
+  return 0;
+}
 
 /* directory operations */
 BYTE *
@@ -113,12 +196,12 @@ mpio_directory_open(mpio_t *m, mpio_mem_t mem)
   BYTE *out;  
   if (mem == MPIO_EXTERNAL_MEM) {
     if (m->external.id)  { 
-      out = m->external.dir;
+      out = m->external.cdir->dir;
     } else {
       return NULL;
     }
   } else {    
-    out = m->internal.dir;
+    out = m->internal.cdir->dir;
   }
 
   if (out[0] == 0x00) 
@@ -130,6 +213,192 @@ mpio_directory_open(mpio_t *m, mpio_mem_t mem)
   debugn(3, "first dentry: %08x\n", out);
   
   return out;  
+}
+
+int     
+mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
+{
+  mpio_smartmedia_t *sm;
+  mpio_directory_t *new;
+  mpio_fatentry_t   *f, *current;
+  WORD self, parent;
+  struct tm tt;
+
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  if ((strcmp(dir, "..") == 0) ||
+      (strcmp(dir, ".") == 0))
+    {
+      debugn(2, "directory name not allowed: %s\n", dir);
+      return MPIO_ERR_DIR_NAME_ERROR;    
+    }
+
+  /* find free sector */
+  f = mpio_fatentry_find_free(m, mem, FTYPE_ENTRY);
+  if (!f) 
+    {
+      debug("could not free cluster for file!\n");
+      return (MPIO_ERR_FAT_ERROR);
+    } else {
+      self=f->entry;
+    }  
+
+  /* find file-id for internal memory */
+  if (mem==MPIO_INTERNAL_MEM) 
+    {      
+      f->i_index=mpio_fat_internal_find_fileindex(m);
+      debugn(2, "fileindex: %02x\n", f->i_index);
+      f->i_fat[0x01]= f->i_index;
+      if (m->model >= MPIO_MODEL_FD100) 
+	f->i_fat[0x0e] = f->i_index;	
+      self         = f->i_index;
+
+      /* only one block needed for directory */
+      f->i_fat[0x02]=0;
+      f->i_fat[0x03]=1;
+      hexdumpn(0, f->i_fat, 16);
+    }
+
+  if (sm->cdir == sm->root) 
+    {
+      parent=0;
+    } else {
+      current = mpio_dentry_get_startcluster(m, mem, sm->cdir->dentry);
+      if (mem==MPIO_INTERNAL_MEM)
+	{	  
+	  parent = current->i_index;
+	} else {
+	  parent = current->entry;
+	}
+    }
+
+
+  new = malloc(sizeof(mpio_directory_t));
+  mpio_directory_init(m, mem, new, self, parent);  
+
+  mpio_fatentry_set_eof(m ,mem, f);
+  mpio_io_block_write(m, mem, f, new->dir);
+  mpio_dentry_put(m, mem,
+		  dir, strlen(dir),
+		      mktime(&tt), 
+		      0, self, 0x10);
+  
+  free(new);
+  
+  return MPIO_OK;
+}
+
+int     
+mpio_directory_cd(mpio_t *m, mpio_mem_t mem, BYTE *dir)
+{
+  mpio_smartmedia_t *sm;
+  BYTE *p;
+  BYTE month, day, hour, minute, type;
+  BYTE fname[100];
+  WORD year;  
+  DWORD fsize;
+  int i, size;
+  BYTE pwd[INFO_LINE];
+  mpio_directory_t *old, *new;
+
+  if (strcmp(dir, ".")==0)
+    return MPIO_OK;
+
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  if (strcmp(dir, "..") == 0)
+    {
+      if (sm->cdir->prev)
+	{	  
+	  old            = sm->cdir;
+	  sm->cdir       = sm->cdir->prev;
+	  sm->cdir->next = NULL;
+	  free(old);
+	}
+
+      return MPIO_OK;
+    }
+
+  mpio_directory_pwd(m, mem, pwd);
+
+  if ((strlen(pwd) + strlen(dir) + 2) > INFO_LINE)
+  {
+      debugn(2, "directory name gets to long!\n");
+      return MPIO_ERR_DIR_TOO_LONG;    
+  }
+
+
+  p = mpio_dentry_find_name(m, mem, dir);
+  
+  /* second try */
+  if (!p)
+    p = mpio_dentry_find_name_8_3(m, mem, dir);
+
+  if (!p) 
+    {
+      debugn(2, "could not find directory: %s\n", dir);
+      return MPIO_ERR_DIR_NOT_FOUND;    
+    } 
+
+  mpio_dentry_get(m, mem, p,
+		  fname, 100,
+		  &year, &month, &day,
+		  &hour, &minute, &fsize,
+		  &type);
+
+  if (type != FTYPE_DIR)
+    {
+      debugn(2, "this is not a directory: %s\n", dir);
+      return MPIO_ERR_DIR_NOT_A_DIR;    
+    }
+
+  new             = malloc(sizeof(mpio_directory_t));
+  strcpy(new->name, dir);		   
+  new->next       = NULL;
+  new->prev       = sm->cdir;
+  new->dentry     = p;
+  sm->cdir->next  = new;
+  sm->cdir        = new;
+
+  mpio_directory_pwd(m, mem, pwd);
+
+  if (strcmp(dir, "/") != 0)
+    {
+      /* read new directory */
+      size=mpio_directory_read(m, mem, sm->cdir);      
+    }
+
+  return MPIO_OK;
+  
+}
+
+
+void    
+mpio_directory_pwd(mpio_t *m, mpio_mem_t mem, BYTE pwd[INFO_LINE])
+{
+  mpio_smartmedia_t *sm;  
+  mpio_directory_t  *d;
+
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  d = sm->root->next;
+  pwd[0] = 0;
+
+  if (!d)
+    strcat(pwd, "/");
+
+  while (d) 
+    {
+      strcat(pwd, "/");
+      debugn(2, "name: %s\n", d->name);
+      strcat(pwd, d->name);
+      d = d->next;
+    }    
+
+  return;
 }
 
 int
@@ -225,13 +494,13 @@ int
 mpio_dentry_get(mpio_t *m, mpio_mem_t mem, BYTE *buffer,                   
 		BYTE *filename, int filename_size,
 		WORD *year, BYTE *month, BYTE *day,
-		BYTE *hour, BYTE *minute, DWORD *fsize)
+		BYTE *hour, BYTE *minute, DWORD *fsize, BYTE *type)
 {
   BYTE filename_8_3[13];
   
   return mpio_dentry_get_real(m, mem, buffer, filename, filename_size, 
 			      filename_8_3,
-			      year, month, day, hour, minute, fsize);
+			      year, month, day, hour, minute, fsize, type);
 }
   
 /* TODO: please clean me up !!! */
@@ -240,7 +509,8 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
 		     BYTE *filename, int filename_size,
 		     BYTE *filename_8_3,
 		     WORD *year, BYTE *month, BYTE *day,
-		     BYTE *hour, BYTE *minute, DWORD *fsize)
+		     BYTE *hour, BYTE *minute, DWORD *fsize,
+		     BYTE *type)
 {
   int date, time;  
   int vfat = 0;  
@@ -319,12 +589,19 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
     i--;  
   filename_8_3[i] = 0;
   hexdumpn(4, filename_8_3, 13);
-  
+
   if (!vfat) 
     {    
       if (filename_size >= 12) 
 	{
 	  snprintf(filename, 13, "%s", filename_8_3);	    
+	  /* UGLY !! */      
+	  if (((strncmp(dentry->name, ".       ", 8)==0) &&
+	       (strncmp(dentry->ext, "   ", 3) == 0)))
+	    filename[1]=0;
+	  if (((strncmp(dentry->name, "..      ", 8)==0) &&
+	       (strncmp(dentry->ext, "   ", 3) == 0)))
+	    filename[2]=0;
 	} else {
 	  snprintf(filename, filename_size, "%s", "ERROR");
 	}
@@ -347,6 +624,13 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
   *fsize *= 0x100;
   *fsize += dentry->size[0];
 
+  if (dentry->attr & 0x10) {
+    /* is this a directory? */
+    *type = FTYPE_DIR;
+  } else {
+    *type = FTYPE_PLAIN;
+  }
+
   return(((BYTE *)dentry) - buffer);
 }
 
@@ -365,7 +649,7 @@ mpio_rootdir_read (mpio_t *m, mpio_mem_t mem)
     if (mpio_io_sector_read(m, mem, (sm->dir_offset + i), recvbuff))
       return 1;
 
-    memcpy(sm->dir + (i * SECTOR_SIZE), recvbuff, SECTOR_SIZE);
+    memcpy(sm->root->dir + (i * SECTOR_SIZE), recvbuff, SECTOR_SIZE);
   }
 
   return (0);
@@ -379,7 +663,7 @@ mpio_rootdir_clear (mpio_t *m, mpio_mem_t mem)
   if (mem == MPIO_INTERNAL_MEM) sm=&m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm=&m->external;
 
-  memset(sm->dir, 0x00, DIR_SIZE);
+  memset(sm->root->dir, 0x00, DIR_SIZE);
 
   return 0;
 }
@@ -401,14 +685,18 @@ mpio_dentry_get_filesize(mpio_t *m, mpio_mem_t mem, BYTE *p)
     s -= DIR_ENTRY_SIZE ;
   }
 
-  fsize  = dentry->size[3];
-  fsize *= 0x100;
-  fsize += dentry->size[2];
-  fsize *= 0x100;
-  fsize += dentry->size[1];
-  fsize *= 0x100;
-  fsize += dentry->size[0];
-
+  if (dentry->attr & 0x10) {
+    fsize = BLOCK_SIZE;
+  } else {
+    fsize  = dentry->size[3];
+    fsize *= 0x100;
+    fsize += dentry->size[2];
+    fsize *= 0x100;
+    fsize += dentry->size[1];
+    fsize *= 0x100;
+    fsize += dentry->size[0];
+  }
+  
   return fsize; 
 }
 
@@ -440,6 +728,7 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
 {
   int s;
   DWORD cluster;
+  BYTE i_index;
   mpio_dir_slot_t *dentry;
   mpio_fatentry_t *new;
 
@@ -456,7 +745,10 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
   cluster = dentry->start[1] * 0x100 + dentry->start[0];
 
   if (mem == MPIO_INTERNAL_MEM) 
-    cluster = mpio_fat_internal_find_startsector(m, cluster);
+    {
+      i_index=dentry->start[0];
+      cluster = mpio_fat_internal_find_startsector(m, cluster);
+    }
   if (cluster < 0)
     return NULL;
 
@@ -465,8 +757,11 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
   if (mem == MPIO_INTERNAL_MEM) 
     { 
       new->entry=cluster;
+      new->i_index=i_index;
       mpio_fatentry_entry2hw(m, new);      
     }  
+
+  debugn(2,"i_index=0x%02x\n", new->i_index);
   
   return new; 
 }
@@ -474,7 +769,7 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
 int
 mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
 		BYTE *filename, int filename_size,
-		time_t date, DWORD fsize, WORD ssector)
+		time_t date, DWORD fsize, WORD ssector, BYTE attr)
 {
   BYTE *unicode = 0;
   BYTE *back, *fback;
@@ -505,9 +800,9 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
       p += 0x20;
   } else {
     if (mem == MPIO_EXTERNAL_MEM) 
-      p = m->external.dir;
+      p = m->external.cdir->dir;
     if (mem == MPIO_INTERNAL_MEM) 
-      p = m->internal.dir;
+      p = m->internal.cdir->dir;
   }
 
   /* generate vfat filename in UNICODE */
@@ -621,7 +916,7 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
   memcpy(dentry->name, f_8_3, 8);
   memcpy(dentry->ext, f_8_3+9, 3);
 
-  dentry->attr = 0x20;
+  dentry->attr = attr;
   dentry->lcase = 0x00;
 
 
@@ -676,7 +971,7 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
 			  fname, 128,
 			  fname_8_3,
 			  &wdummy, &bdummy, &bdummy,
-			  &bdummy, &bdummy, &ddummy);
+			  &bdummy, &bdummy, &ddummy, &bdummy);
     if ((strcmp(fname_8_3, filename) == 0) &&
 	(strcmp(filename,fname_8_3) == 0)) {
       found = p;
@@ -704,7 +999,7 @@ mpio_dentry_find_name(mpio_t *m, BYTE mem, BYTE *filename)
     mpio_dentry_get (m, mem, p,
 		     fname, 128,
 		     &wdummy, &bdummy, &bdummy,
-		     &bdummy, &bdummy, &ddummy);
+		     &bdummy, &bdummy, &ddummy, &bdummy);
     if ((strcmp(fname,filename) == 0) && (strcmp(filename,fname) == 0)) {
       found = p;
       p = NULL;
@@ -751,13 +1046,13 @@ mpio_dentry_delete(mpio_t *m, BYTE mem, BYTE *filename)
   /* clear new buffer */
   memset(tmp, 0, DIR_SIZE);
   /* copy before delete */
-  if (start != sm->dir)
-    memcpy(tmp, sm->dir, (start - (sm->dir)));
+  if (start != sm->cdir->dir)
+    memcpy(tmp, sm->cdir->dir, (start - (sm->cdir->dir)));
   /* copy after delete */
-  memcpy(tmp + (start - (sm->dir)), (start + size),
-	 (sm->dir + DIR_SIZE - (start + size)));
+  memcpy(tmp + (start - (sm->cdir->dir)), (start + size),
+	 (sm->cdir->dir + DIR_SIZE - (start + size)));
 
-  memcpy(sm->dir, tmp, DIR_SIZE);
+  memcpy(sm->cdir->dir, tmp, DIR_SIZE);
   
   return 0;
 }
@@ -789,7 +1084,7 @@ mpio_dentry_move(mpio_t *m,mpio_mem_t mem,BYTE *m_file,BYTE *a_file) {
   // -- if a_file == NULL this is the start of the directory.
 
   if(a_file==NULL) {
-    b_file = sm->dir;
+    b_file = sm->cdir->dir;
   } else {
     b_file = a_file + a_file_s;
   }
@@ -805,8 +1100,8 @@ mpio_dentry_move(mpio_t *m,mpio_mem_t mem,BYTE *m_file,BYTE *a_file) {
 
   if(m_file > b_file) {
     fprintf(stderr,"U ");
-    t0 = sm->dir;
-    s0 = b_file - sm->dir;
+    t0 = sm->cdir->dir;
+    s0 = b_file - sm->cdir->dir;
 
     t1 = m_file;
     s1 = m_file_s;
@@ -815,11 +1110,11 @@ mpio_dentry_move(mpio_t *m,mpio_mem_t mem,BYTE *m_file,BYTE *a_file) {
     s2 = m_file - b_file;
 
     t3 = m_file + m_file_s;
-    s3 = DIR_SIZE - (m_file-sm->dir) - m_file_s;
+    s3 = DIR_SIZE - (m_file-sm->cdir->dir) - m_file_s;
   } else { 
     fprintf(stderr,"D ");
-    t0 = sm->dir;
-    s0 = m_file - sm->dir;
+    t0 = sm->cdir->dir;
+    s0 = m_file - sm->cdir->dir;
     
     t1 = m_file + m_file_s;
     s1 = a_file + a_file_s - (m_file + m_file_s);
@@ -828,7 +1123,7 @@ mpio_dentry_move(mpio_t *m,mpio_mem_t mem,BYTE *m_file,BYTE *a_file) {
     s2 = m_file_s;
 
     t3 = b_file;
-    s3 = DIR_SIZE - (b_file - sm->dir);
+    s3 = DIR_SIZE - (b_file - sm->cdir->dir);
   }
 
   if(s0) {
@@ -850,7 +1145,7 @@ mpio_dentry_move(mpio_t *m,mpio_mem_t mem,BYTE *m_file,BYTE *a_file) {
   fprintf(stderr," -- t0=%ld, s0=%d, t1=%ld, s1=%d, t2=%ld, s2=%d, t3=%ld, s3=%d; sum=%d, DIRSIZE=%d\n",
 	  (long)t0,s0,(long)t1,s1,(long)t2,s2,(long)t3,s3,s0+s1+s2+s3,DIR_SIZE);
 
-  memcpy(sm->dir, tmp, DIR_SIZE);
+  memcpy(sm->cdir->dir, tmp, DIR_SIZE);
 }
 
 void    
@@ -882,10 +1177,10 @@ mpio_dentry_switch(mpio_t *m, mpio_mem_t mem, BYTE *file1, BYTE *file2)
   current = tmp;
   memset(tmp, 0xff, DIR_SIZE);
   /* before the first file */
-  if (p1 != sm->dir)
+  if (p1 != sm->cdir->dir)
     {      
-      memcpy(current, sm->dir, p1 - sm->dir);
-      current += (p1 - sm->dir);
+      memcpy(current, sm->cdir->dir, p1 - sm->cdir->dir);
+      current += (p1 - sm->cdir->dir);
     }  
   /* the second file*/
   memcpy(current, p2, size2);
@@ -897,10 +1192,10 @@ mpio_dentry_switch(mpio_t *m, mpio_mem_t mem, BYTE *file1, BYTE *file2)
   memcpy(current, p1, size1);
   current += size1;
   /* and the rest */
-  memcpy(current, p2+size2, (sm->dir+DIR_SIZE-p2-size2));
+  memcpy(current, p2+size2, (sm->cdir->dir+DIR_SIZE-p2-size2));
 
   /* really update the directory */
-  memcpy(sm->dir, tmp, DIR_SIZE);
+  memcpy(sm->cdir->dir, tmp, DIR_SIZE);
 
   return;
 }

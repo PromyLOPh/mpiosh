@@ -1,4 +1,4 @@
-$Id: TODO,v 1.18 2002/11/04 16:25:17 crunchy Exp $
+$Id: TODO,v 1.19 2003/04/06 23:09:19 germeier Exp $
 
 * Kernel Module
   - the MPIO can no multitasking, so:
@@ -24,6 +24,9 @@ $Id: TODO,v 1.18 2002/11/04 16:25:17 crunchy Exp $
     * write code to fix defective CIS (??), MBR, PBR [DONE]
   - implement formating of internal memory (BEWARE !!!!)
     [DONE: BEWARE no config files are written!!!!]
+  - written config files file setting/permissions seem not
+    to be right for the newer players (CONFIG.DAT appears as
+    a playable track)
 
 * mpio_tool [is deprecated, use mpiosh]
 

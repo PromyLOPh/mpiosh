@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.7 2003/03/06 23:41:30 germeier Exp $
+ * $Id: global.c,v 1.8 2003/04/06 23:09:20 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -56,6 +56,15 @@ struct mpiosh_cmd_t commands[] = {
   { "dir", (char *[]){ "ls", "ll", NULL }, NULL,
     "  list content of current memory card",
     mpiosh_cmd_dir, NULL },
+  { "pwd", NULL, NULL,
+    "  print the current working directory",
+    mpiosh_cmd_pwd, NULL },
+  { "mkdir", (char *[]){ "md", NULL }, "<directory>",
+    "  make a new directory",
+    mpiosh_cmd_mkdir, mpiosh_readline_comp_mpio_file },
+  { "cd", NULL, "<directory>",
+    "  change the current working directory",
+    mpiosh_cmd_cd, mpiosh_readline_comp_mpio_file },
   { "info", NULL, NULL,
     "  show information about MPIO player",
     mpiosh_cmd_info, NULL },

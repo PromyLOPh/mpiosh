@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.14 2003/02/21 18:28:56 crunchy Exp $
+ * $Id: mpio.h,v 1.15 2003/04/06 23:09:20 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -75,11 +75,17 @@ BYTE   mpio_charset_set(mpio_t *, BYTE *);
 
 /* context, memory bank */
 BYTE*	mpio_directory_open(mpio_t *, mpio_mem_t);
+/* context, memory bank, directory name */
+int     mpio_directory_make(mpio_t *, mpio_mem_t, BYTE *);
+/* context, memory bank, directory name */
+int     mpio_directory_cd(mpio_t *, mpio_mem_t, BYTE *);
+/* context, memory bank, directory name buffer space */
+void    mpio_directory_pwd(mpio_t *, mpio_mem_t, BYTE pwd[INFO_LINE]);  
 /* context, dir context */
 BYTE*	mpio_dentry_next(mpio_t *, mpio_mem_t, BYTE *);
 /* context, dir context */
 int	mpio_dentry_get(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int,WORD *,
-			BYTE *, BYTE *, BYTE *, BYTE *, DWORD *);
+			BYTE *, BYTE *, BYTE *, BYTE *, DWORD *, BYTE *);
 
 /* 
  * reading/writing/deleting of files
@@ -143,7 +149,7 @@ int mpio_file_move(mpio_t *,mpio_mem_t m,mpio_filename_t,mpio_filename_t);
 int	mpio_memory_format(mpio_t *, mpio_mem_t, mpio_callback_t); 
 
 /* mpio_sync has to be called after every set of mpio_file_{del,put}
- * operations to write the current state of FAT and root directory.
+ * operations to write the current state of FAT and (root) directory.
  * This is done explicitly to avoid writing these informations to often
  * and thereby exhausting the SmartMedia chips
  */

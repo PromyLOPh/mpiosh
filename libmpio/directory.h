@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.h,v 1.7 2003/02/21 18:28:55 crunchy Exp $
+ * $Id: directory.h,v 1.8 2003/04/06 23:09:20 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -38,11 +38,17 @@ int     mpio_rootdir_read (mpio_t *, mpio_mem_t);
 int	mpio_rootdir_clear (mpio_t *, mpio_mem_t);
 int     mpio_rootdir_format(mpio_t *, mpio_mem_t);
 
+/* directory opertations */
+int     mpio_directory_init(mpio_t *, mpio_mem_t, mpio_directory_t *, 
+			    WORD, WORD);
+int     mpio_directory_read(mpio_t *, mpio_mem_t, mpio_directory_t *);
+int     mpio_directory_write(mpio_t *, mpio_mem_t, mpio_directory_t *);
+
 /* operations on a single directory entry */
 int	mpio_dentry_get_size(mpio_t *, mpio_mem_t, BYTE *);
 int	mpio_dentry_get_raw(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int);
 int	mpio_dentry_put(mpio_t *, mpio_mem_t, BYTE *, int,
-			time_t, DWORD, WORD);
+			time_t, DWORD, WORD, BYTE);
 BYTE *	mpio_dentry_find_name_8_3(mpio_t *, BYTE, BYTE *);
 BYTE *	mpio_dentry_find_name(mpio_t *, BYTE, BYTE *);
 int	mpio_dentry_delete(mpio_t *, BYTE, BYTE *);
@@ -63,7 +69,8 @@ void    mpio_dentry_copy_from_slot(BYTE *, mpio_dir_slot_t *);
 void    mpio_dentry_copy_to_slot(BYTE *, mpio_dir_slot_t *);
 int	mpio_dentry_get_real(mpio_t *, mpio_mem_t, BYTE *, BYTE *, 
 			     int, BYTE[12],
-			     WORD *, BYTE *, BYTE *, BYTE *, BYTE *, DWORD *);
+			     WORD *, BYTE *, BYTE *, BYTE *, BYTE *, DWORD *,
+			     BYTE *);
 
 #ifdef __cplusplus
 }

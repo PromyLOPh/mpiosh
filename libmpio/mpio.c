@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.47 2003/04/05 12:19:49 germeier Exp $
+ * $Id: mpio.c,v 1.48 2003/04/06 23:09:20 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -81,6 +81,14 @@ static mpio_error_t mpio_errors[] = {
     "There are not enough rights to access the file/directory." },
   { MPIO_ERR_WRITING_FILE,
     "There are no permisson to write to the selected file." },
+  { MPIO_ERR_DIR_TOO_LONG,
+    "The selected directory name is to long." },
+  { MPIO_ERR_DIR_NOT_FOUND,
+    "The selected directory can not be found." },
+  { MPIO_ERR_DIR_NOT_A_DIR,
+    "The selected directory is not a directory." },
+  { MPIO_ERR_DIR_NAME_ERROR,
+    "The selected directory name is not allowed." },
   { MPIO_ERR_INT_STRING_INVALID,
     "Internal Error: Supported is invalid!" } 	
 };
@@ -121,7 +129,7 @@ mpio_check_filename(mpio_filename_t filename)
 void 
 mpio_init_internal(mpio_t *m)
 {
-  mpio_smartmedia_t *sm = &(m->internal);
+  mpio_smartmedia_t *sm = &m->internal;
   BYTE i_offset         = 0x18;
 
   /* init main memory parameters */
@@ -187,7 +195,12 @@ mpio_init_internal(mpio_t *m)
 
   /* Read directory from internal memory */
   sm->dir_offset=0;
+  sm->root = malloc (sizeof(mpio_directory_t));
+  sm->root->name[0]    = 0;
+  sm->root->next    = NULL;
+  sm->root->prev    = NULL;  
   mpio_rootdir_read(m, MPIO_INTERNAL_MEM);
+  sm->cdir = sm->root;
 }
 
 void
@@ -234,6 +247,14 @@ mpio_init_external(mpio_t *m)
       sm->max_blocks  = sm->size / 16 * 1024;      /* 1 cluster == 16 KB */
       sm->spare       = malloc(sm->max_blocks * 0x10);
     }
+
+  /* setup directory support */
+  sm->dir_offset=0;
+  sm->root = malloc (sizeof(mpio_directory_t));
+  sm->root->name[0] = 0;
+  sm->root->next    = NULL;
+  sm->root->prev    = NULL;
+  sm->cdir = sm->root;
 }
 
 mpio_t *
@@ -822,7 +843,7 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
       mpio_dentry_put(m, mem,
 		      o_filename, strlen(o_filename),
 		      ((memory)?mktime(&tt):file_stat.st_ctime), 
-		      fsize, start);
+		      fsize, start, 0x20);
     }  
 
   return fsize-filesize;
@@ -1021,6 +1042,13 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
+  if ((strcmp(filename, "..") == 0) ||
+      (strcmp(filename, ".") == 0))
+    {
+      debugn(2, "directory name not allowed: %s\n", filename);
+      return MPIO_ERR_DIR_NAME_ERROR;    
+    }
+
   /* find file */
   p = mpio_dentry_find_name(m, mem, filename);
   if (!p)
@@ -1099,14 +1127,14 @@ mpio_memory_dump(mpio_t *m, mpio_mem_t mem)
   if (mem == MPIO_INTERNAL_MEM) 
     {      
       hexdump(m->internal.fat, m->internal.max_blocks*0x10);
-      hexdump(m->internal.dir, DIR_SIZE);
+      hexdump(m->internal.root->dir, DIR_SIZE);
     }
   
   if (mem == MPIO_EXTERNAL_MEM) 
     {      
       hexdump(m->external.spare, m->external.max_blocks*0x10);
       hexdump(m->external.fat,   m->external.fat_size*SECTOR_SIZE);
-      hexdump(m->external.dir, DIR_SIZE);
+      hexdump(m->external.root->dir, DIR_SIZE);
     }
   
   for (i = 0 ; i<=0x100 ; i++) 

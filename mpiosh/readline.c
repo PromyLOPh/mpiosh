@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: readline.c,v 1.5 2002/10/29 20:03:35 crunchy Exp $
+ * $Id: readline.c,v 1.6 2003/04/06 23:09:20 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -84,7 +84,7 @@ mpiosh_readline_comp_mpio_file(const char *text, int state)
 {
   static BYTE *p;
   char *arg = NULL;
-  BYTE month, day, hour, minute;
+  BYTE month, day, hour, minute, type;
   char fname[100];
   WORD year;  
   DWORD fsize;  
@@ -102,7 +102,7 @@ mpiosh_readline_comp_mpio_file(const char *text, int state)
     mpio_dentry_get(mpiosh.dev, mpiosh.card, p,
 		    fname, 100,
 		    &year, &month, &day,
-		    &hour, &minute, &fsize);
+		    &hour, &minute, &fsize, &type);
 
     if (strstr(fname, text) == fname) {
       arg = strdup(fname);

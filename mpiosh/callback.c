@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.34 2003/03/08 17:28:20 germeier Exp $
+ * $Id: callback.c,v 1.35 2003/04/06 23:09:20 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -120,7 +120,7 @@ void
 mpiosh_cmd_dir(char *args[])
 {
   BYTE *p;
-  BYTE month, day, hour, minute;
+  BYTE month, day, hour, minute, type;
   BYTE fname[100];
   WORD year;  
   DWORD fsize;  
@@ -136,13 +136,54 @@ mpiosh_cmd_dir(char *args[])
     mpio_dentry_get(mpiosh.dev, mpiosh.card, p,
 		    fname, 100,
 		    &year, &month, &day,
-		    &hour, &minute, &fsize);
+		    &hour, &minute, &fsize,
+		    &type);
 
-    printf ("%02d.%02d.%04d %02d:%02d  %9d - %s\n",
-	    day, month, year, hour, minute, fsize, fname);
+    printf ("%02d.%02d.%04d %02d:%02d  %9d %c %s\n",
+	    day, month, year, hour, minute, fsize, type, fname);
 
     p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
   }  
+}
+
+void
+mpiosh_cmd_pwd(char *args[])
+{
+  BYTE pwd[INFO_LINE];
+  
+  UNUSED(args);
+  
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+
+  mpio_directory_pwd(mpiosh.dev, mpiosh.card, pwd);
+  printf ("%s\n", pwd);
+  
+}
+
+void
+mpiosh_cmd_mkdir(char *args[])
+{
+  BYTE pwd[INFO_LINE];
+  
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+
+  mpio_directory_make(mpiosh.dev, mpiosh.card, args[0]);
+  mpio_sync(mpiosh.dev, mpiosh.card);
+
+}
+
+void
+mpiosh_cmd_cd(char *args[])
+{
+  BYTE pwd[INFO_LINE];
+  
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+
+  mpio_directory_cd(mpiosh.dev, mpiosh.card, args[0]);
+
+  mpio_directory_pwd(mpiosh.dev, mpiosh.card, pwd);
+  printf ("directory is now: %s\n", pwd);
+  
 }
 
 void
@@ -296,7 +337,7 @@ mpiosh_cmd_mget(char *args[])
   regex_t	regex;
   BYTE		fname[100];
   BYTE          errortext[100];
-  BYTE		month, day, hour, minute;
+  BYTE		month, day, hour, minute, type;
   WORD		year;  
   DWORD		fsize;  
   int           found;
@@ -316,7 +357,7 @@ mpiosh_cmd_mget(char *args[])
       while (p != NULL) {
 	memset(fname, '\0', 100);
 	mpio_dentry_get(mpiosh.dev, mpiosh.card, p, fname, 100,
-			&year, &month, &day, &hour, &minute, &fsize);
+			&year, &month, &day, &hour, &minute, &fsize, &type);
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
 	  found = 1;
@@ -482,7 +523,7 @@ mpiosh_cmd_mdel(char *args[])
   regex_t	regex;
   BYTE		fname[100];
   BYTE          errortext[100];
-  BYTE		month, day, hour, minute;
+  BYTE		month, day, hour, minute, type;
   WORD		year;  
   DWORD		fsize;  
   int           deleted = 0;
@@ -500,7 +541,7 @@ mpiosh_cmd_mdel(char *args[])
       while ((p != NULL) && (!mpiosh_cancel)) {
 	memset(fname, '\0', 100);
 	mpio_dentry_get(mpiosh.dev, mpiosh.card, p, fname, 100,
-			&year, &month, &day, &hour, &minute, &fsize);
+			&year, &month, &day, &hour, &minute, &fsize, &type);
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
 	  /* this line has to be above the del, or we won't write
@@ -535,7 +576,7 @@ void
 mpiosh_cmd_dump(char *args[])
 {
   BYTE *p;
-  BYTE month, day, hour, minute;
+  BYTE month, day, hour, minute, type;
   BYTE fname[256];
   char *arg[2];
   WORD year;  
@@ -555,7 +596,7 @@ mpiosh_cmd_dump(char *args[])
     mpio_dentry_get(mpiosh.dev, mpiosh.card, p,
 		    fname, 256,
 		    &year, &month, &day,
-		    &hour, &minute, &fsize);
+		    &hour, &minute, &fsize, &type);
 
     mpiosh_cmd_mget(arg);
     

@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.17 2003/04/04 09:25:38 germeier Exp $
+ * $Id: defs.h,v 1.18 2003/04/06 23:09:20 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -73,7 +73,9 @@ typedef enum { FTYPE_CHAN  = 0x00,
                FTYPE_OTHER = 'H',
                FTYPE_MEMO  = 'M',
                FTYPE_WAV   = 'V',
-               FTYPE_ENTRY = 'R' } mpio_filetype_t;
+               FTYPE_ENTRY = 'R',
+               FTYPE_DIR   = 'D', 
+               FTYPE_PLAIN = '-'} mpio_filetype_t;
 
 /* fixed filenames */
 #define MPIO_CONFIG_FILE  "CONFIG.DAT"
@@ -129,6 +131,7 @@ typedef struct {
   char *msg;
 } mpio_error_t;
 
+#define MPIO_OK                          0
 #define MPIO_ERR_FILE_NOT_FOUND		-1
 #define MPIO_ERR_NOT_ENOUGH_SPACE	-2
 #define MPIO_ERR_FILE_EXISTS		-3
@@ -136,6 +139,10 @@ typedef struct {
 #define MPIO_ERR_READING_FILE		-5
 #define MPIO_ERR_PERMISSION_DENIED	-6
 #define MPIO_ERR_WRITING_FILE		-7
+#define MPIO_ERR_DIR_TOO_LONG           -8
+#define MPIO_ERR_DIR_NOT_FOUND          -9
+#define MPIO_ERR_DIR_NOT_A_DIR         -10
+#define MPIO_ERR_DIR_NAME_ERROR        -11
 /* internal errors, occur when UI has errors! */
 #define MPIO_ERR_INT_STRING_INVALID	-101
 
@@ -172,6 +179,22 @@ typedef struct {
   DWORD  SumSector;
 } mpio_disk_phy_t;
 
+/* */
+
+struct mpio_directory_tx {
+  BYTE name[INFO_LINE];
+  BYTE dir[BLOCK_SIZE];
+  
+  BYTE *dentry;
+    
+  struct mpio_directory_tx *prev;
+  struct mpio_directory_tx *next;
+    
+};
+
+typedef struct mpio_directory_tx mpio_directory_t;
+
+
 /* view of a SmartMedia(tm) card */
 typedef struct {
   BYTE		id;
@@ -198,6 +221,10 @@ typedef struct {
   int  fat_nums;               /* # of FATs */
   BYTE * fat;                  /* *real FAT (like in block allocation :-) */
 
+  /* needed for directory support */
+  mpio_directory_t *root; /* root directory */
+  mpio_directory_t *cdir; /* current directory */
+
   /* how many physical blocks are available
    * for internal memory is this value equal to max_cluster
    */
@@ -207,9 +234,6 @@ typedef struct {
   /* lookup table for phys.<->log. block mapping */
   mpio_zonetable_t zonetable;
 
-  /* seems to be a fixed size according to the 
-     Samsung documentation */
-  BYTE dir[DIR_SIZE];                  /* file index */
 } mpio_smartmedia_t;
 
 

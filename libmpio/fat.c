@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.25 2003/04/04 22:08:53 germeier Exp $
+ * $Id: fat.c,v 1.26 2003/04/06 23:09:20 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -837,24 +837,31 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
 
-    f=mpio_fatentry_new(m, mem, 0, FTYPE_MUSIC);
-    mpio_io_block_delete(m, mem, f);
-    free(f);
-
-    memset(dummy, 0x00, BLOCK_SIZE);
-    
-    /* only write the FAT */
-    for (i= 0; i< 0x20; i++)
-      {
-
-	if (i<DIR_NUM) 
+    if (sm->cdir == sm->root) 
+      {	
+	f=mpio_fatentry_new(m, mem, 0, FTYPE_MUSIC);
+	mpio_io_block_delete(m, mem, f);
+	free(f);
+	
+	memset(dummy, 0x00, BLOCK_SIZE);
+	
+	/* only write the root dir */
+	for (i= 0; i< 0x20; i++)
 	  {
-	    mpio_io_sector_write(m, mem, i, (sm->dir + SECTOR_SIZE * i));
-	  } else {
-	    /* fill the rest of the block with zeros */
-	    mpio_io_sector_write(m, mem, i, dummy);
-	  }	
-      }    
+	    
+	    if (i<DIR_NUM) 
+	      {
+		mpio_io_sector_write(m, mem, i, 
+				     (sm->root->dir + SECTOR_SIZE * i));
+	      } else {
+		/* fill the rest of the block with zeros */
+		mpio_io_sector_write(m, mem, i, dummy);
+	      }	
+	  }    
+      } else {
+	mpio_directory_write(m, mem, sm->cdir);
+      }
+    
   }
   
   if (mem == MPIO_EXTERNAL_MEM) 
@@ -896,9 +903,15 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
 	
 	if (i>=sm->dir_offset)
 	  mpio_io_sector_write(m, mem, i, 
-			       (sm->dir + (i - sm->dir_offset) * SECTOR_SIZE));
+			       (sm->root->dir + 
+				(i - sm->dir_offset) * SECTOR_SIZE));
       }
-    }  
+      
+      if (sm->cdir != sm->root) 
+	mpio_directory_write(m, mem, sm->cdir);
+      
+    }
+  
     
   return 0;
 }
