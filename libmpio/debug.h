@@ -4,7 +4,7 @@
  * Author: Dirk Meyer  <dmeyer@tzi.de>
  *         Andreas Büsching <crunchy@tzi.de>
  *
- * $Id: debug.h,v 1.1 2003/04/23 08:34:14 crunchy Exp $
+ * $Id: debug.h,v 1.4 2003/04/23 09:03:38 crunchy Exp $
  */
 
 #ifndef _MPIO_DEBUG_H_
