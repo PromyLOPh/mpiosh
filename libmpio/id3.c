@@ -1,5 +1,5 @@
 /*
- * $Id: id3.c,v 1.1 2003/04/19 09:32:48 germeier Exp $
+ * $Id: id3.c,v 1.2 2003/04/21 10:37:16 germeier Exp $
  *
  *  Library for accessing Digit@lways MPIO players
  *  Copyright (C) 2003 Markus Germeier
@@ -54,8 +54,16 @@ void
 mpio_id3_copy_tag(BYTE *src, BYTE *dest, int *offset)
 {
   int i=0;
+  int last=0;
   
-  while((*offset<(INFO_LINE-1)) && (src[i]!=0x00))
+  /* find last non-space character, so we can strip */
+  /* trailing spaces                                */
+  while(src[i])
+    if (src[i++]!=0x20)
+      last=i;  
+
+  i=0;
+  while((*offset<(INFO_LINE-1)) && (src[i]) && (i<last))
     dest[(*offset)++]=src[i++];
 }  
 
