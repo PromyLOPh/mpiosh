@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.43 2003/03/22 19:31:05 germeier Exp $
+ * $Id: mpio.c,v 1.44 2003/03/24 19:19:18 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -193,7 +193,9 @@ mpio_init_external(mpio_t *m)
   while((e_offset < 0x3a) && !(mpio_id_valid(m->version[e_offset])))
     e_offset++;
   
-  if (mpio_id_valid(m->version[e_offset]))
+  if ((mpio_id_valid(m->version[e_offset])) &&
+      (m->model != MPIO_MODEL_FL100)) /* ignore external memory ATM until
+					 we know how to support it! */
     {
       sm->manufacturer = m->version[e_offset];
       sm->id = m->version[e_offset + 1];
@@ -306,8 +308,8 @@ mpio_init(mpio_callback_init_t progress_callback)
   } else if (strncmp(new_mpio->version, "FL100", 5) == 0) {
     /* we assume this model is not supported */
     new_mpio->model = MPIO_MODEL_FL100;
-    debug("FL100 found: Beware, this model is assumed to be not supported"
-	  " at the moment because it uses MultiMediaCards instead of SmartMedia\n");
+    debug("FL100 found: External memory is ignored, because we don't know how"
+	  " to support it at the moment (MultiMediaCards instead of SmartMedia)\n");
   } else if (strncmp(new_mpio->version, "FY100", 5) == 0) {
     new_mpio->model = MPIO_MODEL_FY100;
     /* I assume this is like the FD100/FL100, I didn't had the chance to 
