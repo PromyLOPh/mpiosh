@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.40 2003/04/19 11:41:26 germeier Exp $
+ * $Id: callback.c,v 1.41 2003/04/19 23:58:02 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -734,6 +734,25 @@ mpiosh_cmd_switch(char *args[])
     printf("switch <file1> <file2>\n");
   }
 
+}
+
+void
+mpiosh_cmd_rename(char *args[])
+{
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+
+  if(args[0] && args[1] && !args[2]) {
+    if ((mpio_file_rename(mpiosh.dev, mpiosh.card,
+			  args[0], args[1])) == -1) {
+      mpio_perror("error");
+    } else {
+      mpio_sync(mpiosh.dev, mpiosh.card);
+    }
+    
+  } else {
+    fprintf(stderr, "error: wrong number of arguments given\n");
+    printf("rename <oldfilename> <newfilename>\n");
+  }
 }
 
 void

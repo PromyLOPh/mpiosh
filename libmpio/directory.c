@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.17 2003/04/11 21:42:57 germeier Exp $
+ * $Id: directory.c,v 1.18 2003/04/19 23:58:02 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -421,6 +421,155 @@ mpio_directory_pwd(mpio_t *m, mpio_mem_t mem, BYTE pwd[INFO_LINE])
   return;
 }
 
+mpio_dir_entry_t *
+mpio_dentry_filename_write(mpio_t *m, mpio_mem_t mem, BYTE *p, 
+			   BYTE *filename, int filename_size)
+{
+  BYTE *unicode = 0;
+  BYTE *back, *fback;
+  BYTE *fname = 0;
+  iconv_t ic;
+  int in = 0, out = 0;
+  int fin = 0, fout = 0;
+  int count = 0;
+  BYTE index;
+  BYTE f_8_3[13];
+  mpio_dir_slot_t  *slot;
+  mpio_dir_entry_t *dentry;
+  int i, j, points;
+  
+  /* generate vfat filename in UNICODE */
+  ic = iconv_open(UNICODE, m->charset);
+  fin = in = filename_size + 1;
+  fout = out = filename_size * 2 + 2 + 26;
+  fname = malloc(in);
+  fback = fname;
+  unicode = malloc(out);
+  back = unicode;
+
+  memset(fname, 0, in);
+  snprintf(fname, in, "%s", filename);
+  memset(unicode, 0xff, out);
+  iconv(ic, (char **)&fback, &fin, (char **)&back, &fout);
+  iconv_close(ic);
+  hexdump(fname, in);
+  hexdump(unicode, out);
+
+  back = unicode;
+  
+  count = filename_size / 13;
+  if (filename_size % 13)
+    count++;
+
+  slot = (mpio_dir_slot_t *)p;
+
+  index = 0x40 + count;
+  while (count > 0) {
+    mpio_dentry_copy_to_slot(back + ((count - 1) * 26), slot);
+    hexdump((char *)back + ((count - 1) * 26), 0x20);
+    slot->id = index;
+    slot->attr = 0x0f;
+    slot->reserved = 0x00;
+    slot->start[0] = 0x00;
+    slot->start[1] = 0x00;
+    /* FIXME: */
+    slot->alias_checksum = 0x00;   // checksum for 8.3 alias 
+
+    hexdump((char *)slot, 0x20);
+    
+    slot++;
+    count--;
+    index = count;
+  }
+
+/*   memcpy(p, m->internal.dir+0x220, 0x20); */
+
+/*   p+=0x20; */
+  dentry = (mpio_dir_entry_t *)slot;
+
+  /* find uniq 8.3 filename */
+  memset(f_8_3, 0x20, 12);
+  f_8_3[8]='.';
+  f_8_3[12]=0x00;
+
+  i=0;
+  points=0;
+  /* count points to later find the correct file extension */
+  while (i<(strlen(filename))) 
+    {
+      if (filename[i] == '.')
+	points++;
+      i++;
+    }
+
+  /* if we do not find any points we set the value ridiculously high,
+     then everything falls into place */
+  if (!points)
+    points=1024*1024;
+
+  i=j=0;
+  while ((j<8) && (points) && (i<(strlen(filename))))
+    {
+      if (filename[i] == '.') 
+	{
+	  points--;
+	} else {
+	  if (filename[i]!=' ') {
+	    f_8_3[j] = toupper(filename[i]);
+	    j++;
+	  }
+	}
+      i++;
+    }
+
+  j=i;
+  while((points) && (j<(strlen(filename))))
+    {
+      if (filename[j] == '.') 
+	points--;
+      j++;
+    }  
+  
+  i=9;
+  while ((i<12) && (j<(strlen(filename))))
+    {
+      f_8_3[i] = toupper(filename[j]);
+      i++;
+      j++;
+    }
+
+  /* This seems like a special case to me! */
+  if (strcmp(MPIO_MPIO_RECORD, filename)==0)
+    {
+        f_8_3[6]='~';
+        f_8_3[7]='0';
+    }
+
+  if (mpio_dentry_find_name_8_3(m, mem, f_8_3))
+    {
+        f_8_3[6]='~';
+        f_8_3[7]='1';
+    }
+
+  while(mpio_dentry_find_name_8_3(m, mem, f_8_3))
+    f_8_3[7]++;
+
+  
+/*   memcpy(dentry->name,"AAAAAAAA",8); */
+/*   memcpy(dentry->ext,"MP3",3); */
+
+/*   hexdumpn(0, f_8_3, 13); */
+
+  memcpy(dentry->name, f_8_3, 8);
+  memcpy(dentry->ext, f_8_3+9, 3);
+
+  free(unicode);
+  free(fname);
+
+  return dentry;
+}
+
+
 int
 mpio_dentry_get_size(mpio_t *m, mpio_mem_t mem, BYTE *buffer)
 {
@@ -817,19 +966,8 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
 		BYTE *filename, int filename_size,
 		time_t date, DWORD fsize, WORD ssector, BYTE attr)
 {
-  BYTE *unicode = 0;
-  BYTE *back, *fback;
-  BYTE *fname = 0;
-  iconv_t ic;
-  int in = 0, out = 0;
-  int fin = 0, fout = 0;
-  int count = 0;
-  BYTE index;
-  BYTE f_8_3[13];
-  int i, j, points;
   BYTE *p;
   mpio_dir_entry_t *dentry;
-  mpio_dir_slot_t  *slot;
   
   /* read and copied code from mtools-3.9.8/directory.c 
    * to make this one right 
@@ -851,135 +989,10 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
       p = m->internal.cdir->dir;
   }
 
-  /* generate vfat filename in UNICODE */
-  ic = iconv_open(UNICODE, m->charset);
-  fin = in = filename_size + 1;
-  fout = out = filename_size * 2 + 2 + 26;
-  fname = malloc(in);
-  fback = fname;
-  unicode = malloc(out);
-  back = unicode;
-
-  memset(fname, 0, in);
-  snprintf(fname, in, "%s", filename);
-  memset(unicode, 0xff, out);
-  iconv(ic, (char **)&fback, &fin, (char **)&back, &fout);
-  iconv_close(ic);
-  hexdump(fname, in);
-  hexdump(unicode, out);
-
-  back = unicode;
-  
-  count = filename_size / 13;
-  if (filename_size % 13)
-    count++;
-
-  slot = (mpio_dir_slot_t *)p;
-
-  index = 0x40 + count;
-  while (count > 0) {
-    mpio_dentry_copy_to_slot(back + ((count - 1) * 26), slot);
-    hexdump((char *)back + ((count - 1) * 26), 0x20);
-    slot->id = index;
-    slot->attr = 0x0f;
-    slot->reserved = 0x00;
-    slot->start[0] = 0x00;
-    slot->start[1] = 0x00;
-    /* FIXME: */
-    slot->alias_checksum = 0x00;   // checksum for 8.3 alias 
-
-    hexdump((char *)slot, 0x20);
-    
-    slot++;
-    count--;
-    index = count;
-  }
-
-/*   memcpy(p, m->internal.dir+0x220, 0x20); */
-
-/*   p+=0x20; */
-  dentry = (mpio_dir_entry_t *)slot;
-
-  /* find uniq 8.3 filename */
-  memset(f_8_3, 0x20, 12);
-  f_8_3[8]='.';
-  f_8_3[12]=0x00;
-
-  i=0;
-  points=0;
-  /* count points to later find the correct file extension */
-  while (i<(strlen(filename))) 
-    {
-      if (filename[i] == '.')
-	points++;
-      i++;
-    }
-
-  /* if we do not find any points we set the value ridiculously high,
-     then everything falls into place */
-  if (!points)
-    points=1024*1024;
-
-  i=j=0;
-  while ((j<8) && (points) && (i<(strlen(filename))))
-    {
-      if (filename[i] == '.') 
-	{
-	  points--;
-	} else {
-	  if (filename[i]!=' ') {
-	    f_8_3[j] = toupper(filename[i]);
-	    j++;
-	  }
-	}
-      i++;
-    }
-
-  j=i;
-  while((points) && (j<(strlen(filename))))
-    {
-      if (filename[j] == '.') 
-	points--;
-      j++;
-    }  
-  
-  i=9;
-  while ((i<12) && (j<(strlen(filename))))
-    {
-      f_8_3[i] = toupper(filename[j]);
-      i++;
-      j++;
-    }
-
-  /* This seems like a special case to me! */
-  if (strcmp(MPIO_MPIO_RECORD, filename)==0)
-    {
-        f_8_3[6]='~';
-        f_8_3[7]='0';
-    }
-
-  if (mpio_dentry_find_name_8_3(m, mem, f_8_3))
-    {
-        f_8_3[6]='~';
-        f_8_3[7]='1';
-    }
-
-  while(mpio_dentry_find_name_8_3(m, mem, f_8_3))
-    f_8_3[7]++;
-
-  
-/*   memcpy(dentry->name,"AAAAAAAA",8); */
-/*   memcpy(dentry->ext,"MP3",3); */
-
-/*   hexdumpn(0, f_8_3, 13); */
-
-  memcpy(dentry->name, f_8_3, 8);
-  memcpy(dentry->ext, f_8_3+9, 3);
+  dentry = mpio_dentry_filename_write(m, mem, p, filename, filename_size);
 
   dentry->attr = attr;
   dentry->lcase = 0x00;
-
-
 
   /* read and copied code from mtools-3.9.8/directory.c 
    * to make this one right 
@@ -1005,9 +1018,6 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
   dentry->size[3] = (fsize / 0x1000000) & 0xff;
   dentry->start[0] = ssector & 0xff;
   dentry->start[1] = ssector / 0x100;
-
-  free(unicode);
-  free(fname);
 
   /* what do we want to return? */
   return 0;
@@ -1258,4 +1268,51 @@ mpio_dentry_switch(mpio_t *m, mpio_mem_t mem, BYTE *file1, BYTE *file2)
   memcpy(sm->cdir->dir, tmp, DIR_SIZE);
 
   return;
+}
+
+void    
+mpio_dentry_rename(mpio_t *m, mpio_mem_t mem, BYTE *p, BYTE *newfilename)
+{
+  mpio_smartmedia_t *sm;
+  BYTE *current;
+  int size1 , size2, offset, offset_d1, offset_d2;
+  BYTE tmp[DIR_SIZE];
+
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+  
+  current = sm->cdir->dir;
+
+  size1 = mpio_dentry_get_size(m, mem, p) / 0x20;
+  size2 = (strlen(newfilename) / 13) + 1;
+  if ((strlen(newfilename) % 13))
+    size2++;
+
+  debugn(2, "size1: %d   size2: %d\n", size1, size2);
+
+  /* we want to copy the last dentry to the right location
+   * so we avoid reading and writing the same information
+   */
+  size1--; /* kludge so we can do compares without worry */
+  size2--;
+
+  memcpy(tmp, current, DIR_SIZE); 
+  offset   = p - current;
+  offset_d1 = offset + (size1 * 0x20);
+  offset_d2 = offset + (size2 * 0x20);
+
+  if (size2>size1) {
+    /* new filename needs at least one slot more than the old one */
+    memcpy(current+offset_d2, tmp+offset_d1, (DIR_SIZE-offset_d1));
+  }
+
+  if (size2<size1) {
+    /* new filename needs at least one slot less than the old one */
+    memset(p+offset, 0, (DIR_SIZE-offset)); /* clear to avoid bogus dentries */
+    memcpy(current+offset_d2, tmp+offset_d1, (DIR_SIZE-offset_d2));
+  }
+    
+  mpio_dentry_filename_write(m, mem, p, newfilename, strlen(newfilename));
+
+  return ;  
 }

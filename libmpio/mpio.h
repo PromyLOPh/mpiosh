@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.17 2003/04/19 09:32:48 germeier Exp $
+ * $Id: mpio.h,v 1.18 2003/04/19 23:58:02 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -127,13 +127,18 @@ int	mpio_file_put_from_memory(mpio_t *, mpio_mem_t, mpio_filename_t,
 				  BYTE *, int); 
 
 /* 
+ * rename a file on the MPIO
+ */
+/* context, memory bank, filename, filename */
+int	mpio_file_rename(mpio_t *, mpio_mem_t, 
+			 mpio_filename_t, mpio_filename_t);
+
+/* 
  * switch position of two files
  */
 /* context, memory bank, filename, filename */
 int	mpio_file_switch(mpio_t *, mpio_mem_t, 
 			 mpio_filename_t, mpio_filename_t);
-  
-
 
 /* Move a named file after a given file. If after==NULL move it
    to the top of the list,

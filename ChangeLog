@@ -1,3 +1,11 @@
+2003-04-20  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/directory.c (mpio_dentry_filename_write): 
+	  split this function from mpio_dentry_put to make a rename easier
+	* libmpio/mpio.c (mpio_file_rename): 
+	  libmpio/directory.c (mpio_dentry_rename): 
+	  new functions
+
 2003-04-19  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/id3.h: 

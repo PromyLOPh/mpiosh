@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.52 2003/04/19 09:32:48 germeier Exp $
+ * $Id: mpio.c,v 1.53 2003/04/19 23:58:02 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -892,6 +892,25 @@ mpio_file_switch(mpio_t *m, mpio_mem_t mem,
     MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
 
   mpio_dentry_switch(m, mem, p1, p2);
+
+  return 0;
+}
+
+int	
+mpio_file_rename(mpio_t *m, mpio_mem_t mem, 
+		 mpio_filename_t old, mpio_filename_t new)
+{
+  BYTE *p;
+
+  /* find files */
+  p = mpio_dentry_find_name(m, mem, old);
+  if (!p)
+    p = mpio_dentry_find_name_8_3(m, mem, old);
+
+  if (!p)
+    MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
+
+  mpio_dentry_rename(m, mem, p, new);
 
   return 0;
 }

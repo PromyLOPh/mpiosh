@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.h,v 1.9 2003/04/11 21:42:57 germeier Exp $
+ * $Id: directory.h,v 1.10 2003/04/19 23:58:02 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -60,6 +60,9 @@ BYTE    mpio_dentry_is_dir(mpio_t *, mpio_mem_t, BYTE *);
 
 /* switch two directory entries */
 void    mpio_dentry_switch(mpio_t *, mpio_mem_t, BYTE *, BYTE *);
+
+/* rename a dentry */
+void    mpio_dentry_rename(mpio_t *, mpio_mem_t, BYTE *, BYTE *);
 
 /* Move a given file to a new position in the file
    list	relative to another file.	

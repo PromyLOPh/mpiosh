@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.10 2003/04/19 09:32:48 germeier Exp $
+ * $Id: global.c,v 1.11 2003/04/19 23:58:02 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -50,7 +50,7 @@ struct mpiosh_cmd_t commands[] = {
   { "ver", NULL, NULL,
     "  version of mpio package",
     mpiosh_cmd_version, NULL },
-  { "help", NULL, "[<command>]",
+  { "help", (char *[]){ "?", NULL }, "[<command>]",
     "  show information about known commands or just about <command>",
     mpiosh_cmd_help, mpiosh_readline_comp_cmd },
   { "dir", (char *[]){ "ls", "ll", NULL }, NULL,
@@ -105,6 +105,9 @@ struct mpiosh_cmd_t commands[] = {
   { "switch", NULL, "<file1> <file2>",
     "  switches the order of two files",
     mpiosh_cmd_switch, mpiosh_readline_comp_mpio_file },
+  { "rename", (char *[]){ "ren", NULL }, "<oldfilename> <newfilename>",
+    "  renames a file on the current memory card",
+    mpiosh_cmd_rename, mpiosh_readline_comp_mpio_file },
   { "ldir", (char *[]){ "lls", NULL }, NULL,
     "  list local directory",
     mpiosh_cmd_ldir, NULL },
