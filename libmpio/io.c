@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.19 2002/10/13 08:57:31 germeier Exp $
+ * $Id: io.c,v 1.20 2002/10/13 12:03:51 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -440,8 +440,13 @@ mpio_zone_block_find_free_seq(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
 WORD 
 mpio_zone_block_get_logical(mpio_t *m, mpio_cmd_t mem, DWORD pblock)
 {
-
-  return 0;
+  int zone, block, pb;
+  
+  pb    = pblock / BLOCK_SECTORS;
+  zone  = pb / MPIO_ZONE_PBLOCKS;
+  block = pb % MPIO_ZONE_PBLOCKS;
+  
+  return m->external.zonetable[zone][block];
 }
 
 
@@ -761,49 +766,54 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
    * - calculate the logical block for zone management
    */
 
-  if (index==MPIO_BLOCK_DEFECT) 
-    {
-      block_address = 0;
-      pvalue = 0;
-    } else {
-      if ((index>=MPIO_BLOCK_CIS) && (index<(MPIO_BLOCK_CIS + BLOCK_SECTORS)))
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {      
+      if (index==MPIO_BLOCK_DEFECT) 
 	{
 	  block_address = 0;
-	  if (index==MPIO_BLOCK_CIS)
+	  pvalue = 0;
+	} else {
+	  if ((index>=MPIO_BLOCK_CIS) && 
+	      (index<(MPIO_BLOCK_CIS + BLOCK_SECTORS)))
 	    {
-	      pvalue=mpio_zone_block_find_free_seq(m, mem, index);  
-	    } else {
-	      /* find the block from the block list! */
-	      pvalue=mpio_zone_block_find_seq(m, mem, MPIO_BLOCK_CIS);
+	      block_address = 0;
+	      if (index==MPIO_BLOCK_CIS)
+		{
+		  pvalue=mpio_zone_block_find_free_seq(m, mem, index);  
+		} else {
+		  /* find the block from the block list! */
+		  pvalue=mpio_zone_block_find_seq(m, mem, MPIO_BLOCK_CIS);
+		}
+	      if (pvalue != MPIO_BLOCK_NOT_FOUND)
+		pvalue = pvalue + index - MPIO_BLOCK_CIS;
+	      
+	    } else {      
+	      block_address = blockaddress_encode(index / BLOCK_SECTORS); 
+	      if ((index % BLOCK_SECTORS) == 0)
+		{
+		  /* this is the first write to the block: allocate a new one */
+		  /* ... and mark it with the block_address */
+		  pvalue=mpio_zone_block_find_free_seq(m, mem, 
+						       (index / BLOCK_SECTORS));      
+		} else {
+		  /* find the block from the block list! */
+		  pvalue=mpio_zone_block_find_seq(m, mem, (index / BLOCK_SECTORS));
+		}
+	      if (pvalue != MPIO_BLOCK_NOT_FOUND)
+		pvalue = pvalue + (index % BLOCK_SECTORS);
+	      
 	    }
-	  if (pvalue != MPIO_BLOCK_NOT_FOUND)
-	    pvalue = pvalue + index - MPIO_BLOCK_CIS;
 	  
-	} else {      
-	  block_address = blockaddress_encode(index / BLOCK_SECTORS); 
-	  if ((index % BLOCK_SECTORS) == 0)
+	  if (pvalue == MPIO_BLOCK_NOT_FOUND)
 	    {
-	      /* this is the first write to the block, so allocate a new one */
-	      /* ... and mark it with the block_address */
-	      pvalue=mpio_zone_block_find_free_seq(m, mem, 
-						   (index / BLOCK_SECTORS));      
-	    } else {
-	      /* find the block from the block list! */
-	      pvalue=mpio_zone_block_find_seq(m, mem, (index / BLOCK_SECTORS));
-	    }
-	  if (pvalue != MPIO_BLOCK_NOT_FOUND)
-	    pvalue = pvalue + (index % BLOCK_SECTORS);
-	  
+	      debug ("Oops, this should never happen! (%6x : %6x)\n", 
+		     index, block_address);
+	      exit (-1);
+	    }      
 	}
-      
-      if (pvalue == MPIO_BLOCK_NOT_FOUND)
-	{
-	  debug ("Oops, this should never happen! (%6x : %6x)\n", 
-		 index, block_address);
-	  exit (-1);
-	}      
+    } else {
+      pvalue = index;
     }
-  
 
   mpio_io_set_cmdpacket(m, PUT_SECTOR, mem, pvalue, sm->size, 0, cmdpacket);
 
@@ -1028,6 +1038,12 @@ mpio_io_block_delete(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
 
   fatentry2hw(f, &chip, &address);
 
+  if (address == MPIO_BLOCK_NOT_FOUND)
+    {
+      debug("hmm, what happens here? (%4x)\n", f->entry);
+      return 0;
+    }
+
   return (mpio_io_block_delete_phys(m, chip, address));
 }
 
@@ -1083,7 +1099,7 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
       if (chip == MPIO_EXTERNAL_MEM) 
 	{
 	  sm = &m->external;
-	  mpio_zone_block_set_free_phys(m, chip, address);
+	  mpio_zone_block_set_defect_phys(m, chip, address);
 	}      
     }
   
@@ -1101,10 +1117,19 @@ mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
   BYTE  chip=0;
   DWORD address;
 
-  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
-  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
-  
-  fatentry2hw(f, &chip, &address);
+  if (mem == MPIO_INTERNAL_MEM) 
+    {
+      sm = &m->internal;
+      fatentry2hw(f, &chip, &address);
+    }
+	
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {
+      sm = &m->external;
+      /* find free physical block */
+      chip = MPIO_EXTERNAL_MEM;
+      address = mpio_zone_block_find_free_log(m, mem, f->entry);
+    }
 
   /* build block for transfer to MPIO */
   for (i = 0; i < BLOCK_SECTORS; i++) 
@@ -1129,7 +1154,8 @@ mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
       /* fill in block information */
       if (mem == MPIO_EXTERNAL_MEM) 
 	{      
-/* 	  block_address = cluster2blockaddress(address, sm->size); */
+	  block_address = mpio_zone_block_get_logical(m, mem, address);
+	  block_address = blockaddress_encode(block_address);
 
 	  ba = (block_address / 0x100) & 0xff;
 	  sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] = ba;

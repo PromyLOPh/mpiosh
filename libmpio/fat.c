@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.17 2002/10/13 08:57:31 germeier Exp $
+ * $Id: fat.c,v 1.18 2002/10/13 12:03:51 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -837,10 +837,10 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
       for (i = 0; i < (sm->dir_offset + DIR_NUM) ; i++) {
 	/* before writing to a new block delete it! */
 	if (((i / 0x20) * 0x20) == i) {
-	  block = mpio_zone_block_find_seq(m, mem, i);
+	  block = mpio_zone_block_find_seq(m, mem, (i/0x20));
 	  if (block == MPIO_BLOCK_NOT_FOUND) 
 	    {
-	      block = mpio_zone_block_find_free_seq(m, mem, i);
+	      block = mpio_zone_block_find_free_seq(m, mem, (i/0x20));
 	    }
 	  if (block == MPIO_BLOCK_NOT_FOUND) 
 	    {

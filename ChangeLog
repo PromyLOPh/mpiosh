@@ -1,5 +1,9 @@
 2002-10-13  Markus Germeier  <mager@tzi.de>
 
+	* all operations on external memory should work now!
+
+2002-10-13  Markus Germeier  <mager@tzi.de>
+
 	* libmpio/mpio.c (mpio_init): fixed segv when external memory
 	  was selected
 	* formatting of external memory is now completly supported 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.32 2002/10/13 08:57:31 germeier Exp $
+ * $Id: mpio.c,v 1.33 2002/10/13 12:03:51 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -837,7 +837,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 	  }
 	
       } while (mpio_fatentry_next_entry(m, mem, f));
-    mpio_io_block_delete(m, mem, &backup);
+/*     mpio_io_block_delete(m, mem, &backup); */
     mpio_fatentry_set_free(m, mem, &backup);
     free(f);
   

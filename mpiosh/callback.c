@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.23 2002/10/13 08:57:31 germeier Exp $
+ * $Id: callback.c,v 1.24 2002/10/13 12:03:51 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -181,8 +181,8 @@ mpiosh_cmd_mem(char *args[])
       printf("Support for external memory is work in progress!!\n");
       printf("Assumed status:\n");
       printf("reading   : works (untested)\n");
-      printf("deleting  : broken\n");
-      printf("writing   : broken\n");
+      printf("deleting  : works (untested)\n");
+      printf("writing   : works (untested)\n");
       printf("formatting: complete (untested)\n");
       printf("external memory card is selected\n");
     } else {
