@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.4 2002/09/09 13:29:52 germeier Exp $
+ * $Id: io.c,v 1.5 2002/09/09 15:49:01 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -626,14 +626,37 @@ mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
 }
 
 int  
-mpio_io_block_delete(mpio_t *m, BYTE mem, DWORD index, BYTE size)
+mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
 {
+  mpio_smartmedia_t *sm;
   int nwrite, nread;
   BYTE cmdpacket[CMD_SIZE], status[CMD_SIZE];
+  BYTE  chip=0;
+  DWORD address;
+
+  if (mem == MPIO_INTERNAL_MEM) 
+    {
+      sm = &m->internal;
+      hexdump((char *)&f->entry, 4);
+      hexdump((char *)&f->hw_address, 4);
+      chip    = f->hw_address / 0x1000000;    
+      address = f->hw_address & 0x0ffffff;
+    }
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {
+      sm = &m->external;
+      chip    = MPIO_EXTERNAL_MEM;
+      address = cluster2block(sm->size, f->entry);
+      address *= BLOCK_SECTORS;
+
+      /* add offset to start of "data" area! */
+      address += (sm->dir_offset + DIR_NUM - (2 * BLOCK_SECTORS));      
+	
+    }
 
 /*  Send command packet to MPIO  */
 
-  mpio_io_set_cmdpacket(DEL_BLOCK, mem, index, size, 0, cmdpacket);
+  mpio_io_set_cmdpacket(DEL_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
   debugn  (5, ">>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));

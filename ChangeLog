@@ -1,5 +1,12 @@
 2002-09-09  Markus Germeier  <mager@tzi.de>
 
+	* libmpio/mpio.c (mpio_memory_format): 
+	  updated code to format external SmartMedia cards
+	* libmpio/fat.c (mpio_fatentry_plus_plus, mpio_bootblocks_read): 
+	  fixed max_cluster issues
+	
+2002-09-09  Markus Germeier  <mager@tzi.de>
+
 	* libmpio/io.c (cluster2block): 
 	  fixed cluster to block mapping for 32MB SmartMedia cards
 	* libmpio/io.c (mpio_io_block_read, mpio_io_sector_read): 

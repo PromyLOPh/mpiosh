@@ -1,4 +1,4 @@
-$Id: TODO,v 1.5 2002/09/08 17:03:50 germeier Exp $
+$Id: TODO,v 1.6 2002/09/09 15:48:56 germeier Exp $
 
 * Kernel Module
   - the MPIO can no multitasking, so:
@@ -16,7 +16,8 @@ $Id: TODO,v 1.5 2002/09/08 17:03:50 germeier Exp $
   - implement writing of files
   
   If everything is done:
-  - implement formating of external memory 
+  - implement formating of external memory [partially done]
+    * write code to fix defective CIS (??), MBR, PBR
   - implement formating of internal memory (BEWARE !!!!)
 
 * mpio_tool [is deprecated, use mpiosh]

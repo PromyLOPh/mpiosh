@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.5 2002/09/09 13:29:52 germeier Exp $
+ * $Id: mpio.c,v 1.6 2002/09/09 15:49:06 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -424,10 +424,10 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
     }
 
 /*     debug("mager: %04x : %3d\n", realsector*BLOCK_SECTORS, realsector); */
-    mpio_io_block_delete(m, mem, ((realsector*BLOCK_SECTORS) + data_offset),
-			 sm->size);
-    mpio_io_block_write(m, mem, realsector + (data_offset/BLOCK_SECTORS), 
-			sm->size, block);
+/*     mpio_io_block_delete(m, mem, ((realsector*BLOCK_SECTORS) + data_offset), */
+/* 			 sm->size); */
+/*     mpio_io_block_write(m, mem, realsector + (data_offset/BLOCK_SECTORS),  */
+/* 			sm->size, block); */
 
     filesize -= toread;
 	
@@ -454,34 +454,40 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
 {
   int data_offset;
   mpio_smartmedia_t *sm;
+  mpio_fatentry_t   *f;
   DWORD clusters;
   DWORD i;
   
-  if (mem == MPIO_INTERNAL_MEM) {    
-    sm=&m->internal;
-    data_offset=0x00;
-    debug("formatting of internal memory is not yet supported, sorry\n");
-    return 0;
-  }
+  if (mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm=&m->internal;
+      data_offset=0x00;
+      debug("formatting of internal memory is not yet supported, sorry\n");
+      return 0;
+    }
   
-  if (mem == MPIO_EXTERNAL_MEM) {
-    sm = &m->external;
-    data_offset = sm->dir_offset+DIR_NUM;    
-  }
-/*   debug("mager: %2x\n", data_offset); */
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {
+      sm = &m->external;
+      data_offset = 0x02;
+    }
 
   clusters = sm->size*128;
   
-/*   debug("Clusters: %4x\n", sm->size*128); */
-
-  for (i = data_offset; i < clusters; i += 0x20) {
-    mpio_io_block_delete(m, mem, i, sm->size);
-    if (progress_callback)
-      (*progress_callback)(i, clusters + 1);
-  }
+  f = mpio_fatentry_new(m, mem, data_offset);  
+  do 
+    {
+      mpio_io_block_delete(m, mem, f);
+      if (progress_callback)
+	(*progress_callback)(f->entry, sm->max_cluster + 1);
+    } while (mpio_fatentry_plus_plus(f));
+  free(f);
 
   /* format CIS area */
-  mpio_io_block_delete(m, mem, 0x20, sm->size);
+  f = mpio_fatentry_new(m, mem,        /* yuck */
+			(1 - ((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2 )));
+  mpio_io_block_delete(m, mem, f);
+  free(f);
   mpio_io_sector_write(m, mem, 0x20, sm->cis);
   mpio_io_sector_write(m, mem, 0x21, sm->cis);
 
@@ -490,7 +496,7 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
   mpio_fat_write(m, mem);
 
   if (progress_callback)
-    (*progress_callback)(clusters+1, clusters+1);
+    (*progress_callback)(sm->max_cluster+1, sm->max_cluster+1);
 
   return 0;
 }
@@ -580,8 +586,8 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 /*       realsector = sector_hack(sm->size, sector); */
     }
 
-    mpio_io_block_delete(m, mem, (realsector * BLOCK_SECTORS) + data_offset,
-			 sm->size);
+/*     mpio_io_block_delete(m, mem, (realsector * BLOCK_SECTORS) + data_offset, */
+/* 			 sm->size); */
 
     if (filesize > BLOCK_SIZE) {
       towrite = BLOCK_SIZE;

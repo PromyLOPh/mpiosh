@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.4 2002/09/08 23:22:48 germeier Exp $
+ * $Id: fat.c,v 1.5 2002/09/09 15:48:58 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -180,13 +180,22 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
        temp = ((total_sector / 0x20 * 0x02 / 0x200) + 0x01);   
      }   
 
-  sm->max_cluster = (total_sector / BLOCK_SECTORS);
-  debugn(2,"max_cluster: %d\n", sm->max_cluster);
   sm->fat_offset = sm->pbr_offset + 0x01;
   sm->fat_size = temp;
   sm->fat_nums = *(sm->pbr + 0x10);
   sm->dir_offset = sm->pbr_offset + 0x01 +  temp * 2;
-
+  sm->max_cluster = (total_sector / BLOCK_SECTORS);
+  /* fix max clusters */
+  temp*=2;
+  while (temp>=0x10)
+    {
+      sm->max_cluster--;
+      temp-=BLOCK_SECTORS;
+    }
+  
+  debug("max_cluster: %d\n", sm->max_cluster);
+  debug("temp: %04x\n", temp);
+  
   return 0;  
 }
 
@@ -204,8 +213,11 @@ mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector)
       new->mem    = mem;
       new->entry  = sector;      
     }  
+
+  if (mem == MPIO_INTERNAL_MEM) 
+    mpio_fatentry_entry2hw(m, new);
   
-    return new;
+  return new;
 }
   
 int
@@ -219,7 +231,7 @@ mpio_fatentry_plus_plus(mpio_fatentry_t *f)
   }
   
   if (f->mem == MPIO_EXTERNAL_MEM) {
-    if (f->entry > (f->m->external.max_cluster - 2))
+    if (f->entry > f->m->external.max_cluster)
       return 0;    
   }
   
@@ -522,13 +534,14 @@ int
 mpio_fat_write(mpio_t *m, mpio_mem_t mem)
 {
   mpio_smartmedia_t *sm;
+  mpio_fatentry_t   *f;
   BYTE dummy[BLOCK_SIZE];
   WORD i;
   
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
-    debug("writing of the internal FAT is not yet supported, sorry\n");
-    return 0;
+    debug("ERROR: internal FAT is written during block or sector writes!\n");
+    exit(-1);
   }
   
   if (mem == MPIO_EXTERNAL_MEM) sm=&m->external;
@@ -537,8 +550,12 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
   
   for (i = 0x40; i < (sm->dir_offset + DIR_NUM) ; i++) {
     if (((i / 0x20) * 0x20) == i) {
-/*       debug("formatting: %2x\n", i); */
-      mpio_io_block_delete(m, mem, i, sm->size);
+      /* yuck */
+      f=mpio_fatentry_new(m, mem, 
+			  ((i / 0x20) - 
+			   ((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2 ))); 
+      mpio_io_block_delete(m, mem, f);
+      free(f);
     }
     
     if (i == 0x40)
