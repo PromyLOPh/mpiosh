@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.28 2002/09/28 00:32:41 germeier Exp $
+ * $Id: mpio.c,v 1.29 2002/09/30 13:39:14 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -204,6 +204,7 @@ mpio_init(mpio_callback_init_t progress_callback)
 {
   mpio_t *new_mpio;
   mpio_smartmedia_t *sm;  
+  int id_offset;
 
   new_mpio = malloc(sizeof(mpio_t));
   if (!new_mpio) {
@@ -233,8 +234,19 @@ mpio_init(mpio_callback_init_t progress_callback)
   snprintf(new_mpio->firmware.month, 3, "%s", new_mpio->version + 0x14);
   snprintf(new_mpio->firmware.day, 3, "%s", new_mpio->version + 0x16);
 
+  /* there are different identification strings! */
+  if (strncmp(new_mpio->version, "MPIO", 4) != 0)
+    debug("MPIO id string not found, proceeding anyway...");
+
+  /* strings: "MPIOxy    " */
+  id_offset = 4;
+
+  /* string: "MPIO-xy   " */
+  if (new_mpio->version[id_offset] == '-')
+    id_offset++;
+
   /* identify different versions */
-  switch (new_mpio->version[5])
+  switch (new_mpio->version[id_offset])
     {
       case 'E': 
 	new_mpio->model = MPIO_MODEL_DME;
@@ -244,16 +256,19 @@ mpio_init(mpio_callback_init_t progress_callback)
         break ;
       case 'G':
 	new_mpio->model = MPIO_MODEL_DMG;
-	if (new_mpio->version[6] == 'P')
-	  new_mpio->model = MPIO_MODEL_DMG_PLUS; /* should be right */
+	if (new_mpio->version[id_offset+1] == 'P')
+	  new_mpio->model = MPIO_MODEL_DMG_PLUS;
         break ;
       case 'B':
 	new_mpio->model = MPIO_MODEL_DMB;
-	if (new_mpio->version[6] == 'P')
+	if (new_mpio->version[id_offset+1] == 'P')
 	  new_mpio->model = MPIO_MODEL_DMB_PLUS;
 	break;	
     default:
       new_mpio->model = MPIO_MODEL_UNKNOWN;
+      debug("Unknown version string found!\n"
+	    "Please report this to: mpio-devel@lists.sourceforge.net\n");
+      hexdumpn(1, new_mpio->version, CMD_SIZE);
     }
 
   /* internal init */

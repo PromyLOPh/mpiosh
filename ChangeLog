@@ -1,3 +1,9 @@
+2002-09-30  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.c (mpio_init): fixed identification of
+	  newer firmwares (e.g. DMG+)  "MPIOxy" vs. "MPIO-xy"
+	  thanks to mathieu for reporting this one.
+
 2002-09-28  Markus Germeier  <mager@tzi.de>
 
 	* kernel/Makefile.am (distclean): added target distclean
