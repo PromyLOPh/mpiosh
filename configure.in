@@ -29,7 +29,7 @@ case "$kernel_version" in
 esac
 echo $kernel_version
 if test "$_k_verc_fail" ; then
-  echo "  Your kernel version is to old."
+  echo "  Your kernel version is too old."
   echo "  Please update your system to a kernel version of 2.2.x or higher."
   AC_ERROR(too old)
 fi

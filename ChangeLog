@@ -1,3 +1,11 @@
+2002-11-14  Andreas Buesching  <crunchy@tzi.de>
+
+	* tools/mpiologo.c: renamed logotool.c to mpiologo.c
+
+	* mpio.spec.in (): another way to add the kernel module to
+	the file list; add mpiologo to file list
+	
+
 2002-11-13  Markus Germeier  <mager@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_format): backup and restore

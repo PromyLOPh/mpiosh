@@ -2,6 +2,7 @@
 %define version @VERSION@
 %define release 1
 %define name    mpio
+%define spec_path @SPEC_PATH@
 
 Version: %version
 Summary: MPIO - providing access to MPIO mp3 players
@@ -28,6 +29,19 @@ make
 
 %install
 rm -rf $RPM_BUILD_ROOT
+KVERSION=`uname -r`
+
+echo "%defattr(755,root,root)" > /tmp/mpio-files.lst
+echo "%prefix/bin/mpiosh" >> /tmp/mpio-files.lst
+echo "%prefix/bin/mpiologo" >> /tmp/mpio-files.lst
+echo "%prefix/lib/libmpio*" >> /tmp/mpio-files.lst
+echo "%defattr(700,root,root)" >> /tmp/mpio-files.lst
+echo "%prefix/sbin/mkmpiodev" >> /tmp/mpio-files.lst
+echo "%defattr(644,root,root)" >> /tmp/mpio-files.lst
+echo "/lib/modules/$KVERSION/%{spec_path}/mpio.o" >> /tmp/mpio-files.lst
+echo "%defattr(640,root,root)" >> /tmp/mpio-files.lst
+echo "/etc/mpio/mpioshrc" >> /tmp/mpio-files.lst
+
 make DESTDIR=$RPM_BUILD_ROOT install
 
 %post
@@ -38,18 +52,12 @@ depmod -a
 %preun
 mkmpiodev -r
 
-%files
-%defattr(755,root,root)
-%prefix/bin/mpiosh
-%prefix/lib/libmpio*
-%defattr(700,root,root)
-%prefix/sbin/mkmpiodev
-%defattr(644,root,root)
-/lib/modules/*/@SPEC_PATH@/mpio.o
+%files -f /tmp/mpio-files.lst
 
 %doc COPYING ChangeLog INSTALL NEWS
 %doc README TODO
 
 %clean
 rm -rf $RPM_BUILD_ROOT
+rm -f /tmp/mpio-files.lst
 
