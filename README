@@ -1,3 +1,19 @@
+- How can I get started with this software?
+
+You should create device file for MPIO. Be root and type following:
+
+   ./mkmpiodev
+
+Once you create it, you do not need to run this script again.
+Next, the driver module has to be loaded before playing.
+
+   /sbin/insmod /usr/local/bin/mpio.o
+
+Connect your MPIO to PC by USB cable. You can run mpiosh shell now.
+When you want to stop playing, disconnect MPIO and type:
+
+   /sbin/rmmod mpio
+
 - Is there any risk to use this software with my MPIO mp3 player?
 
 We do not really know that, but we do not garantee for anything. If you

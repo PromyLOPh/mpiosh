@@ -1,3 +1,8 @@
+2002-09-03  Yuji Touya  <salmoon@users.sourceforge.net>
+
+	* add mkmpiodev script to create device file
+	* README: add explanation to get started
+
 2002-09-03  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/*: various "little" code cleanups
