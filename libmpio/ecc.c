@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: ecc.c,v 1.2 2002/09/09 13:29:52 germeier Exp $
+ * $Id: ecc.c,v 1.3 2002/10/13 14:37:41 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -183,18 +183,60 @@ int
 mpio_ecc_256_check(BYTE *data, BYTE *ecc)
 {
   BYTE own_ecc[3];
+  BYTE check[3];
+  BYTE c;
+  BYTE line, col;
+  
+  int v, i;
+  
   mpio_ecc_256_gen(data, own_ecc);
   if ((own_ecc[0]^ecc[0])|
       (own_ecc[1]^ecc[1])|
       (own_ecc[2]^ecc[2])) {
-    debug("ECC %2x %2x %2x vs. %2x %2x %2x\n", 
+    debugn(2, "ECC %2x %2x %2x vs. %2x %2x %2x\n", 
 	  ecc[0], ecc[1], ecc[2], own_ecc[0], own_ecc[1], own_ecc[2]);
-    debugn(2, "ECC Error detected\n");
-    debugn(2, "ECC Correction code not in place yet, Sorry\n");
-    debugn(3, "got   ECC: %2x %2x %2x\n", ecc[0], ecc[1], ecc[2]);
-    debugn(3, "calc. ECC: %2x %2x %2x\n", own_ecc[0], own_ecc[1], own_ecc[2]);
-
-    return 1;
+    check[0] = (ecc[0] ^ own_ecc[0]);
+    check[1] = (ecc[1] ^ own_ecc[1]);
+    check[2] = (ecc[2] ^ own_ecc[2]);
+    
+    v=1;
+    for(i=0; i<4; i++)
+      {
+	if (!((get_bit(check[1], i*2) ^
+	       (get_bit(check[1], i*2+1)))))
+	  v=0;
+	if (!((get_bit(check[0], i*2) ^
+	       (get_bit(check[0], i*2+1)))))
+	  v=0;
+      }
+    for(i=1; i<4; i++)
+      {
+	if (!((get_bit(check[2], i*2) ^
+	       (get_bit(check[2], i*2+1)))))
+	  v=0;
+      }
+    
+    if (v) {
+      debug("correctable error detected ... fixing the bit\n");
+      line = get_bit(check[1], 7) * 128 +
+	get_bit(check[1], 5) * 64  +
+	get_bit(check[1], 3) * 32  +
+	get_bit(check[1], 1) * 16  +
+	get_bit(check[0], 7) * 8   +
+	get_bit(check[0], 5) * 4   +
+	get_bit(check[0], 3) * 2   +
+	get_bit(check[0], 1);
+      col  = get_bit(check[2], 7) * 4 +
+	get_bit(check[2], 5) * 2 +
+	get_bit(check[2], 3);
+      debug ("error in line: %d , col %d\n", line, col);
+      debug ("defect byte is: %02x\n", data[line]);
+      data[line] ^= ( 1 << col);
+      debug ("fixed  byte is: %02x\n", data[line]);
+    } else {				       
+      debug("uncorrectable error detected. Sorry you lose!\n");
+      return 1;
+    }
   }
   
   return 0;  

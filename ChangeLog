@@ -1,7 +1,9 @@
 2002-10-13  Markus Germeier  <mager@tzi.de>
 
 	* all operations on external memory should work now!
-
+	* libmpio/ecc.c (mpio_ecc_256_check): 
+	  1 Bit errors are now automagically corrected
+	
 2002-10-13  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.c (mpio_init): fixed segv when external memory
