@@ -1,5 +1,5 @@
 /*
- * $Id: io.c,v 1.7 2003/10/19 21:06:35 germeier Exp $
+ * $Id: io.c,v 1.8 2003/10/19 21:44:16 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -509,9 +509,9 @@ mpio_device_open(mpio_t *m){
   struct usb_interface_descriptor *interface;
   struct usb_endpoint_descriptor *ep;
   int ret, i;
+  m->use_libusb=0;
 #endif
 
-  m->use_libusb=0;
   m->fd = open(MPIO_DEVICE, O_RDWR);
   if (m->fd > 0) {
     debug ("using kernel module\n");
@@ -589,9 +589,16 @@ mpio_device_open(mpio_t *m){
 
 int 
 mpio_device_close(mpio_t *m) {
+#ifdef HAVE_USB
+  if(m->use_libusb) {
+#endif
+    close(m->fd);
+    m->fd=0;
+#ifdef HAVE_USB
+  }  
   usb_close(m->usb_handle);
-  
-  m->use_libusb = 0;
+  m->use_libusb = 0;  
+#endif
   
   return MPIO_OK;
 }
@@ -686,11 +693,15 @@ mpio_io_bulk_write(int fd, BYTE *block, int num_bytes)
 int
 mpio_io_write(mpio_t *m, BYTE *block, int num_bytes)
 {
+#ifdef HAVE_USB
   if (m->use_libusb) {
     return usb_bulk_write(m->usb_handle, m->usb_out_ep, block, num_bytes, MPIO_USB_TIMEOUT);
-  } else {      
+  } else {     
+#endif 
     return mpio_io_bulk_write(m->fd, block, num_bytes);
+#ifdef HAVE_USB
   }  
+#endif
 }
 
 
@@ -732,11 +743,15 @@ mpio_io_bulk_read (int fd, BYTE *block, int num_bytes)
 int
 mpio_io_read (mpio_t *m, BYTE *block, int num_bytes)
 {
+#ifdef HAVE_USB
   if (m->use_libusb) {
     return usb_bulk_read(m->usb_handle, m->usb_in_ep, block, num_bytes, MPIO_USB_TIMEOUT);
   } else {    
+#endif
     return mpio_io_bulk_read(m->fd, block, num_bytes);
+#ifdef HAVE_USB
   }
+#endif
 }
 
 /*

@@ -1,3 +1,16 @@
+2003-10-19  Markus Germeier  <mager@tzi.de>
+	* added some missing #ifdef HAVE_USB
+	  to libmpio/src/io.c
+
+2003-10-19  Markus Germeier  <mager@tzi.de>
+	* added support for the new internal chips
+	  found in the new FL100 player
+	  (this is supposed to mainly work, but
+	   still has some issues)
+	* added support for libusb if the kernel
+	  module is not available
+	  (this needs root privilidges for the moment :-( )
+
 2003-09-23  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/io.c (model2externalmem): added FY100 and VP-01 to
 	  the list, the external memory of these is now supported.
