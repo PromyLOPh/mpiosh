@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.18 2002/09/23 22:38:03 germeier Exp $
+ * $Id: callback.c,v 1.19 2002/09/24 15:38:03 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -352,7 +352,7 @@ mpiosh_cmd_put(char *args[])
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
   
-  if ((size = mpio_file_put(mpiosh.dev, mpiosh.card, args[0], 
+  if ((size = mpio_file_put(mpiosh.dev, mpiosh.card, args[0], FTYPE_MUSIC,
 			    mpiosh_callback_put)) == -1) {
     mpio_perror("error");
   } else {
@@ -400,8 +400,8 @@ mpiosh_cmd_mput(char *args[])
 	  
 	  if (!(error = regexec(&regex, (*run)->d_name, 0, NULL, 0))) {
 	    printf("putting '%s' ... \n", (*run)->d_name);
-	    if (mpio_file_put(mpiosh.dev, mpiosh.card,
-			      (*run)->d_name, mpiosh_callback_put) == -1) {
+	    if (mpio_file_put(mpiosh.dev, mpiosh.card, (*run)->d_name, 
+			      FTYPE_MUSIC, mpiosh_callback_put) == -1) {
 	      mpio_perror("error");
 	      /* an existing file is no reason for a complete abort!! */
 	      if (mpio_errno()==MPIO_ERR_FILE_EXISTS)

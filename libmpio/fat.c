@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.13 2002/09/23 22:41:14 germeier Exp $
+ * $Id: fat.c,v 1.14 2002/09/24 15:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -200,7 +200,7 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
 }
 
 mpio_fatentry_t *
-mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector)
+mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector, BYTE ftype)
 {
   mpio_smartmedia_t *sm;
   mpio_fatentry_t *new;
@@ -216,7 +216,7 @@ mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector)
       /* init FAT entry */
       memset(new->i_fat, 0xff, 0x10);
       new->i_fat[0x00] = 0xaa;  /* start of file */
-      new->i_fat[0x06] = 0x01;  /* filetype, hmm ... */
+      new->i_fat[0x06] = ftype;
       new->i_fat[0x0b] = 0x00;  
       new->i_fat[0x0c] = 0x00;  
       new->i_fat[0x0d] = 0x00;  
@@ -341,17 +341,24 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
 	debug("defective block encountered, abort reading!\n");
 	return 0xaaaaaaaa;
       }
-      e  += 7;    
-    if((sm->fat[e+0] == 0xff) &&
-       (sm->fat[e+1] == 0xff) &&
-       (sm->fat[e+2] == 0xff) &&
-       (sm->fat[e+3] == 0xff))
+    /* this is a special system file! */
+    if((sm->fat[e+6] != FTYPE_MUSIC) &&
+       (sm->fat[e+7] == 0xff) &&
+       (sm->fat[e+8] == 0x00) &&
+       (sm->fat[e+9] == 0xff) &&
+       (sm->fat[e+10] == 0xff))
+      return 0xffffffff;
+
+    if((sm->fat[e+7] == 0xff) &&
+       (sm->fat[e+8] == 0xff) &&
+       (sm->fat[e+9] == 0xff) &&
+       (sm->fat[e+10] == 0xff))
       return 0xffffffff;
        
-    v = sm->fat[e+0] * 0x1000000 +
-        sm->fat[e+1] * 0x10000 +
-        sm->fat[e+2] * 0x100 + 
-        sm->fat[e+3];    
+    v = sm->fat[e+7] * 0x1000000 +
+        sm->fat[e+8] * 0x10000 +
+        sm->fat[e+9] * 0x100 + 
+        sm->fat[e+10];    
   
     return v; 
   }
@@ -427,7 +434,7 @@ mpio_fat_internal_find_startsector(mpio_t *m, BYTE start)
   mpio_smartmedia_t *sm = &m->internal;
   int found=-1;
 
-  f = mpio_fatentry_new(m, MPIO_INTERNAL_MEM, 0);
+  f = mpio_fatentry_new(m, MPIO_INTERNAL_MEM, 0, FTYPE_MUSIC);
 
   while(mpio_fatentry_plus_plus(f))
     {
@@ -451,7 +458,7 @@ mpio_fat_internal_find_fileindex(mpio_t *m)
 
   memset(index, 1, 256);
 
-  f = mpio_fatentry_new(m, MPIO_INTERNAL_MEM, 0);
+  f = mpio_fatentry_new(m, MPIO_INTERNAL_MEM, 0, FTYPE_MUSIC);
   while(mpio_fatentry_plus_plus(f))
     {
       if (sm->fat[f->entry * 0x10 + 1] != 0xff)
@@ -483,7 +490,7 @@ mpio_fat_free_clusters(mpio_t *m, mpio_mem_t mem)
   int e = 0;
   int fsize;
 
-  f = mpio_fatentry_new(m, mem, 0);
+  f = mpio_fatentry_new(m, mem, 0, FTYPE_MUSIC);
   
   do 
     {
@@ -497,11 +504,11 @@ mpio_fat_free_clusters(mpio_t *m, mpio_mem_t mem)
 }
 
 mpio_fatentry_t *
-mpio_fatentry_find_free(mpio_t *m, mpio_mem_t mem)
+mpio_fatentry_find_free(mpio_t *m, mpio_mem_t mem, BYTE ftype)
 {
   mpio_fatentry_t *f;
 
-  f = mpio_fatentry_new(m, mem, 1);
+  f = mpio_fatentry_new(m, mem, 1, ftype);
 
   while(mpio_fatentry_plus_plus(f))
     {
@@ -589,7 +596,7 @@ mpio_fat_clear(mpio_t *m, mpio_mem_t mem)
   if (mem == MPIO_INTERNAL_MEM) {
     sm = &m->internal;
     
-    f = mpio_fatentry_new(m, mem, 1);
+    f = mpio_fatentry_new(m, mem, 1, FTYPE_MUSIC);
     do {      
       mpio_fatentry_set_free(m, mem, f) ;
     } while(mpio_fatentry_plus_plus(f));
@@ -627,7 +634,7 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
 
-    f=mpio_fatentry_new(m, mem, 0);
+    f=mpio_fatentry_new(m, mem, 0, FTYPE_MUSIC);
     mpio_io_block_delete(m, mem, f);
     free(f);
 
@@ -656,7 +663,8 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
 	  /* yuck */
 	  f=mpio_fatentry_new(m, mem, 
 			      ((i / 0x20) - 
-			       ((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2 ))); 
+			       ((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2 )),
+			      FTYPE_MUSIC); 
 	  mpio_io_block_delete(m, mem, f);
 	  free(f);
 	}

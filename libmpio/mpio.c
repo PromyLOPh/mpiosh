@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.26 2002/09/23 22:38:03 germeier Exp $
+ * $Id: mpio.c,v 1.27 2002/09/24 15:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -381,11 +381,6 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 
   MPIO_CHECK_FILENAME(filename);
 
-  /* please fix me sometime */
-  /* the system entries are kind of special ! */
-  if (strncmp("sysdum", filename, 6) == 0) 
-    MPIO_ERR_RETURN(MPIO_ERR_PERMISSION_DENIED);
-
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
@@ -454,6 +449,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 
 int
 mpio_file_put(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+	      mpio_filetype_t filetype,
 	      mpio_callback_t progress_callback)
 {
   mpio_smartmedia_t *sm;
@@ -497,7 +493,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     }
 
   /* find first free sector */
-  f = mpio_fatentry_find_free(m, mem);
+  f = mpio_fatentry_find_free(m, mem, filetype);
   if (!f) 
     {
       debug("could not free cluster for file!\n");
@@ -637,8 +633,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 }
 
 int
-mpio_memory_format(mpio_t *m, mpio_mem_t mem, 
-	      BYTE (*progress_callback)(int, int))
+mpio_memory_format(mpio_t *m, mpio_mem_t mem, mpio_callback_t progress_callback)
 {
   int data_offset;
   mpio_smartmedia_t *sm;
@@ -665,7 +660,7 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
    */
   mpio_fat_clear(m, mem);
   
-  f = mpio_fatentry_new(m, mem, data_offset);  
+  f = mpio_fatentry_new(m, mem, data_offset, FTYPE_MUSIC);  
   do 
     {
       if (!mpio_io_block_delete(m, mem, f))
@@ -689,7 +684,8 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
   if (mem == MPIO_EXTERNAL_MEM) {    
     /* format CIS area */
     f = mpio_fatentry_new(m, mem,        /* yuck */
-			  (1-((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2)));
+			  (1-((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2)),
+			  FTYPE_MUSIC);
     mpio_io_block_delete(m, mem, f);
     free(f);
     mpio_io_sector_write(m, mem, 0x20, sm->cis);
@@ -718,11 +714,6 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   BYTE abort=0;
 
   MPIO_CHECK_FILENAME(filename);
-
-  /* please fix me sometime */
-  /* the system entry are kind of special ! */
-  if (strncmp("sysdum", filename, 6)==0)
-    MPIO_ERR_RETURN(MPIO_ERR_PERMISSION_DENIED);
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;

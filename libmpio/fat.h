@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.h,v 1.7 2002/09/23 22:38:03 germeier Exp $
+ * $Id: fat.h,v 1.8 2002/09/24 15:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -36,10 +36,10 @@ int	mpio_fat_clear(mpio_t *, mpio_mem_t);
 int	mpio_fat_free_clusters(mpio_t *, mpio_mem_t);
 int	mpio_fat_free(mpio_t *, mpio_mem_t);
 
-mpio_fatentry_t *mpio_fatentry_new(mpio_t *, mpio_mem_t, DWORD);
+mpio_fatentry_t *mpio_fatentry_new(mpio_t *, mpio_mem_t, DWORD, BYTE);
 int              mpio_fatentry_plus_plus(mpio_fatentry_t *);
 
-mpio_fatentry_t *mpio_fatentry_find_free(mpio_t *, mpio_mem_t);
+mpio_fatentry_t *mpio_fatentry_find_free(mpio_t *, mpio_mem_t, BYTE);
 int              mpio_fatentry_next_free(mpio_t *, mpio_mem_t, 
 					 mpio_fatentry_t *);
 int              mpio_fatentry_next_entry(mpio_t *, mpio_mem_t, 

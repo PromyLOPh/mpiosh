@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.6 2002/09/14 22:54:41 germeier Exp $
+ * $Id: directory.c,v 1.7 2002/09/24 15:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -414,7 +414,7 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
   if (cluster < 0)
     return NULL;
 
-  new = mpio_fatentry_new(m, mem, cluster);
+  new = mpio_fatentry_new(m, mem, cluster, FTYPE_MUSIC);
 
   if (mem == MPIO_INTERNAL_MEM) 
     { 
@@ -515,8 +515,6 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
 
   /* find uniq 8.3 filename */
   memset(f_8_3, 0x20, 12);
-  f_8_3[6]='~';
-  f_8_3[7]='1';
   f_8_3[8]='.';
   f_8_3[12]=0x00;
 
@@ -538,6 +536,12 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
       f_8_3[i] = toupper(filename[j]);
       i++;
       j++;
+    }
+
+  if (mpio_dentry_find_name_8_3(m, mem, f_8_3))
+    {
+        f_8_3[6]='~';
+        f_8_3[7]='1';
     }
 
   while(mpio_dentry_find_name_8_3(m, mem, f_8_3))
@@ -597,8 +601,25 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
   WORD wdummy;
   BYTE fname[129];
   BYTE fname_8_3[13];
+  BYTE filename_8_3[13];
   DWORD ddummy;
   BYTE *found = 0;
+  int i, j, len;
+
+  /* format given filename to a "standard" 8.3 filename */
+  memset(filename_8_3, 0x20, 13);
+  filename_8_3[12]=0;
+  len=strlen(filename);
+  i=j=0;
+  while ((i<13) && (j <len))
+    {
+      if (filename[j] == '.')
+	i=8;
+      filename_8_3[i] = filename[j];      
+      
+      i++;
+      j++;
+    }
   
   p = mpio_directory_open(m, mem);
   while ((p) && (!found)) {
@@ -607,9 +628,9 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
 			  fname_8_3,
 			  &wdummy, &bdummy, &bdummy,
 			  &bdummy, &bdummy, &ddummy);
-/*     debug ("s: %s\n", fname_8_3); */
-    if ((strcmp(fname_8_3, filename) == 0) &&
-	(strcmp(filename,fname_8_3) == 0)) {
+    
+    if ((strcmp(fname_8_3, filename_8_3) == 0) &&
+	(strcmp(filename_8_3,fname_8_3) == 0)) {
       found = p;
       p = NULL;
     }

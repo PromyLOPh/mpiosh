@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.8 2002/09/23 22:38:03 germeier Exp $
+ * $Id: mpio.h,v 1.9 2002/09/24 15:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -75,7 +75,8 @@ int	mpio_dentry_get(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int,WORD *,
 int	mpio_file_get(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
 
 /* context, memory bank, filename, callback */
-int	mpio_file_put(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
+int	mpio_file_put(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_filetype_t,
+		      mpio_callback_t); 
 
 /* context, memory bank, filename, callback */
 int	mpio_file_del(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 

@@ -1,4 +1,14 @@
 2002-09-24  Markus Germeier  <mager@tzi.de>
+	* libmpio/directory.c (mpio_dentry_put): fixed 8.3 handling
+	  to allow correct writing of CONFIG.DAT
+	  (mpio_dentry_find_name_8_3): fixed handling of given filename
+	* libmpio/mpio.c (mpio_file_del, mpio_file_get): 
+	  system files (like sysdum?.du?) can now be read and deleted
+	  (mpio_file_put): use mpio_filetype_t to tag files which are
+	  written to the internal memory (it is now possible to write
+	  config files back to the player)
+
+2002-09-24  Markus Germeier  <mager@tzi.de>
 	* a lot of little changes and updates
 	* mpiosh/callback.c (mpiosh_cmd_dump_mem): 
 	  renamed function from debug_memory to dump_memory

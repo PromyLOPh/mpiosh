@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.9 2002/09/23 22:38:03 germeier Exp $
+ * $Id: defs.h,v 1.10 2002/09/24 15:38:03 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -59,12 +59,13 @@ typedef enum { GET_VERSION      = 0x01,
 
 /* file types on internal memory */
 /* found in the code of salmoon, are these needed? -mager */
-typedef enum { FTYPE_CONF  = 'C',
+typedef enum { FTYPE_MUSIC = 0x01,
+               FTYPE_CONF  = 'C',
 	       FTYPE_FONT  = 'F',
                FTYPE_OTHER = 'H',
                FTYPE_MEMO  = 'M',
                FTYPE_WAV   = 'V',
-               FTYPE_ENTRY = 'R' } mpio_file_t;
+               FTYPE_ENTRY = 'R' } mpio_filetype_t;
 
 /* type of callback functions */
 typedef BYTE (*mpio_callback_t)(int, int) ; 
