@@ -1,3 +1,7 @@
+2003-03-08    <mager@tzi.de>
+
+	* mpio.spec.in, etc/Makefile.am: fixed packaging problems
+
 2003-02-21    <crunchy@tzi.de>
 
 	* libmpio/directory.h, libmpio/directory.c, libmpio/mpio.h,

@@ -3,6 +3,8 @@
 %define release 1
 %define name    mpio
 %define spec_path @SPEC_PATH@
+%define	prefix		/usr
+%define sysconfdir	%prefix/etc
 
 Version: %version
 Summary: MPIO - providing access to MPIO mp3 players
@@ -11,7 +13,7 @@ Release: %release
 Copyright: see COPYING
 Group: Applications/MultiMedia
 Source: http://download.sourceforge.net/mpio/mpio-@VERSION@.tar.gz
-Prefix: /usr
+Prefix: %prefix
 Buildroot: /var/tmp/mpio-@VERSION@-buildroot/
 Packager: Andreas Büsching <crunchy@tzi.de>
 
@@ -22,7 +24,7 @@ a userspace library and at the moment one tool to access the MPIO player.
 
 %prep
 %setup
-CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=%prefix
+CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=%prefix -sysconfdir=%sysconfdir
 
 %build
 make
@@ -39,8 +41,8 @@ echo "%defattr(700,root,root)" >> /tmp/mpio-files.lst
 echo "%prefix/sbin/mkmpiodev" >> /tmp/mpio-files.lst
 echo "%defattr(644,root,root)" >> /tmp/mpio-files.lst
 echo "/lib/modules/$KVERSION/%{spec_path}/mpio.o" >> /tmp/mpio-files.lst
-echo "%defattr(640,root,root)" >> /tmp/mpio-files.lst
-echo "/etc/mpio/mpioshrc" >> /tmp/mpio-files.lst
+echo "%defattr(644,root,root)" >> /tmp/mpio-files.lst
+echo "%sysconfdir/mpio/mpioshrc" >> /tmp/mpio-files.lst
 
 make DESTDIR=$RPM_BUILD_ROOT install
 
