@@ -9,6 +9,10 @@ all: mpio.o
 mpio.o: mpio.c
 	$(CC) -c $(KCFLAGS) $(INCLUDES) $<
 
+install-strip:
+	$(mkinstalldirs) $(DESTDIR)@MODULE_PATH@
+	$(INSTALL_PROGRAM) -m 644 mpio.o $(DESTDIR)@MODULE_PATH@
+
 install:
 	$(mkinstalldirs) $(DESTDIR)@MODULE_PATH@
 	$(INSTALL_PROGRAM) -m 644 mpio.o $(DESTDIR)@MODULE_PATH@
