@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.7 2002/09/24 15:38:03 germeier Exp $
+ * $Id: directory.c,v 1.8 2002/10/17 22:49:27 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -213,7 +213,7 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
   BYTE *uc;
   BYTE *fname = 0;
   iconv_t ic;
-  int dsize;
+  int dsize, i;
   
   if (buffer == NULL)
     return -1;  
@@ -269,9 +269,15 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
   free(unicode);
 
   memcpy(filename_8_3, dentry->name, 8);
-  filename_8_3[0x08] = '.';	
-  memcpy(filename_8_3 + 0x09, dentry->ext, 3);
-  filename_8_3[0x0c] = 0;
+  i=8;
+  while(filename_8_3[i-1]==' ')
+    i--;
+  filename_8_3[i++] = '.';	
+  memcpy(filename_8_3 + i, dentry->ext, 3);
+  i+=3;
+  while(filename_8_3[i-1]==' ')
+    i--;  
+  filename_8_3[i] = 0;
   hexdumpn(4, filename_8_3, 13);
   
   if (!vfat) 
