@@ -1,4 +1,4 @@
-$Id: TODO,v 1.15 2002/10/12 21:18:13 crunchy Exp $
+$Id: TODO,v 1.16 2002/10/13 17:14:51 germeier Exp $
 
 * Kernel Module
   - the MPIO can no multitasking, so:
@@ -8,10 +8,9 @@ $Id: TODO,v 1.15 2002/10/12 21:18:13 crunchy Exp $
 * libmpio
   - find FAT entry dynamic [DONE]
   - finish API
-  - implement dir functions
-  - implement ECC code (we want a GPL code for this)
-    [error checking works, TODO: error correction)
-  - use ECC code for every read/write operation!! [done]
+  - implement dir functions [DONE]
+  - implement ECC code (we want a GPL code for this) [DONE]
+  - use ECC code for every read/write operation!! [DONE]
   - implement reading of files [DONE]
   - implement writing of files [partially done]
 	* writing to internal memory [DONE]
@@ -21,8 +20,8 @@ $Id: TODO,v 1.15 2002/10/12 21:18:13 crunchy Exp $
   - implement deleting of files [DONE]
   
   If everything is done:
-  - implement formating of external memory [partially done]
-    * write code to fix defective CIS (??), MBR, PBR
+  - implement formating of external memory [DONE]
+    * write code to fix defective CIS (??), MBR, PBR [DONE]
   - implement formating of internal memory (BEWARE !!!!)
     [DONE: BEWARE no config files are written!!!!]
 
