@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.24 2002/10/13 12:03:51 germeier Exp $
+ * $Id: callback.c,v 1.25 2002/10/13 19:46:51 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -273,18 +273,18 @@ mpiosh_callback_get(int read, int total)
   return mpiosh_cancel; // continue
 }
 
-void
-mpiosh_cmd_get(char *args[])
-{
-  MPIOSH_CHECK_CONNECTION_CLOSED;
-  MPIOSH_CHECK_ARG;
+/* void */
+/* mpiosh_cmd_get(char *args[]) */
+/* { */
+/*   MPIOSH_CHECK_CONNECTION_CLOSED; */
+/*   MPIOSH_CHECK_ARG; */
   
-  if (mpio_file_get(mpiosh.dev, mpiosh.card, args[0], 
-		    mpiosh_callback_get) == -1) {
-    mpio_perror("error");
-  } 
-  printf("\n");
-}
+/*   if (mpio_file_get(mpiosh.dev, mpiosh.card, args[0],  */
+/* 		    mpiosh_callback_get) == -1) { */
+/*     mpio_perror("error"); */
+/*   }  */
+/*   printf("\n"); */
+/* } */
 
 void
 mpiosh_cmd_mget(char *args[])
@@ -355,22 +355,22 @@ mpiosh_callback_put(int read, int total)
   return mpiosh_cancel; // continue
 }
 
-void
-mpiosh_cmd_put(char *args[])
-{
-  int size;
+/* void */
+/* mpiosh_cmd_put(char *args[]) */
+/* { */
+/*   int size; */
 
-  MPIOSH_CHECK_CONNECTION_CLOSED;
-  MPIOSH_CHECK_ARG;
+/*   MPIOSH_CHECK_CONNECTION_CLOSED; */
+/*   MPIOSH_CHECK_ARG; */
   
-  if ((size = mpio_file_put(mpiosh.dev, mpiosh.card, args[0], FTYPE_MUSIC,
-			    mpiosh_callback_put)) == -1) {
-    mpio_perror("error");
-  } else {
-    mpio_sync(mpiosh.dev, mpiosh.card);
-  }
-  printf("\n");
-}
+/*   if ((size = mpio_file_put(mpiosh.dev, mpiosh.card, args[0], FTYPE_MUSIC, */
+/* 			    mpiosh_callback_put)) == -1) { */
+/*     mpio_perror("error"); */
+/*   } else { */
+/*     mpio_sync(mpiosh.dev, mpiosh.card); */
+/*   } */
+/*   printf("\n"); */
+/* } */
 
 void
 mpiosh_cmd_mput(char *args[])
@@ -451,19 +451,19 @@ mpiosh_callback_del(int read, int total)
   return mpiosh_cancel; // continue
 }
 
-void
-mpiosh_cmd_del(char *args[])
-{
-  int size;
+/* void */
+/* mpiosh_cmd_del(char *args[]) */
+/* { */
+/*   int size; */
   
-  MPIOSH_CHECK_CONNECTION_CLOSED;
-  MPIOSH_CHECK_ARG;
+/*   MPIOSH_CHECK_CONNECTION_CLOSED; */
+/*   MPIOSH_CHECK_ARG; */
   
-  size = mpio_file_del(mpiosh.dev, mpiosh.card, args[0], mpiosh_callback_del);
-  mpio_sync(mpiosh.dev, mpiosh.card);
+/*   size = mpio_file_del(mpiosh.dev, mpiosh.card, args[0], mpiosh_callback_del); */
+/*   mpio_sync(mpiosh.dev, mpiosh.card); */
 
-  printf("\n");
-}
+/*   printf("\n"); */
+/* } */
 
 void
 mpiosh_cmd_mdel(char *args[])

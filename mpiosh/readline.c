@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: readline.c,v 1.2 2002/10/12 20:06:22 crunchy Exp $
+ * $Id: readline.c,v 1.3 2002/10/13 19:46:51 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -90,6 +90,11 @@ mpiosh_readline_comp_mpio_file(const char *text, int state)
   WORD year;  
   DWORD fsize;  
 
+  if (mpiosh.dev == NULL) {
+    rl_attempted_completion_over = 1;
+    return NULL;
+  }
+  
   if (state == 0) p = mpio_directory_open(mpiosh.dev, mpiosh.card);
 
   while ((p != NULL) && (arg == NULL)) {

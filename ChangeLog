@@ -1,3 +1,13 @@
+2002-10-13  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpiosh/callback.c: removed the callback functions of get, put
+	and del. This work is done by mget, mput and mdel now.
+
+	* mpiosh/readline.c (mpiosh_readline_comp_mpio_file): fixed a
+	crash which ocurrs when there is no connection to the player
+	opened. Also stop readline from using default filename completion
+	in the case of not returning any results.
+
 2002-10-13  Markus Germeier  <mager@tzi.de>
 
 	* all operations on external memory should work now!
