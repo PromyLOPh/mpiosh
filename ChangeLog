@@ -1,0 +1,4 @@
+2002-08-05  Andreas Buesching  <crunchy@tzi.de>
+
+	* autogen.sh: add script to build configure script
+

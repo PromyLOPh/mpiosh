@@ -1,0 +1,34 @@
+- How to help us finding bugs and learning more about different models
+  of the MPIO mp3 players?
+
+The mpiosh shell is at the moment the only user interface to access
+the functionality of libmpio. Because this software is definitly not
+ready yet (pre alpha) and we need a lot of more information about
+different models of the MPIO mp3 players we add special debugging
+functionality to shell to help users to support our work.
+
+To activate and to control the debugging output we need to understand
+your bug reports the shell has a special 'debug' command. To activate
+the debug ouput type the following command:
+
+  mpio <i> debug on
+
+to see more detailed deug output the level can be changed using the 'level' option like this:
+
+  mpio <i> debug level 5
+
+This sets the highest debug level available. To make it easier to send us the output you can redirect the debug output to a file like this:
+
+  mpio <i> debug file /tmp/mpio-5.debug
+
+If you would like to help us finding bugs and learning more about the
+protocol of the MPIO players use this debugging support.
+
+Thanks for you help.
+
+MPIO-Team
+
+
+
+
+
