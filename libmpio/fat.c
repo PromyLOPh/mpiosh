@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.23 2003/03/25 23:56:52 germeier Exp $
+ * $Id: fat.c,v 1.24 2003/03/26 00:05:50 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -503,8 +503,7 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
     /* check if this block became defective */
     if (m->model >= MPIO_MODEL_FD100) {      
       /* newer models */
-      if ((sm->fat[e+0x0c] != 0) ||
-	  (sm->fat[e+0x0f] != 0) ||
+      if ((sm->fat[e+0x0f] != 0) ||
 	  (sm->fat[e+0x01] != sm->fat[e+0x0e]))
 	{
 	  debug("defective block encountered, abort reading! (newer models check)\n");
