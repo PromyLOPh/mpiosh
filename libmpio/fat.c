@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.10 2002/09/11 13:44:30 germeier Exp $
+ * $Id: fat.c,v 1.11 2002/09/18 22:18:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -259,7 +259,7 @@ mpio_fatentry_plus_plus(mpio_fatentry_t *f)
 
 /* read "fat_size" sectors of fat into the provided buffer */
 int
-mpio_fat_read (mpio_t *m, mpio_mem_t mem)
+mpio_fat_read (mpio_t *m, mpio_mem_t mem, BYTE (*progress_callback)(int, int))
 {
   mpio_smartmedia_t *sm;
   BYTE recvbuff[SECTOR_SIZE];
@@ -269,7 +269,7 @@ mpio_fat_read (mpio_t *m, mpio_mem_t mem)
     {    
       sm = &m->internal;
       if (mpio_io_spare_read(m, mem, 0, (sm->size / sm->chips), 0, sm->fat,
-			     (sm->fat_size * SECTOR_SIZE)))
+			     (sm->fat_size * SECTOR_SIZE), progress_callback))
 	return 1;
       return 0;
     }

@@ -1,3 +1,17 @@
+2002-09-18  Markus Germeier  <mager@tzi.de>
+
+	* mpiosh/callback.c (mpiosh_cmd_mem): 
+	  external memory is only selectable if it is available
+	* libmpio/mpio.c (mpio_init): added progress callback
+	  for init
+	* mpiosh/callback.c (mpiosh_callback_init): 
+	  added function
+	* libmpio/io.c (cluster2block, cluster2blockaddress): 
+	  removed wrong block mapping
+	  (current mapping should work with complete error 
+	   free SM cards _only_)
+	  
+
 2002-09-18  Andreas Buesching  <crunchy@tzi.de>
 
 	* libmpio/mpio.c (mpio_file_get, mpio_file_put, mpio_file_del):

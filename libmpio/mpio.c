@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.18 2002/09/18 20:32:22 crunchy Exp $
+ * $Id: mpio.c,v 1.19 2002/09/18 22:18:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -90,7 +90,8 @@ mpio_init_internal(mpio_t *m)
   sm->fat_size     = sm->max_cluster*16/SECTOR_SIZE;   
   debugn(2,"fat_size: %04x\n", sm->fat_size*SECTOR_SIZE);
   sm->fat          = malloc(sm->fat_size*SECTOR_SIZE);
-  mpio_fat_read(m, MPIO_INTERNAL_MEM);
+  /* fat will be read in mpio_init, so we can more easily handle
+     a callback function */
 
   /* Read directory from internal memory */
   sm->dir_offset=0;
@@ -135,13 +136,13 @@ mpio_init_external(mpio_t *m)
       
       mpio_bootblocks_read(m, MPIO_EXTERNAL_MEM);
       sm->fat = malloc(SECTOR_SIZE*sm->fat_size);
-      mpio_fat_read(m, MPIO_EXTERNAL_MEM);
+      mpio_fat_read(m, MPIO_EXTERNAL_MEM, NULL);
       mpio_rootdir_read(m, MPIO_EXTERNAL_MEM);
     }
 }
 
 mpio_t *
-mpio_init(void) 
+mpio_init(BYTE (*progress_callback)(int, int)) 
 {
   mpio_t *new_mpio;
 
@@ -199,6 +200,9 @@ mpio_init(void)
 
   /* external init */
   mpio_init_external(new_mpio);
+
+  /* read FAT/spare area */
+  mpio_fat_read(new_mpio, MPIO_INTERNAL_MEM, progress_callback);
 
   return new_mpio;  
 }

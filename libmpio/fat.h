@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.h,v 1.5 2002/09/11 00:18:34 germeier Exp $
+ * $Id: fat.h,v 1.6 2002/09/18 22:18:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -30,7 +30,7 @@
 
 int	mpio_bootblocks_read(mpio_t *, mpio_mem_t);
 
-int	mpio_fat_read(mpio_t *, mpio_mem_t);
+int	mpio_fat_read(mpio_t *, mpio_mem_t, BYTE (*)(int, int));
 int	mpio_fat_write(mpio_t *, mpio_mem_t);
 int	mpio_fat_clear(mpio_t *, mpio_mem_t);
 int	mpio_fat_free_clusters(mpio_t *, mpio_mem_t);

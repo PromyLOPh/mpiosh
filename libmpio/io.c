@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.13 2002/09/15 23:05:25 salmoon Exp $
+ * $Id: io.c,v 1.14 2002/09/18 22:18:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -109,32 +109,35 @@ cluster2block(int mem, int sector)
 
   /* No Zone-based block management for SmartMedia below 32MB !!*/
 
-  if (mem == 32) 
-    {
-      /* I'm so large in *not* knowing! */
-      if (sector >= 830)
-      	a++;
-      if (a >= 1001) 
-	a += 21;
-    }  
+  /* The jumps are defect sectors on a specific SM medium and have to
+     be handled with a proper logic block -> physical block which
+     include a bad block management */
 
-  if (mem == 64) 
-    {
-      /* I'm so large in *not* knowing! */
-      if (sector >= 89)
-	a++;
-      if (a >= 1000)
-	a += 21;    
-      if (a >= 2021)
-	a += 24;
-      if (a >= 3045)
-	a += 24;    
-      /* WHAT? */
-      if (a >= 3755)
-	a++;      
-    }
+/*   if (mem == 32)  */
+/*     { */
+/*       if (sector >= 830) */
+/*       	a++; */
+/*       if (a >= 1001) */
+/* 	a += 21; */
+/*     }   */
 
-  if (mem == 128) 
+/*   if (mem == 64)  */
+/*     { */
+/*       /\* I'm so large in *not* knowing! *\/ */
+/*       if (sector >= 89) */
+/* 	a++; */
+/*       if (a >= 1000) */
+/* 	a += 21;     */
+/*       if (a >= 2021) */
+/* 	a += 24; */
+/*       if (a >= 3045) */
+/* 	a += 24;     */
+/*       /\* WHAT? *\/ */
+/*       if (a >= 3755) */
+/* 	a++;       */
+/*     } */
+
+  if (mem > 16)
     {
       /* two blocks are already spent elsewhere */
       /* question is: where (CIS and ??) */
@@ -142,7 +145,7 @@ cluster2block(int mem, int sector)
 	a += 22;
       /* ... and then add 24 empty blocks every 1000 sectors */
       a += ((sector - 998) / 1000 * 24);
-    }  
+    }
   
   return a;
 }
@@ -183,6 +186,10 @@ cluster2blockaddress(DWORD index, BYTE size)
 {
   DWORD ba;
   WORD  block_address;
+
+  /* The jumps are defect sectors on a specific SM medium and have to
+     be handled with a proper logic block -> physical block which
+     include a bad block management */
   
   if (index<0x40) 
     {
@@ -191,27 +198,23 @@ cluster2blockaddress(DWORD index, BYTE size)
       if (index >= 0x8000) 
 	{	  
 	  ba = ((index % 0x8000) / 0x20);
-	  /* I'm so large in *not* knowing! */
-	  /* these are the same jumps as found in cluster2block */
-	  if (size == 64)
-	    {
-	      if (index >= 0x1d5e0)
-		ba--;	      
-	    }
+/* 	  if (size == 64) */
+/* 	    { */
+/* 	      if (index >= 0x1d5e0) */
+/* 		ba--;	       */
+/* 	    } */
 	} else {       
 	  ba = (index / 0x20) - 2;
-	  /* I'm so large in *not* knowing! */
-	  /* these are the same jumps as found in cluster2block */
-	  if (size == 32) 
-	    {
-	      if (ba >= 0x33f)
-		ba--;	      
-	    }	  
-	  if (size == 64)
-	    {
-	      if (ba >= 0x05b)
-		ba--;	      
-	    }	  
+/* 	  if (size == 32)  */
+/* 	    { */
+/* 	      if (ba >= 0x33f) */
+/* 		ba--;	       */
+/* 	    }	   */
+/* 	  if (size == 64) */
+/* 	    { */
+/* 	      if (ba >= 0x05b) */
+/* 		ba--;	       */
+/* 	    }	   */
 	}
       block_address= index2blockaddress(ba);
       debugn(2, "block-foo: %06x %04x %04x\n", index, ba, block_address);
@@ -660,7 +663,8 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
 
 int
 mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
-		   BYTE wsize, BYTE *output, int toread)
+		   BYTE wsize, BYTE *output, int toread,
+		   BYTE (*progress_callback)(int, int))
 {
   int i;
   int nwrite, nread;
@@ -697,6 +701,9 @@ mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
 				     output + (i * CMD_SIZE) +
 				     (toread / chips * (chip - 1)),
 				     CMD_SIZE);
+
+	  if ((progress_callback) && (i % 256))
+	    (*progress_callback)((i*CMD_SIZE), toread);
       
 	  if(nread != CMD_SIZE) 
 	    {
@@ -709,6 +716,8 @@ mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
 		  CMD_SIZE);
 	}
     }
+  if (progress_callback)
+    (*progress_callback)(toread, toread);
   
   return 0;  
 }

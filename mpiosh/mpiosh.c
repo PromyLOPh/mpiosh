@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.13 2002/09/18 20:32:22 crunchy Exp $
+ * $Id: mpiosh.c,v 1.14 2002/09/18 22:18:29 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -418,7 +418,8 @@ main(int argc, char *argv[]) {
   debug_init();
   
   mpiosh_init();
-  mpiosh.dev = mpio_init();
+  mpiosh.dev = mpio_init(mpiosh_callback_init);
+  printf("\n");
 
   if (mpiosh.card == MPIO_INTERNAL_MEM)
     mpiosh.prompt = PROMPT_INT;

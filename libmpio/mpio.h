@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.4 2002/09/15 12:03:23 germeier Exp $
+ * $Id: mpio.h,v 1.5 2002/09/18 22:18:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -45,7 +45,7 @@
  *init and shutdown 
  */
 
-mpio_t *mpio_init(void);
+mpio_t *mpio_init(BYTE (*)(int, int));
 void	mpio_close(mpio_t *);
 
 /*

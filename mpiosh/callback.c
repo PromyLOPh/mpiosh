@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.9 2002/09/18 20:32:22 crunchy Exp $
+ * $Id: callback.c,v 1.10 2002/09/18 22:18:29 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -160,13 +160,20 @@ mpiosh_cmd_info(char *args[])
 void
 mpiosh_cmd_mem(char *args[])
 {
+  int free;
+  
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
 
   if (!strcmp(args[0], "e")) {
-    mpiosh.card = MPIO_EXTERNAL_MEM;
-    mpiosh.prompt = PROMPT_EXT;
-    printf("external memory card is selected\n");
+    if (mpio_memory_free(mpiosh.dev, mpiosh.card, &free)) {
+      mpiosh.card = MPIO_EXTERNAL_MEM;
+      mpiosh.prompt = PROMPT_EXT;
+      printf("external memory card is selected\n");
+    } else {
+      printf("no external memory card is available\n");
+    }
+    
   } else if (!strcmp(args[0], "i")) {
     mpiosh.card = MPIO_INTERNAL_MEM;
     mpiosh.prompt = PROMPT_INT;
@@ -183,7 +190,8 @@ mpiosh_cmd_open(char *args[])
   
   UNUSED(args);
   
-  mpiosh.dev = mpio_init();
+  mpiosh.dev = mpio_init(mpiosh_callback_init);
+  printf("\n");
 
   if (mpiosh.dev == NULL)	
     printf("error: could not open connection MPIO player\n");
@@ -215,6 +223,15 @@ mpiosh_cmd_quit(char *args[])
   UNUSED(args);
   
   exit(0);
+}
+
+BYTE
+mpiosh_callback_init(int read, int total) 
+{
+  printf("\rinitialized %.2f %%", ((double) read / total) * 100.0 );
+  fflush(stdout);
+
+  return mpiosh_cancel; // continue
 }
 
 BYTE
