@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.12 2004/04/19 12:19:26 germeier Exp $
+ * $Id: mpio.c,v 1.13 2004/04/23 18:17:56 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
@@ -481,7 +481,7 @@ void
 mpio_close(mpio_t *m) 
 {
   if (m) {
-    close(m->fd);
+    mpio_device_close(m);
     
     if(m->internal.fat)
       free(m->internal.fat);

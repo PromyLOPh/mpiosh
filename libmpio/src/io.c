@@ -1,5 +1,5 @@
 /*
- * $Id: io.c,v 1.10 2004/04/19 12:19:26 germeier Exp $
+ * $Id: io.c,v 1.11 2004/04/23 18:17:56 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
@@ -584,19 +584,19 @@ mpio_device_open(mpio_t *m){
     }
   }
 
-  m->use_libusb=0;  
   return MPIO_ERR_PERMISSION_DENIED;
 }
 
 int 
 mpio_device_close(mpio_t *m) {
   if(m->use_libusb) {
+    debugn(2, "closing libusb\n");
     usb_close(m->usb_handle);
-    close(m->fd);
     m->fd=0;
   } 
 #ifdef USE_KMODULE
   else {
+    debugn(2, "closing kernel module\n");
     close(m->fd);
     m->fd=0;
   }
