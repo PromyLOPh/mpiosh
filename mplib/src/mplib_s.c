@@ -286,7 +286,7 @@ id3v2_add_tag(int fd, id3v2_tag *tag, id3v2_tag *old)
 		if(tag->header->has_footer) i -= 10;
 		/* add padding to total size we mean to store on disk */
 		/* mplib does not use any kind of padding internaly */
-		i += 1024;
+/* 		i += 1024; */ /* no padding needed for MPIO use */
 	}
 	
 	d = id3_sync32(i); 
@@ -407,7 +407,8 @@ id3v2_add_tag(int fd, id3v2_tag *tag, id3v2_tag *old)
 		fwrite(btag_start, tag->header->total_tag_size, 1, tmp);
 
 		/* Write 1024b padding */
-		fwrite(blank, 1024, 1, tmp);
+		/* no padding needed for MPIO use */
+/* 		fwrite(blank, 1024, 1, tmp); */
 
 		/* write rest of file */
 		while(!feof(file))
@@ -1022,7 +1023,8 @@ id3_add_frame(id3v2_frame_list *list, char *field, char *new_value, int len)
 	new_value = new_valuecp;
 
 	/* make sync safe */
-	len_sync = id3_sync(new_value, len);
+/* 	len_sync = id3_sync(new_value, len); */
+	len_sync = len; /* disabled sync for MPIO use */
 	
 	frame = XMALLOCD(id3v2_frame, "id3_add_frame:frame");
 	frame->frame_id = xmallocd(4, "id3_add_frame:frame->frame_id");
