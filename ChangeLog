@@ -1,4 +1,8 @@
 2004-03-24  Markus Germeier  <mager@tzi.de>
+        * dummy entry! fixed CVS syncmail
+	* check latest Changelog entries!
+	
+2004-03-24  Markus Germeier  <mager@tzi.de>
 	* small build environment updates
 	* updated mpio.spec.in file
 	
