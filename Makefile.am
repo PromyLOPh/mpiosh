@@ -1,4 +1,4 @@
-SUBDIRS=kernel libmpio mpiosh etc tools 
+SUBDIRS=@MPIO_KERNEL@ libmpio mpiosh etc tools 
 
 sbin_SCRIPTS=mkmpiodev
 EXTRA_DIST=mpio.spec mkmpiodev
