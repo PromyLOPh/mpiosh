@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.20 2002/10/13 12:03:51 germeier Exp $
+ * $Id: io.c,v 1.21 2002/10/23 00:03:42 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -1007,7 +1007,9 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, BYTE size,
 				     CMD_SIZE);
 
 	  if ((progress_callback) && (i % 256))
-	    (*progress_callback)(mem, (i*CMD_SIZE), toread);
+	    (*progress_callback)(mem, 
+				 (i*CMD_SIZE+(toread/chips*(chip-1))),
+				 toread );
       
 	  if(nread != CMD_SIZE) 
 	    {

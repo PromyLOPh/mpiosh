@@ -1,3 +1,8 @@
+2002-10-23  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/io.c (mpio_io_spare_read): fixed init progress counter
+	  for models with two internal chips
+
 2002-10-18  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/global.c (commands): add config command with no
