@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
+ * $Id: mpio.c,v 1.3 2002/09/03 21:20:53 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -41,7 +41,6 @@
 
 #define DSTRING 100
 
-int sector_hack(int mem, int sector);
 void mpio_init_internal(mpio_t *);
 void mpio_init_external(mpio_t *);
 
@@ -72,7 +71,7 @@ mpio_init_internal(mpio_t *m)
     sm->chips = 2;
   }
 
-  /* this probably is not needed, but anyways ... */
+  /* used for size calculations (see mpio_memory_free) */
   mpio_id2geo(sm->id, &sm->geo);
 
   /* read FAT information from spare area */
@@ -182,7 +181,8 @@ mpio_memory_free(mpio_t *m, mpio_mem_t mem, int *free)
 {
   *free=mpio_fat_free_clusters(m, mem);
   if (mem==MPIO_INTERNAL_MEM) {    
-    return (m->internal.geo.SumSector * SECTOR_SIZE / 1000);    
+    return (m->internal.geo.SumSector 
+	    * SECTOR_SIZE / 1000 * m->internal.chips);    
   }
   
   if (mem==MPIO_EXTERNAL_MEM) {
@@ -216,235 +216,91 @@ mpio_get_info(mpio_t *m, mpio_info_t *info)
   snprintf(info->firmware_date, max,    "%s.%s.%s", 
 	   m->firmware.day, m->firmware.month, m->firmware.year);
   
-  if (m->internal.chips == 1) {    
-    snprintf(info->firmware_mem_internal, max, "%3dMB (%s)", 
-	     mpio_id2mem(m->internal.id), 
-	     mpio_id2manufacturer(m->internal.manufacturer));
-  } else {
-    snprintf(info->firmware_mem_internal, max, "%3dMB (%s) - %d chips", 
-	     mpio_id2mem(m->internal.id), 
-	     mpio_id2manufacturer(m->internal.manufacturer),
-	     m->internal.chips);
-  }
-
-  snprintf(info->firmware_mem_external, max, "%3dMB (%s)", 
-	   mpio_id2mem(m->external.id), 
-	   mpio_id2manufacturer(m->external.manufacturer));
+  if (m->internal.chips == 1) 
+    {    
+      snprintf(info->firmware_mem_internal, max, "%3dMB (%s)", 
+	       mpio_id2mem(m->internal.id), 
+	       mpio_id2manufacturer(m->internal.manufacturer));
+    } else {
+      snprintf(info->firmware_mem_internal, max, "%3dMB (%s) - %d chips", 
+	       mpio_id2mem(m->internal.id)*m->internal.chips, 
+	       mpio_id2manufacturer(m->internal.manufacturer),
+	       m->internal.chips);
+    }
+  
+  if (m->internal.id)
+    {      
+      snprintf(info->firmware_mem_external, max, "%3dMB (%s)", 
+	       mpio_id2mem(m->external.id), 
+	       mpio_id2manufacturer(m->external.manufacturer));
+    } else {
+      snprintf(info->firmware_mem_external, max, "not available");
+    }
+      
 }
 
-/* void */
-/* mpio_print_version(mpio_t *m) */
-/* { */
-/*   printf("Firmware Id:      \"%s\"\n", m->firmware.id); */
-/*   printf("Firmware Version:  %s.%s\n", m->firmware.major,  */
-/* 	 m->firmware.minor); */
-/*   printf("Firmware Date:     %s.%s.%s\n", m->firmware.day, */
-/* 	 m->firmware.month, */
-/* 	 m->firmware.year); */
-
-/*   printf("internal Memory:   %3dMB (%s)\n",  */
-/* 	 mpio_id2mem(m->internal.id),  */
-/* 	 mpio_id2manufacturer(m->internal.manufacturer)); */
-/*   if (m->external.id!=0) {     */
-/*     printf("external Memory:   %3dMB (%s)\n",  */
-/* 	   mpio_id2mem(m->external.id), */
-/* 	   mpio_id2manufacturer(m->external.manufacturer)); */
-/*   } else { */
-/*     printf("external Memory:   %3dMB (%s)\n", 0, "not available"); */
-/*   } */
-/* } */
-
-/*
- *
- * foo
- *
- */
-
-/*
- * HELP!
- *
- * somebody explain me these values!!!
- *
- */
-
-int 
-sector_hack(int mem, int sector)
-{
-  int a = sector;
-
-  /* No Zone-based block management for SmartMedia below 32MB !!*/
-
-  if (mem == 64) {
-    /* I'm so large in *not* knowing! */
-    if (sector >= 89)
-      a++;
-    if (a >= 1000)
-      a += 21;    
-    if (a >= 2021)
-      a += 24;
-    if (a >= 3045)
-      a += 24;    
-    /* WHAT? */
-    if (a >= 3755)
-      a++;
-        
-  }
-  if ((mem == 128) || (mem == 32)) {
-    /* two blocks are already spent elsewhere */
-    /* question is: where (CIS and ??) */
-    if (sector >= 998) 
-      a += 22;
-    /* ... and then add 24 empty blocks every 1000 sectors */
-    a += ((sector - 998) / 1000 * 24);
-/*     if (a>=2020) */
-/*       a+=24; */
-/*     if (a>=3044) */
-/*       a+=24; */
-/*     if (a>=4068) */
-/*       a+=24; */
-/*     if (a>=5092) */
-/*       a+=24; */
-/*     if (a>=6116) */
-/*       a+=24; */
-/*     if (a>=7140) */
-/*       a+=24; */
-  }  
-  
-  return a;
-}
-  
 int
 mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename, 
 	      BYTE (*progress_callback)(int, int))
 {
-  BYTE *p;
-  BYTE bdummy;
-  WORD wdummy;
-
   mpio_smartmedia_t *sm;
-  int data_offset;
   BYTE fname[129];
   BYTE block[BLOCK_SIZE];
-  DWORD startsector = 0, sector;
-  DWORD realsector = 0;
   int fd, towrite;
+  BYTE   *p;
+  mpio_fatentry_t *f=0;
   
   DWORD filesize, fsize;
-  DWORD fat_and;
-  DWORD fat_end; 
+
   BYTE abort = 0;
   
   /* please fix me sometime */
-  /* the system entry are kind of special ! */
+  /* the system entries are kind of special ! */
   if (strncmp("sysdum", filename, 6) == 0)
     return 0;  
 
-  if (mem == MPIO_INTERNAL_MEM) {    
-    sm = &m->internal;
-    data_offset = 0x00;
-    fat_and = 0xffffffff;
-    fat_end = 0xffffffff;
-  }
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   
-  if (mem == MPIO_EXTERNAL_MEM) {
-    sm = &m->external;
-    data_offset = sm->dir_offset + DIR_NUM - (2 * BLOCK_SECTORS);    
-    /* FAT 16 vs. FAT 12 */  
-    if (sm->size==128) {
-      fat_and = 0xffff;
-      fat_end = 0xfff8;
-    } else {
-      fat_and = 0xfff;
-      fat_end = 0xff8;
-    } 
-  }
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
-  p = mpio_directory_open(m, mem);
-  while (p) {
-    mpio_dentry_get (m, p,
-		     fname, 128,
-		     &wdummy, &bdummy, &bdummy,
-		     &bdummy, &bdummy, &filesize);
-    fsize = filesize;
-    if ((strcmp(fname,filename) == 0) && (strcmp(filename,fname) == 0)) {
-      startsector = mpio_dentry_get_startsector(m, p);      
-      p = NULL;
-    }
-    
-    p = mpio_dentry_next(m, p);
-  }
+  /* find file */
+  p = mpio_dentry_find_name(m, mem, filename);
+  if (!p)
+      p = mpio_dentry_find_name_8_3(m, mem, filename);
+
+  if (p)
+    f = mpio_dentry_get_startcluster(m, mem, p);      
   
-  /* grr, of curse these are clusters not sectors */
-  /* must code while awake, must ... */
-  if (startsector) {    
+  if (f) {    
+    filesize=fsize=mpio_dentry_get_filesize(m, mem, p);
+    
+    unlink(filename);    
     fd = open(filename, (O_RDWR | O_CREAT), (S_IRWXU | S_IRGRP | S_IROTH));    
-    debugn(2, "startsector: %4x\n", startsector);  
-    sector = startsector;
-    if (mem == MPIO_INTERNAL_MEM) {    
-      realsector = mpio_fat_internal_find_startsector(m, sector);
-      realsector = realsector+         /* chose the right bank */  
-	(0x01000000 * ((realsector / (sm->size / 16 * 1000 / sm->chips)) + 1));
-      sector=realsector;
-      debugn(2, "startsector (real): %4x\n", sector);  
-    } else {
-      realsector=sector_hack(sm->size, sector);
-    }
     
-    mpio_io_block_read(m, mem, realsector + (data_offset / BLOCK_SECTORS),
-		       sm->size, block);
-
-    if (filesize > BLOCK_SIZE) {
-      towrite = BLOCK_SIZE;
-    } else {
-      towrite = filesize;
-    }    
+    do
+      {
+	debugn(2, "sector: %4x\n", f->entry);	    
     
-    if (write(fd, block, towrite) != towrite) {
-      debug("error writing file data\n");
-      close(fd);
-      return -1;
-    } 
-    
-    filesize -= towrite;
+	mpio_io_block_read(m, mem, f, block);
 
-    debugn(5, "sector: (%6x) %4x\n", 
-	  (sector&0xffffff), mpio_fat_entry_read(m, mem, sector&0xffffff));
-
-    
-
-    while((((mpio_fat_entry_read(m, mem, (sector & 0xffffff)) & fat_and)
-	    < fat_end)) && (filesize > 0) && (!abort)) {    
-	sector=mpio_fat_entry_read(m, mem, sector & 0xffffff);	
-	debugn(2,"next sector: %4x\n", sector); 
-	if (mem == MPIO_INTERNAL_MEM) {
-	  realsector = sector;
-	} else {
-	  realsector = sector_hack(sm->size, sector);
-	}
-	    
-	debugn(2," realsector: %4x\n", realsector); 
-	
-	mpio_io_block_read(m, mem,
-			   (realsector + (data_offset / BLOCK_SECTORS)),
-			   sm->size, block);
 	if (filesize > BLOCK_SIZE) {
-	  towrite=BLOCK_SIZE;
+	  towrite = BLOCK_SIZE;
 	} else {
-	  towrite=filesize;
+	  towrite = filesize;
 	}    
 	
-	if (write(fd, block, towrite)!=towrite) {
+	if (write(fd, block, towrite) != towrite) {
 	  debug("error writing file data\n");
 	  close(fd);
 	  return -1;
-	}    
-	filesize-=towrite;
+	} 
+	filesize -= towrite;
 	
 	if (progress_callback)
 	  abort=(*progress_callback)((fsize-filesize), fsize);
 
-      }
-
+      } while ((mpio_fatentry_next_entry(m, mem, f) && (filesize>0)));
+  
     close (fd);    
   } else {
     debug("unable to locate the file: %s\n", filename);
@@ -470,6 +326,8 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   DWORD fat_end;  
   BYTE abort=0;
   
+  debug("Support for writing files is deactivated!");
+  return 0;
 
   if (mem==MPIO_INTERNAL_MEM) {    
     sm=&m->internal;
@@ -531,7 +389,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
       sector=startsector;
       debugn(2, "startsector: %d\n", startsector);
       /* evil hacks are us ;-) */
-      mpio_fat_entry_write(m, mem, startsector, fat_and);
+/*       mpio_fatentry_write(m, mem, startsector, fat_and); */
     } else {
       nextsector=mpio_fat_find_free(m, mem);
       if (!nextsector){
@@ -541,10 +399,10 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
       }
       debugn(2, " nextsector: %d\n", nextsector);
 
-      mpio_fat_entry_write(m, mem, sector, nextsector);
+/*       mpio_fatentry_write(m, mem, sector, nextsector); */
       sector=nextsector;
       /* evil hacks are us ;-) */
-      mpio_fat_entry_write(m, mem, sector, fat_and);
+/*       mpio_fatentry_write(m, mem, sector, fat_and); */
 
     }
 
@@ -555,7 +413,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 /*       sector=realsector; */
 /*       debugn(2, "startsector (real): %4x\n", sector);   */
     } else {
-      realsector=sector_hack(sm->size, sector);
+/*       realsector=sector_hack(sm->size, sector); */
     }
 
 /*     debug("mager: %04x : %3d\n", realsector*BLOCK_SECTORS, realsector); */
@@ -651,6 +509,9 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   DWORD fat_and;
   DWORD fat_end;  
   BYTE abort=0;
+
+  debug("Support for deleting files is deactivated!");
+  return 0;
   
   /* please fix me sometime */
   /* the system entry are kind of special ! */
@@ -690,7 +551,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 		     &bdummy, &bdummy, &filesize);
     fsize=filesize;
     if ((strcmp(fname,filename)==0) && (strcmp(filename,fname)==0)) {
-      startsector=mpio_dentry_get_startsector(m, p);      
+      startsector=mpio_dentry_get_startcluster(m, mem, p);      
       p=NULL;
     }
     
@@ -709,7 +570,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
       sector = realsector;
       debugn(2, "startsector (real): %4x\n", sector);  
     } else {
-      realsector = sector_hack(sm->size, sector);
+/*       realsector = sector_hack(sm->size, sector); */
     }
 
     mpio_io_block_delete(m, mem, (realsector * BLOCK_SECTORS) + data_offset,
@@ -723,38 +584,38 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
     
     filesize -= towrite;
 
-    debugn(5, "sector: (%6x) %4x\n", 
-	  (sector&0xffffff), mpio_fat_entry_read(m, mem, sector&0xffffff));
+/*     debugn(5, "sector: (%6x) %4x\n",  */
+/* 	  (sector&0xffffff), mpio_fatentry_read(m, mem, sector&0xffffff)); */
 
-    while((((mpio_fat_entry_read(m, mem, (sector & 0xffffff)) & fat_and)
-	    < fat_end)) && (filesize>0) && (!abort)) {    
-	oldsector = sector;
-	sector = mpio_fat_entry_read(m, mem, sector & 0xffffff);	
-	mpio_fat_entry_write(m, mem, oldsector, 0);
-	debugn(2,"next sector: %4x\n", sector); 
-	if (mem == MPIO_INTERNAL_MEM) {    
-	  realsector = sector;
-	} else {
-	  realsector = sector_hack(sm->size, sector);
-	}
+/*     while((((mpio_fatentry_read(m, mem, (sector & 0xffffff)) & fat_and) */
+/* 	    < fat_end)) && (filesize>0) && (!abort)) {     */
+/* 	oldsector = sector; */
+/* 	sector = mpio_fatentry_read(m, mem, sector & 0xffffff);	 */
+/* 	mpio_fatentry_write(m, mem, oldsector, 0); */
+/* 	debugn(2,"next sector: %4x\n", sector);  */
+/* 	if (mem == MPIO_INTERNAL_MEM) {     */
+/* 	  realsector = sector; */
+/* 	} else { */
+/* 	  realsector = sector_hack(sm->size, sector); */
+/* 	} */
 	    
-	debugn(2," realsector: %4x\n", realsector); 
+/* 	debugn(2," realsector: %4x\n", realsector);  */
 	
-	mpio_io_block_delete(m, mem,
-			     ((realsector * BLOCK_SECTORS) + data_offset),
-			     sm->size);
-	if (filesize > BLOCK_SIZE) {
-	  towrite = BLOCK_SIZE;
-	} else {
-	  towrite = filesize;
-	}    
+/* 	mpio_io_block_delete(m, mem, */
+/* 			     ((realsector * BLOCK_SECTORS) + data_offset), */
+/* 			     sm->size); */
+/* 	if (filesize > BLOCK_SIZE) { */
+/* 	  towrite = BLOCK_SIZE; */
+/* 	} else { */
+/* 	  towrite = filesize; */
+/* 	}     */
 	
-	filesize -= towrite;
+/* 	filesize -= towrite; */
 	
-	if (progress_callback)
-	  abort=(*progress_callback)((fsize-filesize), fsize);
-      }
-    mpio_fat_entry_write(m, mem, sector, 0);
+/* 	if (progress_callback) */
+/* 	  abort=(*progress_callback)((fsize-filesize), fsize); */
+/*       } */
+/*     mpio_fatentry_write(m, mem, sector, 0); */
 
   } else {
     debug("unable to locate the file: %s\n", filename);

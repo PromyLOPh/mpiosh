@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
+ * $Id: io.c,v 1.3 2002/09/03 21:20:53 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -45,6 +45,56 @@
 #include "ecc.h"
 
 WORD index2blockaddress(WORD);
+int cluster2block(int mem, int sector);
+
+/*
+ * HELP!
+ *
+ * somebody explain me these values!!!
+ *
+ */
+
+int 
+cluster2block(int mem, int sector)
+{
+  int a = sector;
+
+  /* No Zone-based block management for SmartMedia below 32MB !!*/
+
+  if (mem == 32) 
+    {
+      if (sector >= 998) 
+	a += 22;
+    }  
+
+  if (mem == 64) 
+    {
+      /* I'm so large in *not* knowing! */
+      if (sector >= 89)
+	a++;
+      if (a >= 1000)
+	a += 21;    
+      if (a >= 2021)
+	a += 24;
+      if (a >= 3045)
+	a += 24;    
+      /* WHAT? */
+      if (a >= 3755)
+	a++;      
+    }
+
+  if (mem == 128) 
+    {
+      /* two blocks are already spent elsewhere */
+      /* question is: where (CIS and ??) */
+      if (sector >= 998) 
+	a += 22;
+      /* ... and then add 24 empty blocks every 1000 sectors */
+      a += ((sector - 998) / 1000 * 24);
+    }  
+  
+  return a;
+}
 
 WORD index2blockaddress(WORD ba)
 {
@@ -427,26 +477,36 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
  * read/write of blocks
  */
 int
-mpio_io_block_read(mpio_t *m, BYTE area, DWORD index, BYTE size, BYTE *output)
+mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
 {
   int i=0;
   int nwrite, nread;
-  DWORD rarea=0;
+  mpio_smartmedia_t *sm;
+  BYTE  chip=0;
+  DWORD address;
   BYTE cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
 
-  if (area == MPIO_INTERNAL_MEM) 
+  if (mem == MPIO_INTERNAL_MEM) 
     {
-      rarea = index / 0x1000000;    
-      index &= 0xffffff;
+      sm = &m->internal;
+      hexdump(&f->entry, 4);
+      hexdump(&f->hw_address, 4);
+      chip    = f->hw_address / 0x1000000;    
+      address = f->hw_address & 0x0ffffff;
     }
-  if (area == MPIO_EXTERNAL_MEM) 
+  if (mem == MPIO_EXTERNAL_MEM) 
     {
-      rarea = area;
+      sm = &m->external;
+      chip    = MPIO_EXTERNAL_MEM;
+      address = cluster2block(sm->size, f->entry);
+      address *= BLOCK_SECTORS;
+
+      /* add offset to start of "data" area! */
+      address += (sm->dir_offset + DIR_NUM - (2 * BLOCK_SECTORS));      
+	
     }
 
-  index *= BLOCK_SECTORS;
-
-  mpio_io_set_cmdpacket(GET_BLOCK, rarea, index, size, 0, cmdpacket);
+  mpio_io_set_cmdpacket(GET_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));
@@ -476,7 +536,7 @@ mpio_io_block_read(mpio_t *m, BYTE area, DWORD index, BYTE size, BYTE *output)
   for (i = 0; i < BLOCK_SECTORS; i++) 
     {
       /* check ECC Area information */
-      if (area==MPIO_EXTERNAL_MEM) {      
+      if (mem==MPIO_EXTERNAL_MEM) {      
 	mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS)),                   
 			    ((recvbuff +(i * SECTOR_TRANS) + SECTOR_SIZE +13)));
 	

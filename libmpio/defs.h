@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: defs.h,v 1.2 2002/09/03 21:20:53 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -156,6 +156,24 @@ typedef struct {
   mpio_smartmedia_t external;
 } mpio_t;
 
+typedef struct {
+  mpio_t *m;
+  BYTE mem;                        /* internal/external memory */
+
+  DWORD entry;                     /* number of FAT entry */
+
+  /* internal */
+  BYTE  i_fat[16];                 /* internal FAT entry */
+
+  /* external */
+  DWORD e_sector;                  /* logical startsector of cluster */
+
+  /* mapping to HW (== block address) */
+  DWORD hw_address;                /* 3 bytes block addressing + 1 byte chip */
+  
+} mpio_fatentry_t;
+
+
 /* these are copied from:
  * http://www.linuxhq.com/kernel/v2.4/doc/filesystems/vfat.txt.html
  *
@@ -165,12 +183,12 @@ typedef struct  { // Short 8.3 names
   unsigned char name[8];          // file name 
   unsigned char ext[3];           // file extension 
   unsigned char attr;             // attribute byte 
-  unsigned char lcase;		// Case for base and extension
-  unsigned char ctime_ms;		// Creation time, milliseconds
-  unsigned char ctime[2];		// Creation time
-  unsigned char cdate[2];		// Creation date
-  unsigned char adate[2];		// Last access date
-  unsigned char reserved[2];	// reserved values (ignored) 
+  unsigned char lcase;		  // Case for base and extension
+  unsigned char ctime_ms;         // Creation time, milliseconds
+  unsigned char ctime[2];         // Creation time
+  unsigned char cdate[2];         // Creation date
+  unsigned char adate[2];         // Last access date
+  unsigned char reserved[2];	  // reserved values (ignored) 
   unsigned char time[2];          // time stamp 
   unsigned char date[2];          // date stamp 
   unsigned char start[2];         // starting cluster number 

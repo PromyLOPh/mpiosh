@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.h,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: fat.h,v 1.2 2002/09/03 21:20:53 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -28,19 +28,25 @@
 
 #include "defs.h"
 
-
 int	mpio_bootblocks_read(mpio_t *, mpio_mem_t);
 
 int	mpio_fat_read(mpio_t *, mpio_mem_t);
 int	mpio_fat_write(mpio_t *, mpio_mem_t);
 int	mpio_fat_clear(mpio_t *, mpio_mem_t);
-
-int	mpio_fat_entry_read(mpio_t *, mpio_mem_t, int);
-int	mpio_fat_entry_write(mpio_t *, mpio_mem_t, int, WORD);
-int	mpio_fat_entry_free(mpio_t *, mpio_mem_t, int);
-
 int	mpio_fat_free_clusters(mpio_t *, mpio_mem_t);
-int	mpio_fat_find_free(mpio_t *, mpio_mem_t);
+int	mpio_fat_free(mpio_t *, mpio_mem_t);
+
+mpio_fatentry_t *mpio_fatentry_new(mpio_t *, mpio_mem_t, DWORD);
+int              mpio_fatentry_plus_plus(mpio_fatentry_t *);
+
+mpio_fatentry_t *mpio_fatentry_find_free(mpio_t *, mpio_mem_t);
+int              mpio_fatentry_next_free(mpio_t *, mpio_mem_t, 
+					 mpio_fatentry_t *);
+int              mpio_fatentry_next_entry(mpio_t *, mpio_mem_t, 
+					 mpio_fatentry_t *);
+DWORD	         mpio_fatentry_read(mpio_t *, mpio_mem_t, mpio_fatentry_t *);
+int	         mpio_fatentry_write(mpio_t *, mpio_mem_t, mpio_fatentry_t *, 
+				     WORD);
 
 int	mpio_fat_internal_find_startsector(mpio_t *, BYTE);
 

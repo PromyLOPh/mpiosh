@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
+ * $Id: directory.c,v 1.3 2002/09/03 21:20:53 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -266,21 +266,51 @@ mpio_rootdir_clear (mpio_t *m, mpio_mem_t mem)
   mpio_smartmedia_t *sm;  
 
   if (mem == MPIO_INTERNAL_MEM) sm=&m->internal;
-  if (mem==MPIO_EXTERNAL_MEM) sm=&m->external;
+  if (mem == MPIO_EXTERNAL_MEM) sm=&m->external;
 
   memset(sm->dir, 0x00, DIR_SIZE);
 
   return 0;
 }
 
-WORD
-mpio_dentry_get_startsector(mpio_t *m, BYTE *p)
+int
+mpio_dentry_get_filesize(mpio_t *m, mpio_mem_t mem, BYTE *p)
 {
   int s;
-  int sektor;
-  mpio_dir_slot_t *dentry;
+  int fsize;
+  mpio_dir_entry_t *dentry;
 
-  s = mpio_dentry_get_size(m, p);
+  s  = mpio_dentry_get_size(m, p);
+  s -= DIR_ENTRY_SIZE ;
+
+  dentry = (mpio_dir_entry_t *)p;
+
+  while (s != 0) {
+    dentry++;
+    s -= DIR_ENTRY_SIZE ;
+  }
+
+  fsize  = dentry->size[3];
+  fsize *= 0x100;
+  fsize += dentry->size[2];
+  fsize *= 0x100;
+  fsize += dentry->size[1];
+  fsize *= 0x100;
+  fsize += dentry->size[0];
+
+  return fsize; 
+}
+
+
+mpio_fatentry_t *
+mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
+{
+  int s;
+  DWORD cluster;
+  mpio_dir_slot_t *dentry;
+  mpio_fatentry_t *new;
+
+  s  = mpio_dentry_get_size(m, p);
   s -= DIR_ENTRY_SIZE ;
 
   dentry = (mpio_dir_slot_t *)p;
@@ -290,9 +320,25 @@ mpio_dentry_get_startsector(mpio_t *m, BYTE *p)
     s -= DIR_ENTRY_SIZE ;
   }
 
-  sektor = dentry->start[1] * 0x100 + dentry->start[0];
+  cluster = dentry->start[1] * 0x100 + dentry->start[0];
 
-  return sektor; 
+  if (mem == MPIO_INTERNAL_MEM) 
+    cluster = mpio_fat_internal_find_startsector(m, cluster);
+  if (cluster < 0)
+    return NULL;
+
+  new = mpio_fatentry_new(m, mem, cluster);
+
+  if (mem == MPIO_INTERNAL_MEM) 
+    { 
+      cluster *= 0x20;
+      cluster +=
+	0x01000000 * ((cluster / 0x20 / (m->internal.fat_size * SECTOR_SIZE /
+				  0x10 / m->internal.chips)) + 1);
+      new->hw_address=cluster;
+    }  
+  
+  return new; 
 }
 
 int
@@ -471,7 +517,7 @@ mpio_dentry_delete(mpio_t *m, BYTE mem, BYTE *filename)
   BYTE tmp[DIR_SIZE];
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
-  if (mem==MPIO_EXTERNAL_MEM) sm = &m->external;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
   start = mpio_dentry_find_name(m, mem, filename);
   

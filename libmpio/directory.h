@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.h,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: directory.h,v 1.2 2002/09/03 21:20:53 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -26,6 +26,8 @@
 #ifndef _MPIO_DIRECTORY_H_
 #define _MPIO_DIRECTORY_H_
 
+#include "fat.h"
+
 /* root directory operations */
 int     mpio_rootdir_read (mpio_t *, mpio_mem_t);
 int	mpio_rootdir_clear (mpio_t *, mpio_mem_t);
@@ -34,12 +36,13 @@ int     mpio_rootdir_format(mpio_t *, mpio_mem_t);
 /* operations on a single directory entry */
 int	mpio_dentry_get_size(mpio_t *, BYTE *);
 int	mpio_dentry_get_raw(mpio_t *, BYTE *, BYTE *, int);
-WORD    mpio_dentry_get_startsector(mpio_t *, BYTE *);
 int	mpio_dentry_put(mpio_t *, BYTE, BYTE *, int,
 			WORD, BYTE, BYTE, BYTE, BYTE, DWORD, WORD);
 BYTE *	mpio_dentry_find_name_8_3(mpio_t *, BYTE, BYTE *);
 BYTE *	mpio_dentry_find_name(mpio_t *, BYTE, BYTE *);
 int	mpio_dentry_delete(mpio_t *, BYTE, BYTE *);
+int     mpio_dentry_get_filesize(mpio_t *, mpio_mem_t, BYTE *);
+mpio_fatentry_t    *mpio_dentry_get_startcluster(mpio_t *, mpio_mem_t, BYTE *);
 
 /* helper functions */
 void    mpio_dentry_copy_from_slot(BYTE *, mpio_dir_slot_t *);

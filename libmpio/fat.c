@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
+ * $Id: fat.c,v 1.3 2002/09/03 21:20:53 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -128,6 +128,43 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
   return 0;  
 }
 
+mpio_fatentry_t *
+mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector)
+{
+  mpio_smartmedia_t *sm;
+  mpio_fatentry_t *new;
+  
+  new = malloc (sizeof(mpio_fatentry_t));
+  
+  if (new) 
+    {
+      new->m      = m;
+      new->mem    = mem;
+      new->entry  = sector;      
+    }  
+  
+    return new;
+}
+  
+int
+mpio_fatentry_plus_plus(mpio_fatentry_t *f)
+{
+  f->entry++;
+
+  if (f->mem == MPIO_INTERNAL_MEM) {
+    if (f->entry > f->m->internal.max_cluster)
+      return 0;    
+  }
+  
+  if (f->mem == MPIO_EXTERNAL_MEM) {
+    if (f->entry > (f->m->external.max_cluster - 2))
+      return 0;    
+  }
+  
+  return 1;
+}
+
+
 /* read "fat_size" sectors of fat into the provided buffer */
 int
 mpio_fat_read (mpio_t *m, mpio_mem_t mem)
@@ -161,14 +198,14 @@ mpio_fat_read (mpio_t *m, mpio_mem_t mem)
 }
 
 int
-mpio_fat_entry_free(mpio_t *m, mpio_mem_t mem, int entry )
+mpio_fatentry_free(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
 {
   int e;
-  mpio_smartmedia_t *sm;
+  mpio_smartmedia_t *sm;  
   
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
-    e = entry * 0x10;
+    e  = f->entry * 0x10;
 
     if((sm->fat[e+0] == 0xff) &&
        (sm->fat[e+1] == 0xff) &&
@@ -178,15 +215,15 @@ mpio_fat_entry_free(mpio_t *m, mpio_mem_t mem, int entry )
 
   if (mem == MPIO_EXTERNAL_MEM) {    
     sm = &m->internal;
-    if (mpio_fat_entry_read(m, mem, entry) == 0)
+    if (mpio_fatentry_read(m, mem, f) == 0)
       return 1;
   }
 
   return 0;
 }
 
-int
-mpio_fat_entry_read(mpio_t *m, mpio_mem_t mem, int entry )
+DWORD
+mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
 {
   mpio_smartmedia_t *sm;  
   int e;  
@@ -194,17 +231,18 @@ mpio_fat_entry_read(mpio_t *m, mpio_mem_t mem, int entry )
   
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
-    e = entry;    
-    e = e * 0x10 + 7;
+    e  = f->entry;    
+    e  = e * 0x10 + 7;
     if((sm->fat[e+0] == 0xff) &&
        (sm->fat[e+1] == 0xff) &&
        (sm->fat[e+2] == 0xff) &&
        (sm->fat[e+3] == 0xff))
       return 0xffffffff;
        
-    v = (sm->fat[e+1] * 0x10000 +
-	 sm->fat[e+2] * 0x100 +
-	 sm->fat[e+3]) / 0x20 + sm->fat[e+0] * 0x1000000;    
+    v = sm->fat[e+0] * 0x1000000 +
+        sm->fat[e+1] * 0x10000 +
+        sm->fat[e+2] * 0x100 + 
+        sm->fat[e+3];    
   
     return v; 
   }
@@ -213,14 +251,14 @@ mpio_fat_entry_read(mpio_t *m, mpio_mem_t mem, int entry )
 
   if (sm->size == 128) {
     /* 2 Byte per entry */
-    e = entry * 2;
+    e = f->entry * 2;
     v = sm->fat[e + 1] * 0x100 + sm->fat[e];
   } else {
     /* 1.5 Byte per entry */
     /* Nibble order: x321 */
-    e = (entry * 3 / 2);
+    e = (f->entry * 3 / 2);
 /*     printf("mager: byte (%d/%d)\n", e, e+1); */
-    if ((entry & 0x01) == 0) {
+    if ((f->entry & 0x01) == 0) {
       /* LLxH */
       /* 21x3 */
       v = (sm->fat[e + 1] & 0x0f) * 0x100 + sm->fat[e];
@@ -234,41 +272,36 @@ mpio_fat_entry_read(mpio_t *m, mpio_mem_t mem, int entry )
 }
 
 int 
-mpio_fat_entry_write(mpio_t *m, mpio_mem_t mem, int entry, WORD value)
+mpio_fatentry_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, WORD value)
 {
   mpio_smartmedia_t *sm;  
   int e;
   BYTE backup;
 
-  if (mem == MPIO_INTERNAL_MEM) {    
-    sm = &m->internal;
-  }
-  
-  if (mem == MPIO_EXTERNAL_MEM) {
-    sm = &m->external;
-  }
-  if (sm->size == 128) {
-    /* 2 Byte per entry */
-    e = entry * 2;
-    sm->fat[e]   = value & 0xff;
-    sm->fat[e + 1] = (value >> 8 ) & 0xff;
-    
-  } else {
-    /* 1.5 Byte per entry */
-    e = (entry * 3 / 2);
-    if ((entry & 0x01) == 0) {
-      /* 21x3 */
-      sm->fat[e]   = value & 0xff;
-      backup       = sm->fat[e + 1] & 0xf0;
-      sm->fat[e + 1] = backup | (( value / 0x100  ) & 0x0f);
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  if (sm->size == 128) 
+    {
+      /* 2 Byte per entry */
+      e = f->entry * 2;
+      sm->fat[e]     = value & 0xff;
+      sm->fat[e + 1] = (value >> 8 ) & 0xff;      
     } else {
-      /* 1x32 */
-      sm->fat[e + 1] = (value / 0x10) & 0xff;
-      backup       = sm->fat[e] & 0x0f;
-      sm->fat[e]   = backup | ( (value * 0x10) & 0xf0 );
-    }    
-      
-  }
+      /* 1.5 Byte per entry */
+      e = (f->entry * 3 / 2);
+      if ((f->entry & 0x01) == 0) {
+	/* 21x3 */
+	sm->fat[e]     = value & 0xff;
+	backup         = sm->fat[e + 1] & 0xf0;
+	sm->fat[e + 1] = backup | (( value / 0x100  ) & 0x0f);
+      } else {
+	/* 1x32 */
+	sm->fat[e + 1] = (value / 0x10) & 0xff;
+	backup         = sm->fat[e] & 0x0f;
+	sm->fat[e]     = backup | ( (value * 0x10) & 0xf0 );
+      }      
+    }  
 
   return 0;
 }
@@ -276,17 +309,20 @@ mpio_fat_entry_write(mpio_t *m, mpio_mem_t mem, int entry, WORD value)
 int 
 mpio_fat_internal_find_startsector(mpio_t *m, BYTE start)
 {
-  int i = 0;
-  int found = 0;
+  mpio_fatentry_t *f;
   mpio_smartmedia_t *sm = &m->internal;
+  int found=-1;
 
-  while ((i < sm->max_cluster) && (!found)) {
-    if ((sm->fat[i * 0x10]  == 0xaa) &&
-	(sm->fat[i * 0x10 + 1] == start)) {
-      found = i;
+  f = mpio_fatentry_new(m, MPIO_INTERNAL_MEM, 0);
+
+  while(mpio_fatentry_plus_plus(f))
+    {
+      if ((sm->fat[f->entry * 0x10]     == 0xaa) &&
+	  (sm->fat[f->entry * 0x10 + 1] == start)) 
+	found=f->entry;
     }
-    i++;      
-  }
+
+  free(f);
 
   return found;
 }
@@ -295,64 +331,117 @@ int
 mpio_fat_free_clusters(mpio_t *m, mpio_mem_t mem)
 {
   mpio_smartmedia_t *sm;  
+  mpio_fatentry_t *f;
   int i;
   int e = 0;
   int fsize;
-  if (mem == MPIO_INTERNAL_MEM) {    
-    sm = &m->internal;
-    
-    for (i = 0; i < sm->max_cluster; i++)
-      if (mpio_fat_entry_free(m, mem, i)) e++;	
-  }
-  
-  if (mem == MPIO_EXTERNAL_MEM) {
-    sm = &m->external;
-    fsize = sm->fat_size * SECTOR_SIZE;
 
-    if (sm->size == 128) {
-      fsize /= 2;
-    } else {
-      fsize *= 2;
-      fsize /= 3;
-    }
-    for (i = 0; i < (sm->max_cluster - 1); i++)
-      if (mpio_fat_entry_read(m, mem, i) == 0) e++;	
-  }
+  f = mpio_fatentry_new(m, mem, 0);
+  
+  do 
+    {
+      if (mpio_fatentry_free(m, mem, f)) e++;      
+    } while (mpio_fatentry_plus_plus(f));
+
+  free(f);
     
   return (e * 16);
 }
 
-int  
+mpio_fatentry_t *
 mpio_fat_find_free(mpio_t *m, mpio_mem_t mem)
 {
-  mpio_smartmedia_t *sm;  
-  int i;
-  int fsize;
-  int found = 0;
+  mpio_fatentry_t *f;
 
-  if (mem == MPIO_INTERNAL_MEM) {    
-    sm = &m->internal;
-    
-    for (i = 2; ((i < sm->max_cluster) && (!found)); i++)
-      if (mpio_fat_entry_free(m, mem, i)) found = i;	
-  }
-  
-  if (mem == MPIO_EXTERNAL_MEM) {
-    sm = &m->external;
-    fsize = sm->fat_size * SECTOR_SIZE;
+  f = mpio_fatentry_new(m, mem, 1);
 
-    if (sm->size == 128) {
-      fsize /= 2;
-    } else {
-      fsize *= 2;
-      fsize /= 3;
+  while(mpio_fatentry_plus_plus(f))
+    {
+      if (mpio_fatentry_free(m, mem, f))
+	return f;
     }
-    for (i = 2; ((i < (sm->max_cluster-1)) && (!found)); i++)
-      if (mpio_fat_entry_read(m, mem, i)==0)	found = i;	
-  }
 
-  return found;
+  free(f);
+
+  return NULL;
 }
+
+int              
+mpio_fatentry_next_free(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
+{
+  mpio_fatentry_t backup;
+
+  memcpy(&backup, f, sizeof(mpio_fatentry_t));
+
+  while(mpio_fatentry_plus_plus(f))
+    {
+      if (mpio_fatentry_free(m, mem, f))
+	return 1;
+    }
+
+  /* no free entry found, restore entry */
+  memcpy(f, &backup, sizeof(mpio_fatentry_t));
+
+  return 0;
+}
+
+int              
+mpio_fatentry_next_entry(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
+{
+  mpio_smartmedia_t *sm;
+  DWORD value;
+  DWORD endvalue;
+  BYTE chip;
+
+  value    = mpio_fatentry_read(m, mem, f);
+  f->entry = value;
+  
+  if (mem == MPIO_INTERNAL_MEM) 
+    {
+      sm = &m->internal;      
+      f->hw_address = value;
+
+      if (value == 0xffffffff)
+	return 0;
+
+      chip = value >> 24;
+
+      value &= 0xffffff;
+      value /= 0x20;
+      value += (chip-1) 
+	* (m->internal.fat_size * SECTOR_SIZE / 0x10 / m->internal.chips);  
+
+
+/* this is the opposite code in  mpio_dentry_get_startcluster */
+/*       cluster += */
+/* 	0x01000000 * ((cluster / 0x20 / (m->internal.fat_size * SECTOR_SIZE / */
+/* 				  0x10 / m->internal.chips)) + 1); */
+
+      
+      f->entry = value;
+      
+    }
+  
+
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {      
+      sm    = &m->external;
+      
+      if (sm->size==128) 
+	{
+	  endvalue = 0xfff8;
+	} else {
+	  endvalue = 0xff8;
+	} 
+      
+      if (value >= endvalue)
+	return 0;
+	  
+    }  
+
+  return 1;
+}
+
 
 int
 mpio_fat_clear(mpio_t *m, mpio_mem_t mem)

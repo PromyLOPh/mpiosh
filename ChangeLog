@@ -1,3 +1,12 @@
+2002-09-03  Markus Germeier  <mager@tzi.de>
+
+	* first part of "design" fixes
+	* libmpio: 
+	  - introduced mpio_fatentry_t
+	  - reading support changed to mpio_fatentry_t
+	  - writing and deleting deactivated
+	    (this simply can't work right now)
+
 2002-09-03  Yuji Touya  <salmoon@users.sourceforge.net>
 
 	* add mkmpiodev script to create device file
