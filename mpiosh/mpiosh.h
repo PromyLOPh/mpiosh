@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: mpiosh.h,v 1.5 2002/09/14 11:19:30 crunchy Exp $
+ * $Id: mpiosh.h,v 1.6 2002/09/21 22:17:15 germeier Exp $
  *
  * Copyright (C) 2002 Andreas Büsching <crunchy@tzi.de>
  *
@@ -60,6 +60,7 @@ void mpiosh_command_free_args(char **args);
 extern mpiosh_t mpiosh;
 extern mpiosh_cmd_t commands[];
 extern int mpiosh_cancel;
+extern int mpiosh_cancel_ack;
 
 extern const char *PROMPT_INT;
 extern const char *PROMPT_EXT;

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.16 2002/09/19 22:23:01 crunchy Exp $
+ * $Id: mpiosh.c,v 1.17 2002/09/21 22:17:15 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -44,6 +44,7 @@ mpiosh_t mpiosh;
 
 /* flag indicating a user-interrupt of the current command */
 int mpiosh_cancel = 0;
+int mpiosh_cancel_ack = 0;
 
 /* prompt strings */
 const char *PROMPT_INT = "\033[;1mmpio <i>\033[m ";
@@ -383,6 +384,7 @@ void
 mpiosh_signal_handler(int signal)
 {
   mpiosh_cancel = 1;
+  mpiosh_cancel_ack = 0;
 }
 
 void
@@ -440,6 +442,7 @@ main(int argc, char *argv[]) {
     if ((*line == '\0') || mpiosh_cancel) {
       rl_clear_pending_input ();
       mpiosh_cancel = 0;
+      mpiosh_cancel_ack = 0;
       continue;
     }
 

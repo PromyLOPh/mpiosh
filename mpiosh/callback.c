@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.16 2002/09/20 20:49:36 germeier Exp $
+ * $Id: callback.c,v 1.17 2002/09/21 22:17:15 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -287,7 +287,7 @@ mpiosh_cmd_mget(char *args[])
       debugn (2, "error in regular expression: %s (%s)\n", args[i], errortext);
     } else {
       p = mpio_directory_open(mpiosh.dev, mpiosh.card);
-      while ((p != NULL) ) {
+      while (p != NULL) {
 	memset(fname, '\0', 100);
 	mpio_dentry_get(mpiosh.dev, mpiosh.card, p, fname, 100,
 			&year, &month, &day, &hour, &minute, &fsize);
@@ -295,16 +295,16 @@ mpiosh_cmd_mget(char *args[])
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
 	  printf("getting '%s' ... \n", fname);
 	  if ((mpio_file_get(mpiosh.dev, mpiosh.card,
-				    fname, mpiosh_callback_put)) == -1) {
+				    fname, mpiosh_callback_get)) == -1) {
 	    debug("cancelled operation\n");
 	    mpio_perror("error");
 	    break;
 	  }
+	  printf("\n");
 	  if (mpiosh_cancel) {
 	    debug("operation cancelled by user\n");
 	    break;
 	  }
-	  printf("\n");
 	} else {
 	  regerror(error, &regex, errortext, 100);
 	  debugn (2, "file does not match: %s (%s)\n", fname, errortext);
@@ -325,6 +325,11 @@ mpiosh_callback_put(int read, int total)
   printf("\rwrote %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
 
+  if ((mpiosh_cancel) && (!mpiosh_cancel_ack)) {
+    debug ("user cancelled operation\n");
+    mpiosh_cancel_ack = 1;
+  }
+  
   return mpiosh_cancel; // continue
 }
 
@@ -387,16 +392,14 @@ mpiosh_cmd_mput(char *args[])
 	    if (mpio_file_put(mpiosh.dev, mpiosh.card,
 			      (*run)->d_name, mpiosh_callback_put) == -1) {
 	      mpio_perror("error");
+	      /* an existing file is no reason for a complete abort!! */
+	      if (mpio_errno()==MPIO_ERR_FILE_EXISTS)
+		continue;
 	      break;
-	    }
-	    
-	    if (mpiosh_cancel) {
-	      debug("operation cancelled by user\n");
-	      break;
-	    }
+	    } 
+	    written=1; /* we did write something, so do mpio_sync afterwards */
 	    
 	    printf("\n");
-	    written=1; /* we did write something, so do mpio_sync afterwards */
 	  } else {
 	    regerror(error, &regex, errortext, 100);
 	    debugn (2, "file does not match: %s (%s)\n", 
@@ -410,6 +413,9 @@ mpiosh_cmd_mput(char *args[])
     i++;
   }
   regfree(&regex);
+  if (mpiosh_cancel) 
+    debug("operation cancelled by user\n");
+
   if (written)
     mpio_sync(mpiosh.dev, mpiosh.card);
 }
@@ -419,6 +425,9 @@ mpiosh_callback_del(int read, int total)
 {
   printf("\rdeleted %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
+
+  if (mpiosh_cancel) 
+    debug ("user cancelled operation\n");
 
   return mpiosh_cancel; // continue
 }
@@ -467,12 +476,15 @@ mpiosh_cmd_mdel(char *args[])
 			&year, &month, &day, &hour, &minute, &fsize);
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
+	  /* this line has to be above the del, or we won't write
+	   * the FAT and directory in case of an abort!!!
+	   */
+	  deleted=1;
 	  printf("deleting '%s' ... \n", fname);
 	  size = mpio_file_del(mpiosh.dev, mpiosh.card,
 			       fname, mpiosh_callback_del);
-	  if (mpiosh_cancel) break;
 	  printf("\n");
-	  deleted=1;
+	  if (mpiosh_cancel) break;
 	  /* if we delete a file, start again from the beginning, 
 	     because the directory has changed !! */
 	  p = mpio_directory_open(mpiosh.dev, mpiosh.card);

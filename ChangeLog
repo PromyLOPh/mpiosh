@@ -1,3 +1,13 @@
+2002-09-22  Markus Germeier  <mager@tzi.de>
+	* mpiosh/callback.c (mpiosh_cmd_mdel): 
+	  fixed logical error in abort handling which corrupted
+	  FAT and directory
+	  (mpiosh_cmd_mget): call the correct callback function
+	  (mpiosh_callback_put): introduced mpiosh_cancel_ack
+	  to fix annoying displays in case of an abort
+	  (mpiosh_cmd_mput): don't break mput if an FILE_EXITS
+	  is encountered
+
 2002-09-21  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpio.spec.in (CFLAGS): add 'depmod -a' call to post install

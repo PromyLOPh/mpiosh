@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.24 2002/09/20 20:49:36 germeier Exp $
+ * $Id: mpio.c,v 1.25 2002/09/21 22:17:15 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -388,7 +388,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	if (progress_callback)
 	  abort=(*progress_callback)((fsize-filesize), fsize);
 	if (abort)
-	  debug("aborting operation\n");	
+	  debug("aborting operation");	
 
       } while ((mpio_fatentry_next_entry(m, mem, f) && (filesize>0)) &&
 	       (!abort));
