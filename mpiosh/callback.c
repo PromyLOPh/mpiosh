@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.13 2002/09/19 21:19:02 crunchy Exp $
+ * $Id: callback.c,v 1.14 2002/09/19 21:25:07 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -280,7 +280,7 @@ mpiosh_cmd_mget(char *args[])
       debugn (2, "error in regular expression: %s (%s)\n", args[i], errortext);
     } else {
       p = mpio_directory_open(mpiosh.dev, mpiosh.card);
-      while (p != NULL) {
+      while ((p != NULL) ) {
 	memset(fname, '\0', 100);
 	mpio_dentry_get(mpiosh.dev, mpiosh.card, p, fname, 100,
 			&year, &month, &day, &hour, &minute, &fsize);
@@ -358,7 +358,7 @@ mpiosh_cmd_mput(char *args[])
     } else {
       if ((size = scandir(dir_buf, &dentry, NULL, alphasort)) != -1) {
 	run = dentry;
-	for (j = 0; j < size; j++, run++) {
+	for (j = 0; ((j < size) && (!mpiosh_cancel)); j++, run++) {
 	  if (!(error = regexec(&regex, (*run)->d_name, 0, NULL, 0))) {
 	    printf("putting '%s' ... \n", (*run)->d_name);
 	    if (mpio_file_put(mpiosh.dev, mpiosh.card,
@@ -438,7 +438,7 @@ mpiosh_cmd_mdel(char *args[])
       debugn (2, "error in regular expression: %s (%s)\n", args[i], errortext);
     } else {
       p = mpio_directory_open(mpiosh.dev, mpiosh.card);
-      while (p != NULL) {
+      while ((p != NULL) && (!mpiosh_cancel)) {
 	memset(fname, '\0', 100);
 	mpio_dentry_get(mpiosh.dev, mpiosh.card, p, fname, 100,
 			&year, &month, &day, &hour, &minute, &fsize);
@@ -487,7 +487,7 @@ mpiosh_cmd_dump(char *args[])
   arg[1] = NULL;
   
   p = mpio_directory_open(mpiosh.dev, mpiosh.card);
-  while (p != NULL) {
+  while ((p != NULL) && (!mpiosh_cancel)) {
     memset(fname, '\0', 256);
     
     mpio_dentry_get(mpiosh.dev, mpiosh.card, p,

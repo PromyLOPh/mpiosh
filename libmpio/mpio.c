@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.21 2002/09/19 20:46:02 crunchy Exp $
+ * $Id: mpio.c,v 1.22 2002/09/19 21:25:07 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -73,7 +73,7 @@ static const int mpio_error_num = sizeof mpio_errors / sizeof(mpio_error_t);
 
 static int _mpio_errno = 0;
 
-#define MPIO_ERR_RETURN(err) _mpio_errno = err; return -1
+#define MPIO_ERR_RETURN(err) { _mpio_errno = err; return -1 ; }
 
 void mpio_init_internal(mpio_t *);
 void mpio_init_external(mpio_t *);
