@@ -46,6 +46,7 @@
 #include <linux/spinlock.h>
 #include <linux/usb.h>
 #include <linux/smp_lock.h>
+#include <linux/devfs_fs_kernel.h>
 
 #ifdef CONFIG_USB_DEBUG
 #	define DEBUG
@@ -56,7 +57,7 @@
 /*
  * Version Information
  */
-#define DRIVER_VERSION "0.0.1"
+#define DRIVER_VERSION "0.0.2"
 #define DRIVER_AUTHOR "Yuji Touya <salmoon@users.sourceforge.net>"
 #define DRIVER_DESC "USB MPIO driver"
 
@@ -71,6 +72,7 @@
 
 struct mpio_usb_data {
         struct usb_device *mpio_dev;    /* init: probe_mpio */
+        devfs_handle_t devfs;           /* devfs device */
         unsigned int ifnum;             /* Interface number of the USB device */
         int isopen;                     /* nz if open */
         int present;                    /* Device is present on the bus */
@@ -79,6 +81,8 @@ struct mpio_usb_data {
         wait_queue_head_t wait_q;       /* for timeouts */
 	struct semaphore lock;          /* general race avoidance */
 };
+
+extern devfs_handle_t usb_devfs_handle;	/* /dev/usb dir. */
 
 static struct mpio_usb_data mpio_instance;
 
@@ -275,6 +279,15 @@ read_mpio(struct file *file, char *buffer, size_t count, loff_t * ppos)
 	return read_count;
 }
 
+static struct
+file_operations usb_mpio_fops = {
+	read:		read_mpio,
+	write:		write_mpio,
+/*  	ioctl:		ioctl_mpio, */
+	open:		open_mpio,
+	release:	close_mpio,
+};
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0) /* Hmm, .... */
 static void *probe_mpio(struct usb_device *dev, unsigned int ifnum,
 			const struct usb_device_id *id)
@@ -313,6 +326,14 @@ static void *probe_mpio(struct usb_device *dev, unsigned int ifnum)
 	}
 	dbg("probe_mpio: ibuf address:%p", mpio->ibuf);
 
+	mpio->devfs = devfs_register(usb_devfs_handle, "mpio",
+				    DEVFS_FL_DEFAULT, USB_MAJOR,
+				    MPIO_MINOR,
+				    S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP |
+				    S_IWGRP, &usb_mpio_fops, NULL);
+	if (mpio->devfs == NULL)
+		dbg("probe_mpio: device node registration failed");
+
 	init_MUTEX(&(mpio->lock));
 
 	return mpio;
@@ -321,6 +342,8 @@ static void *probe_mpio(struct usb_device *dev, unsigned int ifnum)
 static void disconnect_mpio(struct usb_device *dev, void *ptr)
 {
 	struct mpio_usb_data *mpio = (struct mpio_usb_data *) ptr;
+
+	devfs_unregister(mpio->devfs);
 
 	if (mpio->isopen) {
 		mpio->isopen = 0;
@@ -335,15 +358,6 @@ static void disconnect_mpio(struct usb_device *dev, void *ptr)
 
 	mpio->present = 0;
 }
-
-static struct
-file_operations usb_mpio_fops = {
-	read:		read_mpio,
-	write:		write_mpio,
-/*  	ioctl:		ioctl_mpio, */
-	open:		open_mpio,
-	release:	close_mpio,
-};
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
 static struct usb_device_id mpio_table [] = {

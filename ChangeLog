@@ -1,3 +1,7 @@
+2002-11-01  Yuji Touya  <salmoon@users.sourceforge.net>
+
+	* kernel/mpio.c: Add usbdevfs filesystem support 
+
 2002-10-29  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/mpiosh.c (mpiosh_init): uses the new configuration file
