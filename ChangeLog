@@ -1,3 +1,16 @@
+2002-09-13  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpiosh/callback.c (mpiosh_callback_get, mpiosh_callback_put) 
+	(mpiosh_callback_del): using mpiosh_cancel to abort operation
+
+	* mpiosh/mpiosh.c: changed handling of SIGINT. The global variable
+	mpiosh_cancel indicates the interrupt.
+
+	* mpiosh/callback.c (mpiosh_cmd_help): add support for
+	arguments. just prints help about specified commands.
+
+	* mpiosh/mpiosh.c: add new command lpwd
+
 2002-09-13  Markus Germeier  <mager@informatik.uni-bremen.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_put, mpiosh_cmd_del) 

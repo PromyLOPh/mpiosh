@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: mpiosh.h,v 1.2 2002/09/13 07:00:46 crunchy Exp $
+ * $Id: mpiosh.h,v 1.3 2002/09/13 15:20:25 crunchy Exp $
  *
  * Copyright (C) 2002 Andreas Büsching <crunchy@tzi.de>
  *
@@ -39,6 +39,9 @@ typedef struct {
   cmd_callback	func;
 } mpiosh_cmd_t;
   
+/* signal handler */
+void mpiosh_signal_handler(int signal);
+
 /* readline extensions */
 void mpiosh_readline_init(void);
 char **mpiosh_readline_completion(const char *text, int start, int end);
@@ -51,9 +54,10 @@ char **mpiosh_command_split(char *line);
 char **mpiosh_command_get_args(char *line);
 void mpiosh_command_free_args(char **args);
 
-/* global structure for device information */
+/* global structures */
 extern mpiosh_t mpiosh;
 extern mpiosh_cmd_t commands[];
+extern int mpiosh_cancel;
 
 extern const char *PROMPT_INT;
 extern const char *PROMPT_EXT;

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.2 2002/09/13 07:00:46 crunchy Exp $
+ * $Id: mpiosh.c,v 1.3 2002/09/13 15:20:25 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -39,8 +39,13 @@
 #include "callback.h"
 #include "mpiosh.h"
 
+/* structure containing current state */
 mpiosh_t mpiosh;
 
+/* flag indicating a user-interrupt of the current command */
+int mpiosh_cancel = 0;
+
+/* prompt strings */
 const char *PROMPT_INT = "\033[;1mmpio <i>\033[m ";
 const char *PROMPT_EXT = "\033[;1mmpio <e>\033[m ";
 
@@ -51,8 +56,8 @@ mpiosh_cmd_t commands[] = {
   { "ver", NULL,
     "version of mpio package",
     mpiosh_cmd_version },
-  { "help", NULL,
-    "show known commands",
+  { "help", "[<command>]",
+    "show information about known commands or just about <command>",
     mpiosh_cmd_help },
   { "dir", NULL,
     "list content of current memory card",
@@ -110,6 +115,9 @@ mpiosh_cmd_t commands[] = {
   { "ldir", NULL,
     "list local directory",
     mpiosh_cmd_ldir },
+  { "lpwd", NULL,
+    "print current working directory",
+    mpiosh_cmd_lpwd },
   { "lcd", NULL,
     "change the current working directory",
     mpiosh_cmd_lcd },
@@ -325,12 +333,19 @@ mpiosh_command_free_args(char **args)
   free(args);
 }
 
+void
+mpiosh_signal_handler(int signal)
+{
+  debug("user abort!\n");
+  mpiosh_cancel = 1;
+}
 
 int
 main(int argc, char *argv[]) {
-  char *	line;
-  char **	cmds, **walk;
-  mpiosh_cmd_t *cmd;
+  char *		line;
+  char **		cmds, **walk;
+  mpiosh_cmd_t *	cmd;
+  struct sigaction	sigc;
   
   UNUSED(argc);
   UNUSED(argv);
@@ -339,7 +354,12 @@ main(int argc, char *argv[]) {
   setenv("mpio_color", "", 0);
 
   /* no unwanted interruption anymore */
-  signal(SIGINT, SIG_IGN);
+  sigc.sa_handler = mpiosh_signal_handler;
+  sigc.sa_flags = SA_NOMASK;
+  
+  sigaction(SIGINT, &sigc, NULL);
+  
+/*   signal(SIGINT, SIG_IGN); */
   
   /* init readline and history */
   rl_readline_name = "mpio";

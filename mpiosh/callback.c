@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.2 2002/09/13 13:07:06 germeier Exp $
+ * $Id: callback.c,v 1.3 2002/09/13 15:20:25 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -76,19 +76,34 @@ void
 mpiosh_cmd_help(char *args[])
 {
   mpiosh_cmd_t *cmd = commands;
+  int		ignore;
 
-  UNUSED(args);
- 
   while (cmd->cmd) {
-    printf("%s", cmd->cmd);
-    if (cmd->args)
-      printf(" %s\n", cmd->args);
-    else
-      printf("\n");
-    if (cmd->info)
-      printf("  %s\n", cmd->info);
-    else
-      printf("\n");
+    if (args[0] != NULL) {
+      char **	walk = args;
+      ignore = 1;
+      
+      while(*walk) {
+	if (!strcmp(*walk, cmd->cmd)) {
+	  ignore = 0;
+	  break;
+	}
+	walk++;
+      }
+    } else
+      ignore = 0;
+    
+    if (!ignore) {
+      printf("%s", cmd->cmd);
+      if (cmd->args)
+	printf(" %s\n", cmd->args);
+      else
+	printf("\n");
+      if (cmd->info)
+	printf("  %s\n", cmd->info);
+      else
+	printf("\n");
+    }
     cmd++;
   }
 }
@@ -206,6 +221,12 @@ mpiosh_callback_get(int read, int total)
 {
   printf("\rretrieved %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
+
+  if (mpiosh_cancel) {
+    mpiosh_cancel = 0;
+    return 1;
+  }
+  
   return 0; // continue
 }
 
@@ -271,6 +292,12 @@ mpiosh_callback_put(int read, int total)
 {
   printf("\rwrote %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
+
+  if (mpiosh_cancel) {
+    mpiosh_cancel = 0;
+    return 1;
+  }
+  
   return 0; // continue
 }
 
@@ -339,6 +366,12 @@ mpiosh_callback_del(int read, int total)
 {
   printf("\rdeleted %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
+
+  if (mpiosh_cancel) {
+    mpiosh_cancel = 0;
+    return 1;
+  }
+  
   return 0; // continue
 }
 
@@ -537,6 +570,18 @@ mpiosh_cmd_ldir(char *args[])
       free(dentry);
     }    
   }
+}
+
+void
+mpiosh_cmd_lpwd(char *args[])
+{
+  char	dir_buf[NAME_MAX];
+
+  UNUSED(args);
+
+  getcwd(dir_buf, NAME_MAX);
+
+  printf("%s\n", dir_buf);
 }
 
 void
