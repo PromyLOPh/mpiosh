@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.8 2003/04/06 23:09:20 germeier Exp $
+ * $Id: global.c,v 1.9 2003/04/18 13:53:02 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -117,6 +117,9 @@ struct mpiosh_cmd_t commands[] = {
   { "lmkdir", NULL, NULL,
     "  create a local directory",
     mpiosh_cmd_lmkdir, NULL },
+  { "health", NULL, NULL,
+    "  show the health status from the selected memory",
+    mpiosh_cmd_health, NULL },
   { "dump_memory", NULL, NULL,
     "  dump FAT, directory, spare area and the first 0x100 of the\n"
     "  selected memory card",

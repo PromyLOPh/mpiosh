@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.37 2003/04/11 22:53:10 germeier Exp $
+ * $Id: callback.c,v 1.38 2003/04/18 13:53:01 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -709,6 +709,7 @@ mpiosh_cmd_format(char *args[])
       }
       
     } 
+    mpiosh_cmd_health(NULL);
   }
 }
 
@@ -742,6 +743,57 @@ mpiosh_cmd_dump_mem(char *args[])
   
   mpio_memory_dump(mpiosh.dev, mpiosh.card);
 
+}
+
+void
+mpiosh_cmd_health(char *args[])
+{
+  mpio_health_t health;
+  int i, lost;
+  
+  UNUSED(args);
+  
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+  
+  mpio_health(mpiosh.dev, mpiosh.card, &health);
+  
+  if (mpiosh.card == MPIO_INTERNAL_MEM) {
+    lost=0;
+    printf("health status of internal memory:\n");
+    printf("=================================\n");
+    printf("%d chip%c      (total/spare/broken)\n",	   
+	   health.num, ((health.num==1)?' ':'s'));
+    for(i=0; i<health.num; i++) {
+      printf("chip #%d      (%5d/%5d/%6d)\n", (i+1),
+	     health.data[i].total,
+	     health.data[i].spare,
+	     health.data[i].broken);
+      lost+=health.data[i].broken;      
+    }    
+    if (lost)
+      printf("You have lost %d KB due to bad blocks.\n", lost*16);
+  } 
+
+  if (mpiosh.card == MPIO_EXTERNAL_MEM) {
+    lost=0;
+    printf("health status of external memory:\n");
+    printf("=================================\n");
+    printf("%d zone%c      (total/spare/broken)\n",	   
+	   health.num, ((health.num==1)?' ':'s'));
+    for(i=0; i<health.num; i++) {
+      printf("zone #%d      (%5d/%5d/%6d)\n", (i+1),
+	     health.data[i].total,
+	     health.data[i].spare,
+	     health.data[i].broken);
+      if (health.data[i].spare<health.data[i].broken)
+	lost++;
+    }    
+    if (lost)
+      printf("%d zone%s to many broken blocks, expect trouble! :-(\n", lost, 
+	     ((lost==1)?" has":"s have"));
+  } 
+
+  
 }
 
 void

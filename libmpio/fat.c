@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.26 2003/04/06 23:09:20 germeier Exp $
+ * $Id: fat.c,v 1.27 2003/04/18 13:53:01 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -500,24 +500,8 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
     e  = f->entry * 0x10;    
-    /* check if this block became defective */
-    if (m->model >= MPIO_MODEL_FD100) {      
-      /* newer models */
-      if ((sm->fat[e+0x0f] != 0) ||
-	  (sm->fat[e+0x01] != sm->fat[e+0x0e]))
-	{
-	  debug("defective block encountered, abort reading! (newer models check)\n");
-	  return 0xffffffff;
-	}      
-    } else 
-      if ((sm->fat[e+0x0e] != 'P') ||
-	  (sm->fat[e+0x0f] != 'C') ||
-	  ((sm->fat[e+0x00] != 0xaa) &&
-	   (sm->fat[e+0x00] != 0xee)))
-	{
-	  debug("defective block encountered, abort reading! (older models check)\n");
-	  return 0xffffffff;
-	}
+    if (mpio_fatentry_is_defect(m, mem, f))
+	return 0xffffffff;
 
     /* this is a special system file! */
     if((sm->fat[e+6] != FTYPE_MUSIC) &&
@@ -948,15 +932,54 @@ mpio_fatentry_set_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
     {    
       sm = &m->internal;
       e  = f->entry * 0x10;
-      debug("Sorry, I don't now how to mark an internal block as"
-	    " defective yet.\n");
-      /*     memset((sm->fat+e), 0xff, 0x10); */
+      memset((sm->fat+e), 0xaa, 0x10);
     }
 
   if (mem == MPIO_EXTERNAL_MEM) 
     {    
       sm = &m->internal;
       mpio_fatentry_write(m, mem, f, 0xfff7);    
+    }
+
+  return 0;
+}
+
+int
+mpio_fatentry_is_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
+{
+  int e;
+  mpio_smartmedia_t *sm;  
+  
+  if (mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      e  = f->entry * 0x10;
+      if (mpio_fatentry_free(m, mem, f))
+	return 0;
+      /* check if this block became defective */
+      if (m->model >= MPIO_MODEL_FD100) {      
+	/* newer models */
+	if ((sm->fat[e+0x0f] != 0) ||
+	    (sm->fat[e+0x01] != sm->fat[e+0x0e]))
+	  {
+	    debug("defective block encountered, abort reading! (newer models check)\n");
+	    return 1;
+	  }      
+      } else 
+	if ((sm->fat[e+0x0e] != 'P') ||
+	    (sm->fat[e+0x0f] != 'C') ||
+	    ((sm->fat[e+0x00] != 0xaa) &&
+	     (sm->fat[e+0x00] != 0xee)))
+	  {
+	    debug("defective block encountered, abort reading! (older models check)\n");
+	    return 1;
+	  }
+    }
+
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {    
+      if (mpio_fatentry_read(m, mem, f)==0xfff7)
+	return 1;
     }
 
   return 0;

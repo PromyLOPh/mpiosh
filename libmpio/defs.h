@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.20 2003/04/11 22:53:10 germeier Exp $
+ * $Id: defs.h,v 1.21 2003/04/18 13:53:01 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -90,7 +90,7 @@ typedef BYTE (*mpio_callback_init_t)(mpio_mem_t, int, int) ;
 #define MPIO_ZONE_MAX        8 /* 8* 16MB = 128MB */
 #define MPIO_ZONE_PBLOCKS 1024 /* physical blocks per zone */
 #define MPIO_ZONE_LBLOCKS 1000 /* logical blocks per zone */
-typedef WORD mpio_zonetable_t[MPIO_ZONE_MAX][MPIO_ZONE_PBLOCKS];
+typedef DWORD mpio_zonetable_t[MPIO_ZONE_MAX][MPIO_ZONE_PBLOCKS];
 
 #define MPIO_BLOCK_FREE      0xffff
 #define MPIO_BLOCK_DEFECT    0xffee
@@ -147,6 +147,7 @@ typedef struct {
 #define MPIO_ERR_DIR_NOT_EMPTY         -12
 #define MPIO_ERR_DEVICE_NOT_READY      -13
 #define MPIO_ERR_OUT_OF_MEMORY         -14
+#define MPIO_ERR_INTERNAL              -15
 /* internal errors, occur when UI has errors! */
 #define MPIO_ERR_INT_STRING_INVALID	-101
 
@@ -195,7 +196,6 @@ struct mpio_directory_tx {
   struct mpio_directory_tx *next;
     
 };
-
 typedef struct mpio_directory_tx mpio_directory_t;
 
 
@@ -240,6 +240,19 @@ typedef struct {
 
 } mpio_smartmedia_t;
 
+/* health status of a memory "card" */
+typedef struct {
+  WORD total;      /* total blocks on "card" */
+  WORD spare;      /* (available spare blocks */
+  WORD broken;     /* broken blocks */
+} mpio_health_single_t;
+
+typedef struct {
+  BYTE num;        /* number of chips or zones */
+  /* internal: max 4 chips
+   * external: max 8 zones (128MB) -> max 8 */
+  mpio_health_single_t data[8];
+} mpio_health_t;  
 
 /* view of the MPIO-* */
 typedef struct {

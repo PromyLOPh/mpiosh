@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.24 2003/04/04 22:03:05 germeier Exp $
+ * $Id: io.c,v 1.25 2003/04/18 13:53:01 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -45,8 +45,8 @@
 #include "ecc.h"
 
 BYTE model2externalmem(mpio_model_t);
-WORD blockaddress_encode(WORD);
-WORD blockaddress_decode(BYTE *);
+DWORD blockaddress_encode(DWORD);
+DWORD blockaddress_decode(BYTE *);
 void fatentry2hw(mpio_fatentry_t *, BYTE *, DWORD *);
 
 /* small hack to handle external addressing on different MPIO models */
@@ -70,8 +70,8 @@ model2externalmem(mpio_model_t model)
 
 /* encoding and decoding of blockaddresses */
 
-WORD 
-blockaddress_encode(WORD ba)
+DWORD 
+blockaddress_encode(DWORD ba)
 {
   WORD addr;
   BYTE p = 0, c = 0;
@@ -102,7 +102,7 @@ blockaddress_encode(WORD ba)
 }
 
 
-WORD 
+DWORD 
 blockaddress_decode(BYTE *entry)
 {
   WORD ba;
@@ -217,7 +217,7 @@ mpio_zone_init(mpio_t *m, mpio_cmd_t mem)
       sm->zonetable[zone][block]=blockaddress_decode(sm->spare+e);
       
       hexdumpn(4, sm->spare+e, 0x10);
-      debugn(2, "decoded: %03x\n", sm->zonetable[zone][block]);
+      debugn(2, "decoded: %04x\n", sm->zonetable[zone][block]);
     }
 
 }
@@ -1101,7 +1101,7 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
 
   if (status[0] != 0xc0) 
     {
-      debug ("error formatting Block %02x:%06x\n", 
+      debugn (2,"error formatting Block %02x:%06x\n", 
 	     chip, address);
       if (chip == MPIO_EXTERNAL_MEM) 
 	{

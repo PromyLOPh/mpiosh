@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.15 2003/04/06 23:09:20 germeier Exp $
+ * $Id: mpio.h,v 1.16 2003/04/18 13:53:01 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -154,10 +154,14 @@ int	mpio_memory_format(mpio_t *, mpio_mem_t, mpio_callback_t);
  * and thereby exhausting the SmartMedia chips
  */
 /* context, memory bank */
-int	mpio_sync(mpio_t *, mpio_mem_t); 
+int	mpio_sync(mpio_t *, mpio_mem_t);
 
-/* context, memory bank */
-int	mpio_memory_dump(mpio_t *, mpio_mem_t); 
+/*
+ * "special" functions
+ */
+
+/* returns health status of selected memory */
+int     mpio_health(mpio_t *, mpio_mem_t, mpio_health_t *);
 
 /* 
  * error handling
@@ -171,6 +175,13 @@ char *	mpio_strerror(int err);
 
 /* prints the error message of the last error*/
 void	mpio_perror(char *prefix);
+
+/* 
+ * debugging
+ */
+ 
+/* context, memory bank */
+int	mpio_memory_dump(mpio_t *, mpio_mem_t);
 
 /* 
  * timeline:

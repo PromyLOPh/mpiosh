@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.h,v 1.10 2002/10/26 13:07:43 germeier Exp $
+ * $Id: fat.h,v 1.11 2003/04/18 13:53:01 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -69,6 +69,8 @@ int              mpio_fatentry_set_eof(mpio_t *, mpio_mem_t,
 					  mpio_fatentry_t *);
 int              mpio_fatentry_set_next(mpio_t *, mpio_mem_t, 
 					mpio_fatentry_t *, mpio_fatentry_t *);
+int              mpio_fatentry_is_defect(mpio_t *, mpio_mem_t, 
+					  mpio_fatentry_t *);
 
 /* finding a file is fundamental different for internal mem */
 int	mpio_fat_internal_find_startsector(mpio_t *, BYTE);

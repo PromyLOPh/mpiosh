@@ -1,3 +1,9 @@
+2003-04-18  Markus Germeier  <mager@informatik.uni-bremen.de>
+
+	* mpiosh/callback.c (mpiosh_cmd_health):
+	  libmpio/mpio.c (mpio_health): new functions to report
+	  health status of SmartMedia cards.
+
 2003-04-12  Markus Germeier  <mager@tzi.de>
 	* small error messages changes
 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.50 2003/04/11 22:53:10 germeier Exp $
+ * $Id: mpio.c,v 1.51 2003/04/18 13:53:01 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -97,6 +97,8 @@ static mpio_error_t mpio_errors[] = {
     "your MPIO is\nconnected and powered up.\n" },
   { MPIO_ERR_OUT_OF_MEMORY,
     "Out of Memory." },
+  { MPIO_ERR_INTERNAL,
+    "Oops, internal ERROR. :-(" },
   { MPIO_ERR_INT_STRING_INVALID,
     "Internal Error: Supported is invalid!" } 	
 };
@@ -1140,6 +1142,69 @@ mpio_sync(mpio_t *m, mpio_mem_t mem)
 
   /* this writes the FAT *and* the root directory */
   return mpio_fat_write(m, mem);  
+}
+
+int  
+mpio_health(mpio_t *m, mpio_mem_t mem, mpio_health_t *r)
+{
+  mpio_smartmedia_t *sm;
+  int i, j, zones;
+  mpio_fatentry_t   *f;
+  
+  if (mem == MPIO_INTERNAL_MEM) 
+    {
+      sm = &m->internal;
+      r->num = sm->chips;
+      
+      f = mpio_fatentry_new(m, mem, 0x00, FTYPE_MUSIC);  
+      
+      for (i=0 ; i < sm->chips; i++) 
+	{
+	  r->data[i].spare  = 0;
+	  r->data[i].total  = (sm->max_cluster / sm->chips);
+	  r->data[i].broken = 0;
+	  /* now count the broken blocks */
+	  for(j=0; j<r->data[i].total; j++)
+	    {
+	      if (mpio_fatentry_is_defect(m, mem, f))
+		r->data[i].broken++;
+	      mpio_fatentry_plus_plus(f);
+	    }
+	}
+      
+      free(f);
+      
+      return MPIO_OK;
+    }
+  
+
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {
+      sm = &m->external;
+
+      zones = sm->max_cluster / MPIO_ZONE_LBLOCKS + 1;
+      r->num = zones;
+
+      for(i=0; i<zones; i++)
+	{
+	  r->data[i].spare  = (i?24:22); /* first zone has only 23 due to CIS */
+	  r->data[i].total  = MPIO_ZONE_PBLOCKS;
+	  r->data[i].broken = 0;
+	  /* now count the broken blocks */
+	  for(j=0; j<MPIO_ZONE_PBLOCKS; j++)
+	    {
+	      if (!i && !j)
+		continue; /* ignore "defective" first block */
+	      if (sm->zonetable[i][j] == MPIO_BLOCK_DEFECT)
+		r->data[i].broken++;
+	    } 
+	  if (r->data[i].spare < r->data[i].broken)
+	    debug("(spare blocks<broken blocks) -> expect trouble!\n");
+	}
+      return MPIO_OK;
+    }
+
+  return MPIO_ERR_INTERNAL;
 }
 
 int
