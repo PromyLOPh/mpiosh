@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.30 2002/10/06 21:19:50 germeier Exp $
+ * $Id: mpio.c,v 1.31 2002/10/12 18:31:45 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <utime.h>
 
+#include "cis.h"
 #include "defs.h"
 #include "debug.h"
 #include "directory.h"

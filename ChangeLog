@@ -1,3 +1,16 @@
+2002-10-12  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpiosh/callback.c: fix compiler warnings
+
+	* libmpio/mpio.c (mpio_memory_format): fixed compiler warning
+
+	* mpiosh/readline.c: new file containing all stuff around the
+	readline library
+	(mpiosh_readline_comp_mpio_file): doing completion on files of the
+	current mpio memory card
+	(mpiosh_readline_init): inserted bug fix for the completion
+	quoting from Mathieu
+
 2002-10-05  Markus Germeier  <mager@tzi.de>
 	* big changes to IO layer and updates to formating/writing
 	  for external memory

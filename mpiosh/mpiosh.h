@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: mpiosh.h,v 1.6 2002/09/21 22:17:15 germeier Exp $
+ * $Id: mpiosh.h,v 1.7 2002/10/12 18:31:45 crunchy Exp $
  *
  * Copyright (C) 2002 Andreas Büsching <crunchy@tzi.de>
  *
@@ -24,7 +24,11 @@
 #ifndef _MPIOSH_H_
 #define _MPIOSH_H_
 
-typedef void(*cmd_callback)(char *args[]);
+#include "libmpio/mpio.h"
+#include "libmpio/debug.h"
+
+typedef void(*mpiosh_cmd_callback_t)(char *args[]);
+typedef char *(*mpiosh_comp_callback_t)(const char *text, int state);
   
 typedef struct {
   mpio_t *	dev;
@@ -36,25 +40,13 @@ typedef struct {
   char *	cmd;
   char *	args;
   char *	info;
-  cmd_callback	func;
+  mpiosh_cmd_callback_t		cmd_func;
+  mpiosh_comp_callback_t	comp_func;
 } mpiosh_cmd_t;
   
-/* signal handler */
+/* mpiosh core functions */
 void mpiosh_signal_handler(int signal);
-
-/* readline extensions */
-void mpiosh_readline_init(void);
-char **mpiosh_readline_completion(const char *text, int start, int end);
-char *mpiosh_readline_comp_cmd(const char *text, int state);
-int mpiosh_readline_cancel(void);
-
-/* helper functions */
 void mpiosh_init(void);
-mpiosh_cmd_t *mpiosh_command_find(char *line);
-char **mpiosh_command_split_line(char *line);
-char **mpiosh_command_get_args(char *line);
-void mpiosh_command_regex_fix(char *argv[]);
-void mpiosh_command_free_args(char **args);
 
 /* global structures */
 extern mpiosh_t mpiosh;

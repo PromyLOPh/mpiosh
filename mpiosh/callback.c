@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.20 2002/09/28 00:32:41 germeier Exp $
+ * $Id: callback.c,v 1.21 2002/10/12 18:31:45 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -31,6 +31,8 @@
 #include <unistd.h>
 
 #include "mpiosh.h"
+#include "command.h"
+
 #include "libmpio/debug.h"
 
 /* commands */
@@ -99,7 +101,7 @@ mpiosh_cmd_help(char *args[])
       else
 	printf("\n");
       if (cmd->info)
-	printf("  %s\n", cmd->info);
+	printf("%s\n", cmd->info);
       else
 	printf("\n");
     }
@@ -281,8 +283,7 @@ void
 mpiosh_cmd_mget(char *args[])
 {
   BYTE *	p;
-  int		size, i = 0;
-  int           error;
+  int		i = 0, error;
   regex_t	regex;
   BYTE		fname[100];
   BYTE          errortext[100];
@@ -368,14 +369,11 @@ void
 mpiosh_cmd_mput(char *args[])
 {
   char			dir_buf[NAME_MAX];
-  int			size, j, i = 0;
+  int			size, j, i = 0, error, written = 0;
   struct dirent **	dentry, **run;
   struct stat		st;
   regex_t	        regex;
-  int                   error;
   BYTE                  errortext[100];
-  int                   fsize;
-  int                   written = 0;
 
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
