@@ -28,13 +28,12 @@
 #include <linux/config.h>
 #include <linux/version.h>
 #include <linux/mm.h>
-
+#include <linux/modversions.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/signal.h>
 #include <linux/sched.h>
 #include <linux/errno.h>
-#include <linux/miscdevice.h>
 #include <linux/random.h>
 #include <linux/poll.h>
 #include <linux/init.h>
