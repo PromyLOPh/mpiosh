@@ -1,3 +1,10 @@
+2003-06-12  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/id3.c (mpio_id3_do): fixed debug output
+	* libmpio/src/ecc.c: fixed debug output
+	* libmpio/src/directory.c (mpio_dentry_get_startcluster): 
+	  fixed ugly bug which broke reading/deleting of files on
+	  external memory (D'oh!)
+
 2003-06-06  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/io.c (model2externalmem): added model
 	  FD100 for external memory support.

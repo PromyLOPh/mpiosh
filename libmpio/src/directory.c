@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.3 2003/04/27 12:08:21 germeier Exp $
+ * $Id: directory.c,v 1.4 2003/06/12 08:32:32 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -929,7 +929,7 @@ mpio_dentry_get_time(mpio_t *m, mpio_mem_t mem, BYTE *p)
 mpio_fatentry_t *
 mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
 {
-  int s, ret;
+  int s;
   DWORD cluster;
   BYTE i_index;
   mpio_dir_slot_t *dentry;
@@ -950,12 +950,10 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
   if (mem == MPIO_INTERNAL_MEM) 
     {
       i_index=dentry->start[0];
-      ret = mpio_fat_internal_find_startsector(m, cluster);
+      cluster = mpio_fat_internal_find_startsector(m, cluster);
+      if (cluster < 0)
+	return NULL;
     }
-  if (ret < 0)
-    return NULL;
-
-  cluster = ret;
 
   new = mpio_fatentry_new(m, mem, cluster, FTYPE_MUSIC);
 

@@ -1,5 +1,5 @@
 /*
- * $Id: id3.c,v 1.3 2003/04/27 12:08:21 germeier Exp $
+ * $Id: id3.c,v 1.4 2003/06/12 08:32:33 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2003 Markus Germeier
@@ -153,7 +153,7 @@ mpio_id3_do(mpio_t *m, BYTE *src, BYTE *tmp)
   tag_list = mp_get_tag_list_from_fd(fd);
   if (!tag_list)
     {
-      debug("no tag list found!\n");
+      debugn(2, "no tag list found!\n");
       return 0;
     }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: ecc.c,v 1.5 2003/04/30 21:23:04 germeier Exp $
+ * $Id: ecc.c,v 1.6 2003/06/12 08:32:33 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -165,7 +165,7 @@ mpio_ecc_256_check(BYTE *data, BYTE *ecc)
       }
     
     if (v) {
-      debugn(0, "correctable error detected ... fixing the bit\n");
+      debugn(2, "correctable error detected ... fixing the bit\n");
       line = 
 	GET_BIT(check[1], 7) * 128 +
 	GET_BIT(check[1], 5) * 64  +
@@ -184,7 +184,7 @@ mpio_ecc_256_check(BYTE *data, BYTE *ecc)
       data[line] ^= ( 1 << col);
       debugn(3, "fixed byte is: %02x\n", data[line]);
     } else {				       
-      debugn(0, "uncorrectable error detected. Sorry, you lose!\n");
+      debugn(2, "uncorrectable error detected. Sorry, you lose!\n");
       return 1;
     }
   }
