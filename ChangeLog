@@ -1,3 +1,8 @@
+2002-10-13  Markus Germeier  <mager@tzi.de>
+
+	* mpiosh/callback.c (mpiosh_cmd_dump): fixed compile and
+	  logic error due to now "missing" mpiosh_cmd_get
+
 2002-10-13  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/callback.c: removed the callback functions of get, put
