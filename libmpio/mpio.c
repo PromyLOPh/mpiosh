@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.8 2002/09/10 13:41:21 germeier Exp $
+ * $Id: mpio.c,v 1.9 2002/09/11 00:18:34 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -320,58 +320,69 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	      BYTE (*progress_callback)(int, int))
 {
   mpio_smartmedia_t *sm;
+  mpio_fatentry_t   *f, current, start;
   int data_offset;
   BYTE block[BLOCK_SIZE];
-  DWORD startsector=0, sector, nextsector;
-  DWORD realsector=0;
   int fd, toread;
   struct stat file_stat;
-  
-  DWORD filesize, fsize;
-  DWORD fat_and;
-  DWORD fat_end;  
+
+  BYTE *p=NULL;
+  DWORD filesize, fsize, free;
   BYTE abort=0;
   
-  debug("Support for writing files is deactivated!");
-  return 0;
-
-  if (mem==MPIO_INTERNAL_MEM) {    
-    sm=&m->internal;
-    data_offset=0x00;
-    fat_and=0xffffffff;
-    fat_end=0xffffffff;
-    debug("writing to internal memory is not yet supported, sorry\n");    
-    return 0;    
-  }
-  
-  if (mem==MPIO_EXTERNAL_MEM) {
-    sm=&m->external;
-    data_offset=sm->dir_offset+DIR_NUM-(2*BLOCK_SECTORS);    
-    /* FAT 16 vs. FAT 12 */  
-    if (sm->size==128) {
-      fat_and=0xffff;
-      fat_end=0xfff8;
-    } else {
-      fat_and=0xfff;
-      fat_end=0xff8;
-    } 
-  }
+  if (mem==MPIO_INTERNAL_MEM) sm=&m->internal;  
+  if (mem==MPIO_EXTERNAL_MEM) sm=&m->external;
 
   if (stat((const char *)filename, &file_stat)!=0) {
     debug("could not find file: %s\n", filename);
     return 0;
   }
-  
   fsize=filesize=file_stat.st_size;
   debugn(2, "filesize: %d\n", fsize);
 
-  fd = open(filename, O_RDONLY);    
-  if (fd==-1) {
-    debug("could not find file: %s\n", filename);
+  /* check if there is enough space left */
+  mpio_memory_free(m, mem, &free);
+  if (free*1024<fsize) {
+    debug("not enough space left (only %d KB)\n", free);
     return 0;
   }
 
-  while ((filesize>0) & (!abort)) {
+  /* check if filename already exists */
+  p = mpio_dentry_find_name(m, mem, filename);
+  if (!p)
+      p = mpio_dentry_find_name_8_3(m, mem, filename);
+  if (p) 
+    {
+      debug("filename already exists\n");
+      return 0;
+    }
+
+  /* find first free sector */
+  f = mpio_fatentry_find_free(m, mem);
+  if (!f) 
+    {
+      debug("could not free cluster for file!\n");
+      return 0;	
+    } else {
+      memcpy(&start, f, sizeof(mpio_fatentry_t));
+    }
+  
+  /* find file-id for internal memory */
+  if (mem==MPIO_INTERNAL_MEM) 
+    {      
+      f->i_index=mpio_fat_internal_find_fileindex(m);      
+      debug("fileindex: %02x\n", f->i_index);
+    }
+
+  /* open file for writing */
+  fd = open(filename, O_RDONLY);    
+  if (fd==-1) 
+    {
+      debug("could not open file: %s\n", filename);
+      return 0;
+    }
+
+  while ((filesize>BLOCK_SIZE)) {
 
     if (filesize>=BLOCK_SIZE) {      
       toread=BLOCK_SIZE;
@@ -384,63 +395,52 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
       close(fd);
       return -1;
     }
-
-    if (!startsector) {
-      startsector=mpio_fat_find_free(m, mem);
-      if (!startsector) {
-	debug("could not find startsector for file!\n");
-	close(fd);
-	return 0;	
-      }
-      sector=startsector;
-      debugn(2, "startsector: %d\n", startsector);
-      /* evil hacks are us ;-) */
-/*       mpio_fatentry_write(m, mem, startsector, fat_and); */
-    } else {
-      nextsector=mpio_fat_find_free(m, mem);
-      if (!nextsector){
-	debug("no more free blocks, short write!\n");
-	close(fd);
-	return (fsize-filesize);
-      }
-      debugn(2, " nextsector: %d\n", nextsector);
-
-/*       mpio_fatentry_write(m, mem, sector, nextsector); */
-      sector=nextsector;
-      /* evil hacks are us ;-) */
-/*       mpio_fatentry_write(m, mem, sector, fat_and); */
-
-    }
-
-    if (mem==MPIO_INTERNAL_MEM) {    
-/*       realsector=fat_internal_find_startsector(m, sector);       */
-/*       realsector=realsector+         /\* chose the right bank *\/   */
-/* 	(0x01000000*((realsector/(sm->size/16*1000/sm->chips))+1));     */
-/*       sector=realsector; */
-/*       debugn(2, "startsector (real): %4x\n", sector);   */
-    } else {
-/*       realsector=sector_hack(sm->size, sector); */
-    }
-
-/*     debug("mager: %04x : %3d\n", realsector*BLOCK_SECTORS, realsector); */
-/*     mpio_io_block_delete(m, mem, ((realsector*BLOCK_SECTORS) + data_offset), */
-/* 			 sm->size); */
-/*     mpio_io_block_write(m, mem, realsector + (data_offset/BLOCK_SECTORS),  */
-/* 			sm->size, block); */
-
     filesize -= toread;
+
+    /* get new free block from FAT and write current block out */
+    memcpy(&current, f, sizeof(mpio_fatentry_t));    
+    if (!(mpio_fatentry_next_free(m, mem, f))) 
+      {
+	debug ("Found no free cluster during mpio_file_put\n"
+	       "This should never happen\n");
+	exit(-1);
+      }    
+    mpio_fatentry_set_next(m ,mem, &current, f);
+    mpio_io_block_write(m, mem, &current, block);
 	
     if (progress_callback)
       abort=(*progress_callback)((fsize-filesize), fsize);
   }
 
+  /* handle the last block to write */
+
+  if (filesize>=BLOCK_SIZE) {      
+    toread=BLOCK_SIZE;
+  } else {
+    toread=filesize;
+  }
+
+  if (read(fd, block, toread)!=toread) {
+    debug("error reading file data\n");
+    close(fd);
+    return -1;
+  }
+  filesize -= toread;
+  
+  /* mark end of FAT chain and write last block */
+  mpio_fatentry_set_eof(m ,mem, f);
+  mpio_io_block_write(m, mem, f, block);
+
   close(fd);
+
+  if (progress_callback)
+    abort=(*progress_callback)((fsize-filesize), fsize);
 
   /* FIXEME: add real values here!!! */
   mpio_dentry_put(m, mem,
 		  filename, strlen(filename),
 		  2002, 8, 13,
-		  2, 12, fsize, startsector);
+		  2, 12, fsize, start.entry);
 
   /* this writes the FAT *and* the root directory */
   mpio_fat_write(m, mem);

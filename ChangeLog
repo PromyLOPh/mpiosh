@@ -1,3 +1,14 @@
+2002-09-11  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.c (mpio_file_put): (+ various files)
+	  updated writing support to support mpio_fatentry_t
+	
+2002-09-10  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/io.c (mpio_io_block_write): 
+	  write FAT entry for internal mem
+	* libmpio/fat.c (mpio_fat_internal_find_fileindex): added function
+
 2002-09-10  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.c (mpio_memory_format): 

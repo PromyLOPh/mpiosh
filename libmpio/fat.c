@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.8 2002/09/10 13:41:21 germeier Exp $
+ * $Id: fat.c,v 1.9 2002/09/11 00:18:34 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -360,7 +360,12 @@ mpio_fatentry_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, WORD value)
   int e;
   BYTE backup;
 
-  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_INTERNAL_MEM) 
+    {
+      debug("This should not be used for internal memory!\n");
+      exit(-1);
+    }
+      
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
   if (sm->size == 128) 
@@ -409,6 +414,39 @@ mpio_fat_internal_find_startsector(mpio_t *m, BYTE start)
   return found;
 }
 
+BYTE
+mpio_fat_internal_find_fileindex(mpio_t *m)
+{
+  mpio_fatentry_t *f;
+  mpio_smartmedia_t *sm = &m->internal;
+  BYTE index[256];
+  BYTE found; /* hmm, ... */
+
+  memset(index, 1, 256);
+
+  f = mpio_fatentry_new(m, MPIO_INTERNAL_MEM, 0);
+  while(mpio_fatentry_plus_plus(f))
+    {
+      if (sm->fat[f->entry * 0x10 + 1] != 0xff)
+	  index[sm->fat[f->entry * 0x10 + 1]] = 0;      
+    }
+  free(f);
+  
+  found=6;  
+  while((found<256) && (!index[found]))
+    found++;
+
+  if (found==256) 
+    {
+      debug("Oops, did not find a new fileindex!\n"
+	    "This should never happen, aborting now!, Sorry!\n");
+      exit(-1);
+    }  
+
+  return found;
+}
+
+
 int  
 mpio_fat_free_clusters(mpio_t *m, mpio_mem_t mem)
 {
@@ -432,7 +470,7 @@ mpio_fat_free_clusters(mpio_t *m, mpio_mem_t mem)
 }
 
 mpio_fatentry_t *
-mpio_fat_find_free(mpio_t *m, mpio_mem_t mem)
+mpio_fatentry_find_free(mpio_t *m, mpio_mem_t mem)
 {
   mpio_fatentry_t *f;
 
@@ -617,16 +655,18 @@ mpio_fatentry_set_free  (mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
   int e;
   mpio_smartmedia_t *sm;  
   
-  if (mem == MPIO_INTERNAL_MEM) {    
-    sm = &m->internal;
-    e  = f->entry * 0x10;
-    memset((sm->fat+e), 0xff, 0x10);
-  }
+  if (mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      e  = f->entry * 0x10;
+      memset((sm->fat+e), 0xff, 0x10);
+    }
 
-  if (mem == MPIO_EXTERNAL_MEM) {    
-    sm = &m->internal;
-    mpio_fatentry_write(m, mem, f, 0);    
-  }
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      mpio_fatentry_write(m, mem, f, 0);    
+    }
 
   return 0;
 }
@@ -637,18 +677,69 @@ mpio_fatentry_set_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
   int e;
   mpio_smartmedia_t *sm;  
   
-  if (mem == MPIO_INTERNAL_MEM) {    
-    sm = &m->internal;
-    e  = f->entry * 0x10;
-    debug("Sorry, I don't now how to mark an internal block as"
-	  " defective yet.\n");
-/*     memset((sm->fat+e), 0xff, 0x10); */
-  }
+  if (mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      e  = f->entry * 0x10;
+      debug("Sorry, I don't now how to mark an internal block as"
+	    " defective yet.\n");
+      /*     memset((sm->fat+e), 0xff, 0x10); */
+    }
 
-  if (mem == MPIO_EXTERNAL_MEM) {    
-    sm = &m->internal;
-    mpio_fatentry_write(m, mem, f, 0xfff7);    
-  }
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      mpio_fatentry_write(m, mem, f, 0xfff7);    
+    }
+
+  return 0;
+}
+
+int
+mpio_fatentry_set_eof(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
+{
+  int e;
+  mpio_smartmedia_t *sm;  
+  
+  if (mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      e  = f->entry * 0x10;
+      memset((sm->fat+e), 0xff, 0x10);
+      memset((f->i_fat+0x07), 0xff, 4);		    
+    }
+
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      mpio_fatentry_write(m, mem, f, 0xffff);    
+    }
+
+  return 0;
+}
+
+int
+mpio_fatentry_set_next(mpio_t *m, mpio_mem_t mem, 
+		       mpio_fatentry_t *f, mpio_fatentry_t *value)
+{
+  int e;
+  mpio_smartmedia_t *sm;  
+  
+  if (mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      e  = f->entry * 0x10;
+      sm->fat[e+0x07]= value->hw_address / 0x1000000;  
+      sm->fat[e+0x08]=(value->hw_address / 0x10000  ) & 0xff;  
+      sm->fat[e+0x09]=(value->hw_address / 0x100    ) & 0xff;  
+      sm->fat[e+0x0a]= value->hw_address              & 0xff;
+    }
+  
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      mpio_fatentry_write(m, mem, f, value->entry);    
+    }
 
   return 0;
 }

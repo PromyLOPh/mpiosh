@@ -1,4 +1,4 @@
-$Id: TODO,v 1.7 2002/09/10 13:41:21 germeier Exp $
+$Id: TODO,v 1.8 2002/09/11 00:18:34 germeier Exp $
 
 * Kernel Module
   - the MPIO can no multitasking, so:
@@ -13,7 +13,11 @@ $Id: TODO,v 1.7 2002/09/10 13:41:21 germeier Exp $
     [error checking works, TODO: error correction)
   - use ECC code for every read/write operation!! [done]
   - implement reading of files [DONE]
-  - implement writing of files
+  - implement writing of files [partially done]
+	* writing to internal memory
+	* resolve remainig block addressing issues in ECC area
+	* fix 8.3 filenames
+	* fix timestamps of files
   - implement deleting of files [DONE]
   
   If everything is done:

@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.2 2002/09/03 21:20:53 germeier Exp $
+ * $Id: defs.h,v 1.3 2002/09/11 00:18:34 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -163,6 +163,7 @@ typedef struct {
   DWORD entry;                     /* number of FAT entry */
 
   /* internal */
+  BYTE  i_index;                   /* file index of file to store */
   BYTE  i_fat[16];                 /* internal FAT entry */
 
   /* external */

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.8 2002/09/10 13:41:21 germeier Exp $
+ * $Id: io.c,v 1.9 2002/09/11 00:18:34 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -461,17 +461,19 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
   memset(sendbuff + SECTOR_SIZE, 0xff, 0x10);
   memcpy(sendbuff, input, SECTOR_SIZE);
   
-  if (index<0x40) 
-    {
-      block_address=0;
-    } else {  
-      ba= (index /0x20) - 2;
-      debugn(2, "foobar: %4x\n", ba);
-      block_address= index2blockaddress(ba);
-      debugn(2, "foobar: %4x\n", block_address);
-    }
-  
   if (mem==MPIO_EXTERNAL_MEM) 
+    if (index<0x40) 
+      {
+	block_address=0;
+      } else {  
+	ba= (index / 0x20) - 2;
+	if (ba > 0x8000)
+	  ba %= 0x8000;
+	debugn(2, "sector-foo: %4x\n", ba);
+	block_address= index2blockaddress(ba);
+	debugn(2, "sector-foo: %4x\n", block_address);
+      }
+  
     {    
       /* generate ECC information for spare area ! */
       mpio_ecc_256_gen(sendbuff, 
@@ -719,6 +721,10 @@ mpio_io_block_write(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *data)
       memset(sendbuff + (i * SECTOR_TRANS) + SECTOR_SIZE,
 	     0xff, CMD_SIZE);
 
+      if (mem == MPIO_INTERNAL_MEM) 
+	memcpy((sendbuff+SECTOR_SIZE+(i * SECTOR_TRANS)), 
+	       f->i_fat, 0x10);
+
       /* fill in block information */
       if (mem == MPIO_EXTERNAL_MEM) 
 	{      
@@ -726,10 +732,17 @@ mpio_io_block_write(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *data)
 	    {
 	      block_address = 0;
 	    } else {  
-	      ba = (address / 0x20) - 2;
-	      /*       debugn(2, "foobar: %4x\n", ba); */
+	      debugn(2, "block-foo-1: %06x\n", address);
+	      /* block address is relativ to zone */
+	      if (address >= 0x8000) 
+		{		  
+		  ba = (address % 0x8000) / 0x20;
+		} else {
+		  ba = (address / 0x20) - 2;
+		}	      
+	      debugn(2, "block-foo-2: %4x\n", ba);
 	      block_address = index2blockaddress(ba);
-	      /*       debugn(2, "foobar: %4x\n", block_address); */
+	      debugn(2, "block-foo-3: %4x\n", block_address);
 	    }
 	  
 	  ba = (block_address / 0x100) & 0xff;
