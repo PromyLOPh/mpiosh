@@ -4,7 +4,7 @@
  * Authors: Dirk Meyer  <dmeyer@tzi.de>
  *          Andreas Büsching <crunchy@tzi.de>
  *
- * $Id: debug.c,v 1.3 2003/04/23 09:06:33 crunchy Exp $
+ * $Id: debug.c,v 1.4 2003/04/27 11:01:29 germeier Exp $
  */
 
 #include "debug.h"
@@ -21,6 +21,7 @@
 #define LEVEL_HEXDUMP 5
 
 #define CHECK_FD if (__debug_fd == NULL) return;
+#define CHECK_FD_RETURN0 if (__debug_fd == NULL) return 0;
 
 char *__debug_color = NULL;
 int __debug_level = 0;
@@ -296,7 +297,7 @@ _use_debug(int level)
 {
   if (__debug_level == -1) return 0;
 
-  CHECK_FD;
+  CHECK_FD_RETURN0;
 
   if (level <= __debug_level) {
     return 1;

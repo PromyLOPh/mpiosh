@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: cis.c,v 1.1 2003/04/23 08:34:14 crunchy Exp $
+ * $Id: cis.c,v 1.2 2003/04/27 11:01:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -22,6 +22,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * */
+
+#include <stdlib.h>
 
 #include "cis.h"
 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: cis.h,v 1.1 2003/04/23 08:34:14 crunchy Exp $
+ * $Id: cis.h,v 1.2 2003/04/27 11:01:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -33,7 +33,7 @@ extern "C" {
 #endif 
 
 /* generate and return a fresh CIS block */
-BYTE	*mpio_cis_gen();
+BYTE	*mpio_cis_gen(void);
 
 #ifdef __cplusplus
 }

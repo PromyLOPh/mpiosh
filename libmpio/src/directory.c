@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.1 2003/04/23 08:34:14 crunchy Exp $
+ * $Id: directory.c,v 1.2 2003/04/27 11:01:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -25,6 +25,7 @@
 
 #include <unistd.h>
 #include <iconv.h>
+#include <ctype.h>
 
 #include "debug.h"
 #include "io.h"
@@ -46,6 +47,7 @@ static int day_n[] = { 0,31,59,90,120,151,181,212,243,273,304,334,0,0,0,0 };
 		  /* JanFebMarApr May Jun Jul Aug Sep Oct Nov Dec */
 
 /* Convert a MS-DOS time/date pair to a UNIX date (seconds since 1 1 70). */
+int date_dos2unix(unsigned short,unsigned short);
 
 int date_dos2unix(unsigned short time,unsigned short date)
 {
@@ -83,12 +85,12 @@ mpio_charset_set(mpio_t *m, BYTE *charset)
   int     r = 1;
   
   ic = iconv_open(UNICODE, charset);
-  if (ic < 0)
+  if (ic == ((iconv_t)(-1)))
     r=0;
   iconv_close(ic);
   
   ic = iconv_open(charset, UNICODE);
-  if (ic < 0)
+  if (ic == ((iconv_t)(-1)))
     r=0;
   iconv_close(ic);
 
@@ -109,6 +111,9 @@ mpio_directory_init(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir,
 		    WORD self, WORD parent)
 {
   mpio_dir_entry_t *dentry;
+
+  UNUSED(m);
+  UNUSED(mem);
   
   memset(dir->dir,         0, BLOCK_SIZE);
   memset(dir->dir,      0x20, 11);
@@ -160,6 +165,9 @@ mpio_directory_is_empty(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
 {
   mpio_dir_entry_t *dentry;
   BYTE r;
+
+  UNUSED(m);
+  UNUSED(mem);
 
   dentry = (mpio_dir_entry_t *)dir->dir;
   dentry += 2;
@@ -318,7 +326,7 @@ mpio_directory_cd(mpio_t *m, mpio_mem_t mem, BYTE *dir)
   BYTE fname[100];
   WORD year;  
   DWORD fsize;
-  int i, size;
+  int size;
   BYTE pwd[INFO_LINE];
   mpio_directory_t *old, *new;
 
@@ -436,7 +444,8 @@ mpio_dentry_filename_write(mpio_t *m, mpio_mem_t mem, BYTE *p,
   BYTE f_8_3[13];
   mpio_dir_slot_t  *slot;
   mpio_dir_entry_t *dentry;
-  int i, j, points;
+  DWORD i, j;
+  int points;
   
   /* generate vfat filename in UNICODE */
   ic = iconv_open(UNICODE, m->charset);
@@ -574,6 +583,8 @@ int
 mpio_dentry_get_size(mpio_t *m, mpio_mem_t mem, BYTE *buffer)
 {
   mpio_dir_entry_t *dentry;
+
+  UNUSED(mem);
 
   if (!buffer)
     return -1;  
@@ -921,7 +932,7 @@ mpio_dentry_get_time(mpio_t *m, mpio_mem_t mem, BYTE *p)
 mpio_fatentry_t *
 mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
 {
-  int s;
+  int s, ret;
   DWORD cluster;
   BYTE i_index;
   mpio_dir_slot_t *dentry;
@@ -942,10 +953,12 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
   if (mem == MPIO_INTERNAL_MEM) 
     {
       i_index=dentry->start[0];
-      cluster = mpio_fat_internal_find_startsector(m, cluster);
+      ret = mpio_fat_internal_find_startsector(m, cluster);
     }
-  if (cluster < 0)
+  if (ret < 0)
     return NULL;
+
+  cluster = ret;
 
   new = mpio_fatentry_new(m, mem, cluster, FTYPE_MUSIC);
 
@@ -1033,7 +1046,6 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
   BYTE fname_8_3[13];
   DWORD ddummy;
   BYTE *found = 0;
-  int i, j, len;
 
   p = mpio_directory_open(m, mem);
   while ((p) && (!found)) {

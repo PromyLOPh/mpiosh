@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.1 2003/04/23 08:34:15 crunchy Exp $
+ * $Id: fat.c,v 1.2 2003/04/27 11:01:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -26,6 +26,7 @@
 #include "fat.h"
 #include "io.h"
 #include "debug.h"
+#include "directory.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -338,7 +339,7 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
       return 1;
     }
 
-  if (error=mpio_mbr_eval(sm)) 
+  if ((error=mpio_mbr_eval(sm))) 
     {
       debug("problem with the MBR (#%d), so I won't try to access the card any"
 	    "further.\n", error);
@@ -352,7 +353,7 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
       return 1;
     }
 
-  if (error=mpio_pbr_eval(sm)) 
+  if ((error=mpio_pbr_eval(sm))) 
     {
       debug("problem with the PBR (#%d), so I won't try to access the card any"
 	    "further.\n", error);
@@ -365,7 +366,6 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
 mpio_fatentry_t *
 mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector, BYTE ftype)
 {
-  mpio_smartmedia_t *sm;
   mpio_fatentry_t *new;
 
   new = malloc (sizeof(mpio_fatentry_t));
@@ -432,7 +432,7 @@ mpio_fat_read (mpio_t *m, mpio_mem_t mem,
 {
   mpio_smartmedia_t *sm;
   BYTE recvbuff[SECTOR_SIZE];
-  int i;
+  DWORD i;
 
   if (mem == MPIO_INTERNAL_MEM) 
     {    
@@ -665,9 +665,7 @@ mpio_fat_free_clusters(mpio_t *m, mpio_mem_t mem)
 {
   mpio_smartmedia_t *sm;  
   mpio_fatentry_t *f;
-  int i;
   int e = 0;
-  int fsize;
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;

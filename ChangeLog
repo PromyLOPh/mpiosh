@@ -1,3 +1,7 @@
+2003-04-27 Markus Germeier  <mager@tzi.de>
+	* libmpio: fixed some C code "things" found with
+	  "paranoia" CFLAGS settings
+
 2003-04-21  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/id3.c (mpio_id3_copy_tag): 

@@ -1,5 +1,5 @@
 /*
- * $Id: id3.c,v 1.1 2003/04/23 08:34:15 crunchy Exp $
+ * $Id: id3.c,v 1.2 2003/04/27 11:01:29 germeier Exp $
  *
  *  Library for accessing Digit@lways MPIO players
  *  Copyright (C) 2003 Markus Germeier
@@ -23,12 +23,21 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <iconv.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "id3.h"
 #include "debug.h"
 #include "mplib.h"
+#include "mpio.h"
 
 #ifdef MPLIB
+/* local declarations */
+void mpio_id3_get_content(id3_tag *, id3_tag *, int, BYTE[INFO_LINE]);
+void mpio_id3_copy_tag(BYTE *, BYTE *, int *);
+BYTE mpio_id3_get(mpio_t *);
+BYTE mpio_id3_set(mpio_t *, BYTE);
+
 void
 mpio_id3_get_content(id3_tag *tag, id3_tag *tag2, int field, 
 		       BYTE out[INFO_LINE])
@@ -104,9 +113,7 @@ mpio_id3_do(mpio_t *m, BYTE *src, BYTE *tmp)
   id3_tag *tag, *tag2, *new_tag;
   id3_tag_list *tag_list;
   id3_tag_list  new_tag_list;
-  id3_content  *content;
   id3_content    new_content;
-  id3_text_content  *text_content;
   id3v2_tag *v2_tag;  
   BYTE data_artist[INFO_LINE];
   BYTE data_title[INFO_LINE];
@@ -119,7 +126,6 @@ mpio_id3_do(mpio_t *m, BYTE *src, BYTE *tmp)
   BYTE mpio_tag[INFO_LINE];
   char   *mpio_tag_unicode; 
 
-  char *uc;
   iconv_t ic;
   int fin, fout;
   char *fback, *back;
@@ -127,7 +133,7 @@ mpio_id3_do(mpio_t *m, BYTE *src, BYTE *tmp)
   if (!m->id3)
     return 0;
   
-  sprintf(tmp, "/tmp/MPIO-XXXXXXXXXXXXXXX", INFO_LINE);
+  snprintf(tmp, INFO_LINE, "/tmp/MPIO-XXXXXXXXXXXXXXX");
   
   fd = mkstemp(tmp);
   if (fd==-1) return 0;

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.1 2003/04/23 08:34:15 crunchy Exp $
+ * $Id: mpio.c,v 1.2 2003/04/27 11:01:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -41,6 +41,7 @@
 #include "mpio.h"
 #include "smartmedia.h"
 #include "fat.h"
+#include "id3.h"
 
 void mpio_bail_out(void);
 void mpio_init_internal(mpio_t *);

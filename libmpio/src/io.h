@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.h,v 1.1 2003/04/23 08:34:15 crunchy Exp $
+ * $Id: io.h,v 1.2 2003/04/27 11:01:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -61,7 +61,8 @@ DWORD mpio_zone_block_find_free_log(mpio_t *, mpio_cmd_t, DWORD);
 DWORD mpio_zone_block_find_free_seq(mpio_t *, mpio_cmd_t, DWORD);
 /* return zone-logical block for a given physical block */
 WORD mpio_zone_block_get_logical(mpio_t *, mpio_cmd_t, DWORD);
-
+/* */
+void mpio_zone_block_set(mpio_t *, mpio_cmd_t, DWORD);
 
 /* real I/O */
 int	mpio_io_set_cmdpacket(mpio_t *, mpio_cmd_t, mpio_mem_t, 

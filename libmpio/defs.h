@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.24 2003/04/23 08:53:23 crunchy Exp $
+ * $Id: defs.h,v 1.25 2003/04/27 11:01:27 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -222,10 +222,10 @@ typedef struct {
   int  dir_offset;
 
   /* these are needed for internal and external cards */
-  int  max_cluster;            /* # of clusters actually available */
-  int  fat_size;               /* # sectors for FAT */  
-  int  fat_nums;               /* # of FATs */
-  BYTE * fat;                  /* *real FAT (like in block allocation :-) */
+  DWORD  max_cluster;            /* # of clusters actually available */
+  DWORD  fat_size;               /* # sectors for FAT */  
+  DWORD  fat_nums;               /* # of FATs */
+  BYTE * fat;                    /* *real FAT (like in block allocation :-) */
 
   /* needed for directory support */
   mpio_directory_t *root; /* root directory */

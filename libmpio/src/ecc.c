@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: ecc.c,v 1.1 2003/04/23 08:34:14 crunchy Exp $
+ * $Id: ecc.c,v 1.2 2003/04/27 11:01:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -184,7 +184,6 @@ mpio_ecc_256_check(BYTE *data, BYTE *ecc)
 {
   BYTE own_ecc[3];
   BYTE check[3];
-  BYTE c;
   BYTE line, col;
   
   int v, i;

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.1 2003/04/23 08:34:15 crunchy Exp $
+ * $Id: io.c,v 1.2 2003/04/27 11:01:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -219,7 +219,7 @@ mpio_zone_init(mpio_t *m, mpio_cmd_t mem)
       hexdumpn(4, sm->spare+e, 0x10);
       debugn(2, "decoded: %04x\n", sm->zonetable[zone][block]);
     }
-
+  return MPIO_OK;
 }
 
 DWORD 
@@ -248,7 +248,7 @@ mpio_zone_block_find_seq(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
 {
   mpio_smartmedia_t *sm;
   int i, f, v;
-  int zone, block;
+  DWORD zone, block;
   
   if (mem != MPIO_EXTERNAL_MEM) 
     {
@@ -293,7 +293,6 @@ DWORD
 mpio_zone_block_set_free(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
 {
   DWORD value;
-  int zone, block;
   mpio_smartmedia_t *sm;
 
   if (mem != MPIO_EXTERNAL_MEM)
@@ -358,6 +357,8 @@ void
 mpio_zone_block_set(mpio_t *m, mpio_cmd_t mem, DWORD pblock)
 {
   int zone, block, pb;
+
+  UNUSED(mem);
   
   pb    = pblock / BLOCK_SECTORS;
   zone  = pb / MPIO_ZONE_PBLOCKS;
@@ -441,6 +442,8 @@ WORD
 mpio_zone_block_get_logical(mpio_t *m, mpio_cmd_t mem, DWORD pblock)
 {
   int zone, block, pb;
+
+  UNUSED(mem);
   
   pb    = pblock / BLOCK_SECTORS;
   zone  = pb / MPIO_ZONE_PBLOCKS;

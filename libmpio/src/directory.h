@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.h,v 1.1 2003/04/23 08:34:14 crunchy Exp $
+ * $Id: directory.h,v 1.2 2003/04/27 11:01:29 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -76,6 +76,8 @@ int	mpio_dentry_get_real(mpio_t *, mpio_mem_t, BYTE *, BYTE *,
 			     int, BYTE[12],
 			     WORD *, BYTE *, BYTE *, BYTE *, BYTE *, DWORD *,
 			     BYTE *);
+mpio_dir_entry_t *
+  mpio_dentry_filename_write(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int);
 
 #ifdef __cplusplus
 }
