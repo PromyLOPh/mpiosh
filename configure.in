@@ -41,6 +41,6 @@ AC_OUTPUT(
     Makefile
     kernel/Makefile
     libmpio/Makefile
-    mpio_tool/Makefile )
+    mpiosh/Makefile )
 
 

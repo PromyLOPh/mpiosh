@@ -1,3 +1,16 @@
+2002-09-12  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpiosh/mpiosh.c (mpiosh_command_split): 
+	function added to support command sequences separated by ';'
+	changed mpiosh_cmd_t structure, containing help string and
+	argument information
+
+	* mpiosh/callback.h, mpiosh/callback.c ():
+	new files containing callback functions of shell commands
+	(MPIOSH_CHECK_CONNECTION_OPEN, MPIOSH_CHECK_CONNECTION_CLOSED) 
+	(MPIOSH_CHECK_ARG): macros for checking status of connection to
+	player
+
 2002-09-11  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.c (mpio_file_put,mpio_file_get): 
