@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.7 2002/09/08 22:57:22 germeier Exp $
+ * $Id: mpiosh.c,v 1.8 2002/09/11 13:59:21 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -61,6 +61,7 @@ static mpiosh_cmd_t commands[] = {
   { "put",	mpiosh_cmd_put,		YES },
   { "mput",	mpiosh_cmd_mput,	YES },
   { "del",	mpiosh_cmd_del,		YES },
+  { "mdel",	mpiosh_cmd_mdel,        YES },
   { "dump",	mpiosh_cmd_dump,	NO },
   { "free",	mpiosh_cmd_free,	NO },
   { "format",	mpiosh_cmd_format,	NO },
@@ -310,11 +311,14 @@ mpiosh_cmd_help(char *args[])
 	 "  to the selected memory card\n");
   printf("get <filename>\n"
 	 "  read <filename> from memory card\n");
-  printf("mput <regexp>\n"
+  printf("mget <regexp>\n"
 	 "  read all files matching the regular expression\n"
 	 "  from the selected memory card\n");
   printf("del <filename>\n"
 	 "  deletes <filename> from memory card\n");
+  printf("mdel <regexp>\n"
+	 "  deletes all files matching the regular expression\n"
+	 "  from the selected memory card\n");
   printf("exit, quit\n"
 	 "  exit mpiosh and close the device\n");
   printf("lcd\n"
@@ -634,6 +638,60 @@ mpiosh_cmd_del(char *args[])
   size = mpio_file_del(mpiosh.dev, mpiosh.card, args[0], mpiosh_callback_del);
 
   printf("\n");
+}
+
+void
+mpiosh_cmd_mdel(char *args[])
+{
+  BYTE *	p;
+  int		size, i = 0;
+  int           error;
+  regex_t	regex;
+  BYTE		fname[100];
+  BYTE          errortext[100];
+  BYTE		month, day, hour, minute;
+  WORD		year;  
+  DWORD		fsize;  
+
+  if (mpiosh.dev == NULL) {
+    printf("connection to MPIO player already closed\n");
+    return;
+  }
+  
+  if (args[0] == NULL) {
+    printf("error: no argument given\n");
+    return;
+  }
+  
+  while (args[i] != NULL) {
+    if (error = regcomp(&regex, args[i], REG_NOSUB)) {
+      regerror(error, &regex, errortext, 100);
+      debugn (2, "error in regular expression: %s (%s)\n", args[i], errortext);
+    } else {
+      p = mpio_directory_open(mpiosh.dev, mpiosh.card);
+      while (p != NULL) {
+	memset(fname, '\0', 100);
+	mpio_dentry_get(mpiosh.dev, p, fname, 100,
+			&year, &month, &day, &hour, &minute, &fsize);
+	
+	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
+	  printf("deleting '%s' ... \n", fname);
+	  size = mpio_file_del(mpiosh.dev, mpiosh.card,
+			       fname, mpiosh_callback_del);
+	  printf("\n");
+	  /* if we delete a file, start again from the beginning, 
+	     because the directory has changed !! */
+	  p = mpio_directory_open(mpiosh.dev, mpiosh.card);
+	} else {
+	  regerror(error, &regex, errortext, 100);
+	  debugn (2, "file does not match: %s (%s)\n", fname, errortext);
+	  p = mpio_dentry_next(mpiosh.dev, p);
+	}
+	
+      }
+    }
+    i++;
+  }
 }
 
 
