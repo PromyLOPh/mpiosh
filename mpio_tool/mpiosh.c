@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.4 2002/09/04 07:55:08 crunchy Exp $
+ * $Id: mpiosh.c,v 1.5 2002/09/08 17:03:50 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -485,8 +485,10 @@ mpiosh_cmd_mget(char *args[])
 {
   BYTE *	p;
   int		size, i = 0;
+  int           error;
   regex_t	regex;
   BYTE		fname[100];
+  BYTE          errortext[100];
   BYTE		month, day, hour, minute;
   WORD		year;  
   DWORD		fsize;  
@@ -502,22 +504,28 @@ mpiosh_cmd_mget(char *args[])
   }
   
   while (args[i] != NULL) {
-    if (regcomp(&regex, args[i], REG_EXTENDED | REG_ICASE)) {
-      fprintf(stderr, "error in regular expression: %s\n", args[i]);
-      continue;
-    }
-
-    p = mpio_directory_open(mpiosh.dev, mpiosh.card);
-    while (p != NULL) {
-      memset(fname, '\0', 100);
-      mpio_dentry_get(mpiosh.dev, p, fname, 100,
-		      &year, &month, &day, &hour, &minute, &fsize);
-      
-      if (!regexec(&regex, fname, 0, NULL, 0)) {
-	size = mpio_file_get(mpiosh.dev, mpiosh.card,
-			     fname, mpiosh_callback_put);
+    if (error = regcomp(&regex, args[i], REG_NOSUB)) {
+      regerror(error, &regex, errortext, 100);
+      debugn (2, "error in regular expression: %s (%s)\n", args[i], errortext);
+    } else {
+      p = mpio_directory_open(mpiosh.dev, mpiosh.card);
+      while (p != NULL) {
+	memset(fname, '\0', 100);
+	mpio_dentry_get(mpiosh.dev, p, fname, 100,
+			&year, &month, &day, &hour, &minute, &fsize);
+	
+	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
+	  printf("getting file \"%s\"\n", fname);
+	  size = mpio_file_get(mpiosh.dev, mpiosh.card,
+			       fname, mpiosh_callback_put);
+	  printf("\n");
+	} else {
+	  regerror(error, &regex, errortext, 100);
+	  debugn (2, "file does not match: %s (%s)\n", fname, errortext);
+	}
+	
+	p = mpio_dentry_next(mpiosh.dev, p);
       }
-      p = mpio_dentry_next(mpiosh.dev, p);
     }
     i++;
   }
@@ -557,8 +565,11 @@ mpiosh_cmd_mput(char *args[])
   char			dir_buf[NAME_MAX];
   int			size, j, i = 0;
   struct dirent **	dentry, **run;
+  regex_t	        regex;
+  int                   error;
+  BYTE                  errortext[100];
+  int                   fsize;
 
-  regex_t	regex;
   if (mpiosh.dev == NULL) {
     printf("connection to MPIO player already closed\n");
     return;
@@ -571,21 +582,27 @@ mpiosh_cmd_mput(char *args[])
   
   getcwd(dir_buf, NAME_MAX);
   while (args[i] != NULL) {
-    if (regcomp(&regex, args[i], REG_EXTENDED | REG_ICASE)) {
-      fprintf(stderr, "error in regular expression: %s\n", args[i]);
-      continue;
-    }
-
-    if ((size = scandir(dir_buf, &dentry, NULL, alphasort)) != -1) {
-      run = dentry;
-      for (j = 0; j < size; j++, run++) {
-	if (!regexec(&regex, (*run)->d_name, 0, NULL, 0)) {
-	  size = mpio_file_put(mpiosh.dev, mpiosh.card,
-			       (*run)->d_name, mpiosh_callback_put);
+    if (error = regcomp(&regex, args[i], REG_NOSUB)) {
+      regerror(error, &regex, errortext, 100);
+      debugn (2, "error in regular expression: %s (%s)\n", args[i], errortext);
+    } else {
+      if ((size = scandir(dir_buf, &dentry, NULL, alphasort)) != -1) {
+	run = dentry;
+	for (j = 0; j < size; j++, run++) {
+	  if (!(error = regexec(&regex, (*run)->d_name, 0, NULL, 0))) {
+	    printf("putting file \"%s\"\n", (*run)->d_name);	    
+	    fsize = mpio_file_put(mpiosh.dev, mpiosh.card,
+				 (*run)->d_name, mpiosh_callback_put);
+	    printf("\n");
+	  } else {
+	    regerror(error, &regex, errortext, 100);
+	    debugn (2, "file does not match: %s (%s)\n", 
+		    (*run)->d_name, errortext);
+	  }
+	  free(*run);
 	}
-	free(*run);
+	free(dentry);
       }
-      free(dentry);
     }
     i++;
   }
