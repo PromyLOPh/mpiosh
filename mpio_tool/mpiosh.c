@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.2 2002/09/01 16:07:10 crunchy Exp $
+ * $Id: mpiosh.c,v 1.3 2002/09/01 18:27:49 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -26,9 +26,13 @@
  * */
 
 #include <dirent.h>
+#include <grp.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -60,6 +64,7 @@ static mpiosh_cmd_t commands[] = {
   { "switch",	mpiosh_cmd_switch,	YES },
   { "ldir",	mpiosh_cmd_ldir,	YES },
   { "lcd",	mpiosh_cmd_lcd,		YES },
+  { "lmkdir",	mpiosh_cmd_lmkdir,	YES },
   { NULL, NULL, NO }
 };
 
@@ -101,7 +106,7 @@ mpiosh_readline_completion(const char *text, int start, int end)
   UNUSED(end);
 
   if (start == 0)
-    matches = completion_matches(text, mpiosh_readline_comp_cmd);
+    matches = rl_completion_matches(text, mpiosh_readline_comp_cmd);
   else {
     
   }
@@ -284,7 +289,7 @@ mpiosh_cmd_help(char *args[])
 	 "  open connect to MPIO player\n");
   printf("close\n"
 	 "  close connect to MPIO player\n");
-  printf("dev [i|e]\n"
+  printf("mem [i|e]\n"
 	 "  set current memory card. 'i' selects the internal and 'e'\n"
 	 "  selects the external memory card (smart media card)\n");
   printf("dir\n"
@@ -301,6 +306,14 @@ mpiosh_cmd_help(char *args[])
 	 "  read <filename> from memory card\n");
   printf("del <filename>\n"
 	 "  deletes <filename> from memory card\n");
+  printf("exit, quit\n"
+	 "  exit mpiosh and close the device\n");
+  printf("lcd\n"
+	 "  change the current working directory\n");
+  printf("ldir\n"
+	 "  list local directory\n");
+  printf("lmkdir\n"
+	 "  create a local directory\n");
 }
 
 void
@@ -520,7 +533,7 @@ mpiosh_cmd_dump(char *args[])
 {
   BYTE *p;
   BYTE month, day, hour, minute;
-  BYTE fname[100];
+  BYTE fname[256];
   char *arg[2];
   WORD year;  
   DWORD fsize;  
@@ -532,19 +545,20 @@ mpiosh_cmd_dump(char *args[])
   
   UNUSED(args);
   
-  args[0] = fname;
-  args[1] = NULL;
+  arg[0] = fname;
+  arg[1] = NULL;
   
   p = mpio_directory_open(mpiosh.dev, mpiosh.card);
   while (p != NULL) {
-    memset(fname, '\0', 100);
+    memset(fname, '\0', 256);
     
     mpio_dentry_get(mpiosh.dev, p,
-		    fname, 100,
+		    fname, 256,
 		    &year, &month, &day,
 		    &hour, &minute, &fsize);
 
-    printf("getting '%s' ... ", arg[0]);
+    
+    printf("getting '%s' ... \n", arg[0]);
     mpiosh_cmd_get(arg);
     
     p = mpio_dentry_next(mpiosh.dev, p);
@@ -616,24 +630,73 @@ mpiosh_cmd_switch(char *args[])
 void
 mpiosh_cmd_ldir(char *args[])
 {
-  char		dir_buf[NAME_MAX];
-  DIR *		dir;
-  dirent **	dentry;
-
+  char			dir_buf[NAME_MAX];
+  struct dirent **	dentry, **run;
+  int			count;
+  
   getcwd(dir_buf, NAME_MAX);
-  dir = opendir(dir_buf);
-  
-  if (dir) {
-    int count = scandir(dir, &dentry, alphasort, NULL);
-    
+  if (dir_buf != '\0') {
+    if ((count = scandir(dir_buf, &dentry, NULL, alphasort)) != -1) {
+      int		j, i, len = 0;
+      struct stat	st;
+      struct passwd *	pwd;
+      struct group *	grp;
+      char 		time[12];
+      char		rights[11];
+      
+      run = dentry;
+      rights[10] = '\0';
+      for (i = 0; i < count; i++, run++) {
+	stat((*run)->d_name, &st);
+
+	rights[0] = *("?pc?dnb?-?l?s???" + (st.st_mode >> 12 & 0xf));
+	for (j = 0; j < 9; j++) {
+	  if (st.st_mode & 1 << (8 - j))
+            rights[j + 1] = "rwxrwxrwx"[j];
+	  else
+            rights[j + 1] = '-';
+	}
+
+	pwd = getpwuid(st.st_uid);
+	grp = getgrgid(st.st_gid);
+	strftime(time, 12, "%b %2d", localtime(&(st.st_mtime)));
+	printf("%s %08s %08s %8d %10s %s\n",
+	       rights, pwd->pw_name, grp->gr_name, st.st_size,
+	       time,
+	       (*run)->d_name);
+	free(*run);
+      }
+      free(dentry);
+    }    
   }
-  
 }
 
 void
 mpiosh_cmd_lcd(char *args[])
 {
+  if (args[0] == NULL) {
+    fprintf(stderr, "error: no argument given\n");
+    return;
+  }
+  
+  if (chdir(args[0])) {
+    perror ("error");
+  } 
 }
+
+void
+mpiosh_cmd_lmkdir(char *args[])
+{
+  if (args[0] == NULL) {
+    fprintf(stderr, "error: no argument given\n");
+    return;
+  }
+
+  if (mkdir(args[0], 0777)) {
+    perror("error");
+  }
+}
+
 
 int
 main(int argc, char *argv[]) {

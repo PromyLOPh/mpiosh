@@ -1,3 +1,10 @@
+2002-09-01  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpio_tool/mpiosh.c: add commands lcd and ldir
+	(mpiosh_cmd_dump): fixed a stupid bug
+	(mpiosh_cmd_ldir): implemented the command ldir
+	(mpiosh_cmd_lcd): implemented the command lcd
+
 2002-08-22  Andreas Buesching  <crunchy@tzi.de>
 	* README: fixed soome types and add a warning
 	* AUTHORS: add salmoon to the list
