@@ -16,7 +16,6 @@ Prefix: %prefix
 Buildroot: /var/tmp/mpio-@VERSION@-buildroot/
 Packager: Andreas Büsching <crunchy@tzi.de>
 Requires: libusb >= 0.1.7, readline >= 4.3, ncurses >= 5.0
-BuildRequires:	libusb-devel >= 0.1.7
 BuildRequires:	readline-devel >= 4.3
 BuildRequires:	ncurses-devel >= 5.0
 
