@@ -32,12 +32,16 @@ fi
 MODULE_PATH="/lib/modules/${kernel_version}"
 if test -d "${MODULE_PATH}/kernel/drivers/usb"; then
     MODULE_PATH="${MODULE_PATH}/kernel/drivers/usb"
+    SPEC_PATH="kernel/drivers/usb"
 else
     MODULE_PATH="${MODULE_PATH}/misc"
+    SPEC_PATH="misc"
 fi
+
 AC_MSG_RESULT(Using module path ${MODULE_PATH}.)
 
 AC_SUBST(MODULE_PATH)
+AC_SUBST(SPEC_PATH)
 
 dnl Checks for header files.
 

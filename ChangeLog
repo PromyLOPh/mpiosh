@@ -1,3 +1,8 @@
+2002-09-22  Andreas Buesching  <crunchy@tzi.de>
+
+	* configure.in (SPEC_PATH): needed for the spec file to find the
+	kernel module
+
 2002-09-22  Markus Germeier  <mager@tzi.de>
 	* mpiosh/callback.c (mpiosh_cmd_mdel): 
 	  fixed logical error in abort handling which corrupted

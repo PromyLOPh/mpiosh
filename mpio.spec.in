@@ -1,5 +1,5 @@
 %define version @VERSION@
-%define release 1
+%define release 2
 %define name    mpio
 
 Version: %version
@@ -44,7 +44,7 @@ mkmpiodev -r
 %defattr(700,root,root)
 %prefix/sbin/mkmpiodev
 %defattr(644,root,root)
-@MODULE_PATH@/mpio.o
+/lib/modules/*/@SPEC_PATH@/mpio.o
 
 %doc COPYING ChangeLog INSTALL NEWS
 %doc README TODO
