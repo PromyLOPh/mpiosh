@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.13 2003/03/12 23:21:31 germeier Exp $
+ * $Id: directory.c,v 1.14 2003/03/13 23:05:22 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -527,7 +527,7 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
   hexdump(fname, in);
   hexdump(unicode, out);
 
-  back = unicode + 2;
+  back = unicode;
   
   count = filename_size / 13;
   if (filename_size % 13)

@@ -1,3 +1,8 @@
+2003-03-14  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/directory.c (mpio_dentry_put): 
+	  fixed missing first char issue
+
 2003-03-13  Markus Germeier  <mager@tzi.de>
 
 	* trying to fix iconv UNICODE conversions on BIG_ENDIAN
