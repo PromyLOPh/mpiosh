@@ -1,3 +1,8 @@
+2003-06-18  Markus Germeier  <mager@tzi.de>
+	* libmpio/Makefile.am (AM_LDFLAGS): 
+	  added variable to support API versioninging of libmpio
+	* missing: updated script
+
 2003-06-14  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/directory.c (mpio_dentry_filename_write): 
 	  added/fixed vfat 8.3 checksum to make "real" vfat 

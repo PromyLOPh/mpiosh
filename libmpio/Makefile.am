@@ -1,5 +1,6 @@
 INCLUDES=@MPLIB_INCLUDE@
 AM_CFLAGS=@MPLIB_CFLAGS@ 
+AM_LDFLAGS=-version-info 1:0:0
 
 lib_LTLIBRARIES=libmpio.la 
 
