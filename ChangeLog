@@ -1,3 +1,12 @@
+2003-09-22  Markus Germeier  <mager@tzi.de>
+	* added Johns patch to support the VirginPulse
+	  VP-01 player. (Thanks!)
+	* small fixes to John patch
+	* assumed the upcoming VP-02 is a FL100 clone
+	  so updated the code accordingly
+	* small and dirty hack for '.' in firmware 
+	  release numbers
+	
 2003-08-01  Markus Germeier  <mager@tzi.de>
 
 	* configure.in: bumped version to 0.7.0

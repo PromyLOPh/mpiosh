@@ -8,6 +8,7 @@
  * additions by Markus Germeier (mager@tzi.de):
  * - small adaptions for Kernel 2.4.x support 
  * - find endpoints automagically (needed for newer players)
+ * - added ID for VirginPulse branded players
  * 
  * based on rio500.c by Cesar Miquel (miquel@df.uba.ar)
  * 
@@ -58,7 +59,7 @@
 /*
  * Version Information
  */
-#define DRIVER_VERSION "0.0.3"
+#define DRIVER_VERSION "0.7.0"
 #define DRIVER_AUTHOR "Yuji Touya <salmoon@users.sourceforge.net>"
 #define DRIVER_DESC "USB MPIO driver"
 
@@ -307,12 +308,17 @@ static void *probe_mpio(struct usb_device *dev, unsigned int ifnum)
 		return NULL;
 	}
 
-	if (dev->descriptor.idProduct != 0x1 /* MPIO all models??? */ ) {
+	if ((dev->descriptor.idProduct != 0x1 /* MPIO all models??? */ ) 
+	    /* Virgin VP-01 (FY100 clone), 
+	       probably all VirginPulse/MPIO players */
+	 && (dev->descriptor.idProduct != 0x71)) {
 		warn(KERN_INFO "MPIO player model not supported/tested.");
 		return NULL;
 	}
 
 	info("USB MPIO found at address %d", dev->devnum);
+	if (dev->descriptor.idProduct == 0x71)
+	  info("player is a VirginPulse branded player");
 
 	as = dev->config->interface->altsetting;
 	mpio->bulk_in_ep = mpio->bulk_out_ep = 0;
@@ -392,6 +398,7 @@ static void disconnect_mpio(struct usb_device *dev, void *ptr)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
 static struct usb_device_id mpio_table [] = {
 	{ USB_DEVICE(0x2735, 1) }, 		/* MPIO-* (all models?) */
+	{ USB_DEVICE(0x2735, 0x71) }, 		/* Virgin VP-01 (FY100?) */
 	{ }					/* Terminating entry */
 };
 

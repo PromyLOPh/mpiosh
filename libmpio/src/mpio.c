@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.7 2003/07/24 16:17:30 germeier Exp $
+ * $Id: mpio.c,v 1.8 2003/09/22 19:15:37 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -63,6 +63,8 @@ static BYTE *mpio_model_name[] = {
   "MPIO-FD100",
   "MPIO-FL100",
   "MPIO-FY100",
+  "VirginPulse VP-01",
+  "VirginPulse VP-02",
   "unknown"
 };
 
@@ -233,6 +235,7 @@ mpio_init_external(mpio_t *m)
     e_offset++;
   
   if ((mpio_id_valid(m->version[e_offset])) &&
+      (m->model != MPIO_MODEL_VP_02) &&
       (m->model != MPIO_MODEL_FL100)) /* ignore external memory ATM until
 					 we know how to support it! */
     {
@@ -309,6 +312,8 @@ mpio_init(mpio_callback_init_t progress_callback)
     if (new_mpio->version[i] == 0x00)
       new_mpio->version[i]=' ';
   snprintf(new_mpio->firmware.major, 3, "%s", new_mpio->version + 0x0c);
+  if (new_mpio->firmware.major[1] == '.') /* small and dirty hack */
+    new_mpio->firmware.major[1]=0x00;
   snprintf(new_mpio->firmware.minor, 3, "%s", new_mpio->version + 0x0e);
   snprintf(new_mpio->firmware.year,  5, "%s", new_mpio->version + 0x10);
   snprintf(new_mpio->firmware.month, 3, "%s", new_mpio->version + 0x14);
@@ -358,6 +363,17 @@ mpio_init(mpio_callback_init_t progress_callback)
        look at a FY100 firmware yet. -mager */
     debug("FY100 found: Beware, this model is not tested and we don't know"
 	  " if it does work!\n");    
+  } else if (strncmp(new_mpio->version, "VP-01", 5) == 0) {
+    /* This is a FY100 clone! */
+    new_mpio->model = MPIO_MODEL_VP_01;
+  } else if (strncmp(new_mpio->version, "VP-02", 5) == 0) {
+    new_mpio->model = MPIO_MODEL_VP_02;
+    /* We assume that this is a FL100 clone -mager */
+    debug("VP-02 found: Beware, this model is not tested and we don't know"
+	  " if it does work!\n");    
+    debug("This model is assumed to be a FL100 clone, so:\n");
+    debug("External memory is ignored, because we don't know how"
+	  " to support it at the moment (MultiMediaCards instead of SmartMedia)\n");
   } else {
     new_mpio->model = MPIO_MODEL_UNKNOWN;
   }
