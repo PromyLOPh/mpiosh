@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.7 2003/07/01 09:06:11 germeier Exp $
+ * $Id: directory.c,v 1.8 2003/07/07 21:54:19 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -519,7 +519,7 @@ mpio_dentry_filename_write(mpio_t *m, mpio_mem_t mem, BYTE *p,
       j++;
     }
 
-  while(mpio_dentry_find_name_8_3(m, mem, f_8_3)) {
+  if(mpio_dentry_find_name_8_3(m, mem, f_8_3)) {
     f_8_3[6]='~';
     f_8_3[7]='0';
   }

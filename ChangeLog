@@ -1,3 +1,7 @@
+2003-07-07  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/directory.c (mpio_dentry_filename_write): 
+	  fixed one of my "famous" 8.3 filename handling "fixes" :-(
+
 2003-07-01  Markus Germeier  <mager@tzi.de>
 	* mpiosh/callback.c(mpiosh_ftyp2ascii): added function
 	* mpiosh/callback.c(mpiosh_cmd_dir): 
