@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.5 2002/09/11 21:34:19 germeier Exp $
+ * $Id: directory.c,v 1.6 2002/09/14 22:54:41 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -68,7 +68,7 @@ int date_dos2unix(unsigned short time,unsigned short date)
 
 /* directory operations */
 BYTE *
-mpio_directory_open(mpio_t *m, BYTE mem)
+mpio_directory_open(mpio_t *m, mpio_mem_t mem)
 {  
   BYTE *out;  
   if (mem == MPIO_EXTERNAL_MEM) {
@@ -81,14 +81,19 @@ mpio_directory_open(mpio_t *m, BYTE mem)
     out = m->internal.dir;
   }
 
-  if (out[0] == 0x00)
-    return NULL;
+  if (out[0] == 0x00) 
+    {
+      debugn(3, "directory is empty\n");
+      return NULL;
+    }
+  
+  debugn(3, "first dentry: %08x\n", out);
   
   return out;  
 }
 
 int
-mpio_dentry_get_size(mpio_t *m, BYTE *buffer)
+mpio_dentry_get_size(mpio_t *m, mpio_mem_t mem, BYTE *buffer)
 {
   mpio_dir_entry_t *dentry;
 
@@ -117,29 +122,37 @@ mpio_dentry_get_size(mpio_t *m, BYTE *buffer)
 }  
 
 BYTE*
-mpio_dentry_next(mpio_t *m, BYTE *buffer)
+mpio_dentry_next(mpio_t *m, mpio_mem_t mem, BYTE *buffer)
 {
   int size;
   BYTE *out;
   
-  size = mpio_dentry_get_size(m, buffer);
-  if (size<0)
+  size = mpio_dentry_get_size(m, mem, buffer);
+  
+  if (size<=0)
     return NULL;
   
   out = buffer + size;
   
-  if (*out == 0x00)
-    return NULL;  
+  if (*out == 0x00) 
+    {
+      debugn(3, "no more entries\n");
+      return NULL;  
+    }
+  
+  debugn(3, "next  dentry: %08x\n", out);
   
   return out;
 }      
 
 int 
-mpio_dentry_get_raw(mpio_t *m, BYTE *dentry, BYTE *buffer, int bufsize)
+mpio_dentry_get_raw(mpio_t *m, mpio_mem_t mem, BYTE *dentry, 
+		    BYTE *buffer, int bufsize)
 {
   int size;
   
-  size = mpio_dentry_get_size(m, buffer);
+  size = mpio_dentry_get_size(m, mem, buffer);
+  debugn(3, "dentry size is: 0x%02x\n", size);
   
   if (size < 0)
     return size;
@@ -169,23 +182,23 @@ mpio_dentry_copy_to_slot(BYTE *buffer, mpio_dir_slot_t *slot)
 }
 
 int
-mpio_dentry_get(mpio_t *m, BYTE *buffer,                   
+mpio_dentry_get(mpio_t *m, mpio_mem_t mem, BYTE *buffer,                   
 		BYTE *filename, int filename_size,
 		WORD *year, BYTE *month, BYTE *day,
 		BYTE *hour, BYTE *minute, DWORD *fsize)
 {
-  BYTE filename_8_3[12];
+  BYTE filename_8_3[13];
   
-  return mpio_dentry_get_real(m, buffer, filename, filename_size, 
+  return mpio_dentry_get_real(m, mem, buffer, filename, filename_size, 
 			      filename_8_3,
 			      year, month, day, hour, minute, fsize);
 }
   
 /* TODO: please clean me up !!! */
 int
-mpio_dentry_get_real(mpio_t *m, BYTE *buffer,                   
+mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,                   
 		     BYTE *filename, int filename_size,
-		     BYTE filename_8_3[12],
+		     BYTE *filename_8_3,
 		     WORD *year, BYTE *month, BYTE *day,
 		     BYTE *hour, BYTE *minute, DWORD *fsize)
 {
@@ -193,13 +206,14 @@ mpio_dentry_get_real(mpio_t *m, BYTE *buffer,
   int vfat = 0;  
   int num_slots = 0;  
   int slots = 0;
-  int in = 0, out = 0;
+  int in = 0, out = 0, iconv_return;
   mpio_dir_entry_t *dentry;
   mpio_dir_slot_t  *slot;
   BYTE *unicode = 0;
   BYTE *uc;
   BYTE *fname = 0;
   iconv_t ic;
+  int dsize;
   
   if (buffer == NULL)
     return -1;  
@@ -211,11 +225,17 @@ mpio_dentry_get_real(mpio_t *m, BYTE *buffer,
       (dentry->start[0] == 0x00)  &&
       (dentry->start[1] == 0x00)) 
     {
-      num_slots = (mpio_dentry_get_size(m, buffer) / 0x20) - 1;
+      dsize = mpio_dentry_get_size(m, mem, buffer);
+      debugn(3, "dentry size is: 0x%02x\n", dsize);
+      hexdump(buffer, dsize);
+      num_slots = (dsize / 0x20) - 1;
       slots = num_slots - 1;
       dentry++;
       vfat++;    
-      unicode = malloc(256);
+      in = num_slots * 26;
+      out = num_slots * 13;
+      unicode = malloc(in + 2);
+      memset(unicode, 0x00, (in+2));
       uc = unicode;
       fname = filename;
       slot = (mpio_dir_slot_t *)buffer;
@@ -237,30 +257,32 @@ mpio_dentry_get_real(mpio_t *m, BYTE *buffer,
   if (vfat) 
     {
       ic = iconv_open("ASCII", "UNICODE");
-      in = num_slots * 26;
-      out = num_slots * 13;
       memset(fname, 0, filename_size);
-      iconv(ic, (char **)&uc, &in, (char **)&fname, &out);
+      hexdumpn(4, unicode, in+2);
+      debugn(4, "before iconv: in: %2d - out: %2d\n", in, out);
+      iconv_return = iconv(ic, (char **)&uc, &in, (char **)&fname, &out);
+      debugn(4, "after  iconv: in: %2d - out: %2d (return: %d)\n", in, out,
+	     iconv_return);
+      hexdumpn(4, filename, (num_slots*13)-out);
       iconv_close(ic);
-      free(unicode);
     } 
+  free(unicode);
 
   memcpy(filename_8_3, dentry->name, 8);
   filename_8_3[0x08] = '.';	
   memcpy(filename_8_3 + 0x09, dentry->ext, 3);
   filename_8_3[0x0c] = 0;
-
+  hexdumpn(4, filename_8_3, 13);
+  
   if (!vfat) 
     {    
       if (filename_size >= 12) 
 	{
 	  snprintf(filename, 13, "%s", filename_8_3);	    
 	} else {
-	  snprintf(filename, 12, "%s", "ERROR");
+	  snprintf(filename, filename_size, "%s", "ERROR");
 	}
     }
-
-/*   hexdumpn(0, filename_8_3, 13); */
 
   date  = (dentry->date[1] * 0x100) + dentry->date[0];
   *year  = date / 512 + 1980;
@@ -323,7 +345,7 @@ mpio_dentry_get_filesize(mpio_t *m, mpio_mem_t mem, BYTE *p)
   int fsize;
   mpio_dir_entry_t *dentry;
 
-  s  = mpio_dentry_get_size(m, p);
+  s  = mpio_dentry_get_size(m, mem, p);
   s -= DIR_ENTRY_SIZE ;
 
   dentry = (mpio_dir_entry_t *)p;
@@ -350,7 +372,7 @@ mpio_dentry_get_time(mpio_t *m, mpio_mem_t mem, BYTE *p)
   int s;
   mpio_dir_entry_t *dentry;
 
-  s  = mpio_dentry_get_size(m, p);
+  s  = mpio_dentry_get_size(m, mem, p);
   s -= DIR_ENTRY_SIZE ;
 
   dentry = (mpio_dir_entry_t *)p;
@@ -375,7 +397,7 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
   mpio_dir_slot_t *dentry;
   mpio_fatentry_t *new;
 
-  s  = mpio_dentry_get_size(m, p);
+  s  = mpio_dentry_get_size(m, mem, p);
   s -= DIR_ENTRY_SIZE ;
 
   dentry = (mpio_dir_slot_t *)p;
@@ -404,7 +426,7 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
 }
 
 int
-mpio_dentry_put(mpio_t *m, BYTE mem,
+mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
 		BYTE *filename, int filename_size,
 		time_t date, DWORD fsize, WORD ssector)
 {
@@ -580,7 +602,7 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
   
   p = mpio_directory_open(m, mem);
   while ((p) && (!found)) {
-    mpio_dentry_get_real (m, p,
+    mpio_dentry_get_real (m, mem, p,
 			  fname, 128,
 			  fname_8_3,
 			  &wdummy, &bdummy, &bdummy,
@@ -592,7 +614,7 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
       p = NULL;
     }
     
-    p = mpio_dentry_next(m, p);
+    p = mpio_dentry_next(m, mem, p);
   }
 	 
   return found;
@@ -610,7 +632,7 @@ mpio_dentry_find_name(mpio_t *m, BYTE mem, BYTE *filename)
   
   p = mpio_directory_open(m, mem);
   while ((p) && (!found)) {
-    mpio_dentry_get (m, p,
+    mpio_dentry_get (m, mem, p,
 		     fname, 128,
 		     &wdummy, &bdummy, &bdummy,
 		     &bdummy, &bdummy, &ddummy);
@@ -619,7 +641,7 @@ mpio_dentry_find_name(mpio_t *m, BYTE mem, BYTE *filename)
       p = NULL;
     }
     
-    p = mpio_dentry_next(m, p);
+    p = mpio_dentry_next(m, mem, p);
   }
 	 
   return found;
@@ -648,7 +670,7 @@ mpio_dentry_delete(mpio_t *m, BYTE mem, BYTE *filename)
     return 0;    
   } 
 
-  size = mpio_dentry_get_size(m, start);
+  size = mpio_dentry_get_size(m, mem, start);
   
   if (size <= 0) {
     debug("fatal error in mpio_dentry_delete\n");

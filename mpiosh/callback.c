@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.5 2002/09/14 11:19:30 crunchy Exp $
+ * $Id: callback.c,v 1.6 2002/09/14 22:54:41 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -125,7 +125,7 @@ mpiosh_cmd_dir(char *args[])
   while (p != NULL) {
     memset(fname, '\0', 100);
     
-    mpio_dentry_get(mpiosh.dev, p,
+    mpio_dentry_get(mpiosh.dev, mpiosh.card, p,
 		    fname, 100,
 		    &year, &month, &day,
 		    &hour, &minute, &fsize);
@@ -133,7 +133,7 @@ mpiosh_cmd_dir(char *args[])
     printf ("%02d.%02d.%04d %02d:%02d  %9d - %s\n",
 	    day, month, year, hour, minute, fsize, fname);
 
-    p = mpio_dentry_next(mpiosh.dev, p);
+    p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
   }  
 }
 
@@ -264,7 +264,7 @@ mpiosh_cmd_mget(char *args[])
       p = mpio_directory_open(mpiosh.dev, mpiosh.card);
       while (p != NULL) {
 	memset(fname, '\0', 100);
-	mpio_dentry_get(mpiosh.dev, p, fname, 100,
+	mpio_dentry_get(mpiosh.dev, mpiosh.card, p, fname, 100,
 			&year, &month, &day, &hour, &minute, &fsize);
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
@@ -278,7 +278,7 @@ mpiosh_cmd_mget(char *args[])
 	  debugn (2, "file does not match: %s (%s)\n", fname, errortext);
 	}
 	
-	p = mpio_dentry_next(mpiosh.dev, p);
+	p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
       }
     }
     i++;
@@ -408,7 +408,7 @@ mpiosh_cmd_mdel(char *args[])
       p = mpio_directory_open(mpiosh.dev, mpiosh.card);
       while (p != NULL) {
 	memset(fname, '\0', 100);
-	mpio_dentry_get(mpiosh.dev, p, fname, 100,
+	mpio_dentry_get(mpiosh.dev, mpiosh.card, p, fname, 100,
 			&year, &month, &day, &hour, &minute, &fsize);
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
@@ -424,7 +424,7 @@ mpiosh_cmd_mdel(char *args[])
 	} else {
 	  regerror(error, &regex, errortext, 100);
 	  debugn (2, "file does not match: %s (%s)\n", fname, errortext);
-	  p = mpio_dentry_next(mpiosh.dev, p);
+	  p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
 	}
 	
       }
@@ -458,7 +458,7 @@ mpiosh_cmd_dump(char *args[])
   while (p != NULL) {
     memset(fname, '\0', 256);
     
-    mpio_dentry_get(mpiosh.dev, p,
+    mpio_dentry_get(mpiosh.dev, mpiosh.card, p,
 		    fname, 256,
 		    &year, &month, &day,
 		    &hour, &minute, &fsize);
@@ -467,7 +467,7 @@ mpiosh_cmd_dump(char *args[])
     printf("getting '%s' ... \n", arg[0]);
     mpiosh_cmd_get(arg);
     
-    p = mpio_dentry_next(mpiosh.dev, p);
+    p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
   }  
 }
 

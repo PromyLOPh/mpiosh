@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.15 2002/09/14 16:14:46 germeier Exp $
+ * $Id: mpio.c,v 1.16 2002/09/14 22:54:41 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -80,6 +80,7 @@ mpio_init_internal(mpio_t *m)
   debugn(2,"max_cluster: %d\n", sm->max_cluster);
                                             /* 16 bytes per cluster */
   sm->fat_size     = sm->max_cluster*16/SECTOR_SIZE;   
+  debugn(2,"fat_size: %04x\n", sm->fat_size*SECTOR_SIZE);
   sm->fat          = malloc(sm->fat_size*SECTOR_SIZE);
   mpio_fat_read(m, MPIO_INTERNAL_MEM);
 

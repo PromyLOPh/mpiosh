@@ -1,3 +1,11 @@
+2002-09-15  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/directory.c: add debug informations,
+	(mpio_dentry_get): fixed a off-by-one error
+
+	* libmpio/mpio.h: add mpio_mem_t to dentry functions
+	  to enable further debugging
+
 2002-09-14  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/mpiosh.c: does not hang anymore after reading commands
