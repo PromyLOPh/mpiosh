@@ -4,7 +4,7 @@
  * Authors: Dirk Meyer  <dmeyer@tzi.de>
  *          Andreas Büsching <crunchy@tzi.de>
  *
- * $Id: debug.c,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: debug.c,v 1.2 2003/03/19 16:41:57 crunchy Exp $
  */
 
 #include "debug.h"
@@ -22,7 +22,7 @@
 
 char *__debug_color = NULL;
 int __debug_level = 0;
-FILE *__debug_fd;
+FILE *__debug_fd = NULL;
 
 void 
 debug_init(void) {
@@ -277,7 +277,8 @@ int
 _use_debug(int level)
 {
   if (__debug_level == -1) return 0;
-  
+  if (__debug_fd == NULL) return 0;
+
   if (level <= __debug_level) {
     return 1;
   }
