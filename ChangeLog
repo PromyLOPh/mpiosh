@@ -1,3 +1,11 @@
+2002-09-16  Yuji Touya  <salmoon@users.sourceforge.net>
+
+	* kernel/mpio.c: changed include file to resolve symbols
+	* kernel/mpio.c (read_mpio): changed maxretry value
+	* libmpio/io.c (model2externalmem): fixed function
+	* libmpio/defs.h: added command, filetype and comments
+	* README: modified "getting started"
+	
 2002-09-15  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_ldir): checking more return values
