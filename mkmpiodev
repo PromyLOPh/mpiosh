@@ -1,0 +1,19 @@
+#!/bin/bash
+#------------------------------
+# Create device file for MPIO
+#------------------------------
+
+DEVFILE=/dev/usb/mpio
+MAJOR=180
+MINOR=70
+PERM=666
+OWNER=root.root
+
+if [ -a $DEVFILE ]; then
+   rm -f $DEVFILE
+fi
+echo -n "Creating $DEVFILE..."
+mknod -m $PERM $DEVFILE c $MAJOR $MINOR
+chown $OWNER $DEVFILE
+echo " done"
+
