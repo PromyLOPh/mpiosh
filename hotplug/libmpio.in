@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# /etc/hotplug/usb/libmpio
+#
+# Fix permissions on device file, so
+# "normal" users can access the MPIO player
+
+MPIO_USER=@MPIOUSER@
+MPIO_GROUP=@MPIOGROUP@
+MPIO_PERM=@MPIOPERM@
+
+if [ "$ACTION" = "add" ] &&
+   [ "$TYPE" = "usb" ]   &&
+   [ -f "${DEVICE}" ]   
+then
+    chmod 0000 "$DEVICE"
+    chown $MPIO_USER "$DEVICE"
+    chgrp $MPIO_GROUP "$DEVICE"
+    chmod $MPIO_PERM "$DEVICE"
+fi
