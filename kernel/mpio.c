@@ -340,12 +340,20 @@ file_operations usb_mpio_fops = {
 	release:	close_mpio,
 };
 
+static struct usb_device_id mpio_table [] = {
+	{ USB_DEVICE(0x2735, 1) }, 		/* MPIO-* (all models?) */
+	{ }					/* Terminating entry */
+};
+
+MODULE_DEVICE_TABLE (usb, mpio_table);
+
 static struct usb_driver mpio_driver = {
 	name:		"mpio",
 	probe:		probe_mpio,
 	disconnect:	disconnect_mpio,
 	fops:		&usb_mpio_fops,
 	minor:		MPIO_MINOR,
+	id_table:	mpio_table,
 };
 
 int usb_mpio_init(void)
