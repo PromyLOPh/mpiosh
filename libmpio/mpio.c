@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.13 2002/09/13 13:07:05 germeier Exp $
+ * $Id: mpio.c,v 1.14 2002/09/13 17:01:34 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -307,6 +307,8 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	
 	if (progress_callback)
 	  abort=(*progress_callback)((fsize-filesize), fsize);
+	if (abort)
+	  debug("aborting operation\n");	
 
       } while ((mpio_fatentry_next_entry(m, mem, f) && (filesize>0)) &&
 	       (!abort));
@@ -459,26 +461,36 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 
   close(fd);
 
-  if (progress_callback)
-    abort=(*progress_callback)((fsize-filesize), fsize);
-  
   if (abort) 
     {    /* delete the just written blocks, because the user
 	  * aborted the operation
 	  */
+      debug("aborting operation\n");	
+      debug("removing already written blocks\n");      
+      
+      filesize=fsize;
       
       memcpy(&current, &firstblock, sizeof(mpio_fatentry_t));
       memcpy(&backup, &firstblock, sizeof(mpio_fatentry_t));
-
+      
       while (mpio_fatentry_next_entry(m, mem, &current))
 	{
 	  mpio_io_block_delete(m, mem, &backup);
 	  mpio_fatentry_set_free(m, mem, &backup);      
 	  memcpy(&backup, &current, sizeof(mpio_fatentry_t));
+
+	  if (filesize > BLOCK_SIZE) 
+	    {
+	      filesize -= BLOCK_SIZE;
+	    } else {
+	      filesize -= filesize;
+	    }	
+	  
+	  if (progress_callback)
+	    (*progress_callback)((fsize-filesize), fsize);
 	}
       mpio_io_block_delete(m, mem, &backup);
       mpio_fatentry_set_free(m, mem, &backup);      
-      
     } else {
       mpio_dentry_put(m, mem,
 		      filename, strlen(filename),

@@ -1,3 +1,7 @@
+2002-09-13  Markus Germeier  <mager@tzi.e>
+
+	* libmpio/mpio.c (mpio_file_put): fixed abort handling
+
 2002-09-13  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_callback_get, mpiosh_callback_put) 
@@ -11,7 +15,7 @@
 
 	* mpiosh/mpiosh.c: add new command lpwd
 
-2002-09-13  Markus Germeier  <mager@informatik.uni-bremen.de>
+2002-09-13  Markus Germeier  <mager@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_put, mpiosh_cmd_del) 
 	(mpiosh_cmd_mdel, mpiosh_cmd_mput): use mpio_sync
