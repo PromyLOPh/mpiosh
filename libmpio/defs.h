@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.28 2003/07/15 07:34:53 germeier Exp $
+ * $Id: defs.h,v 1.29 2003/07/24 16:17:30 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -239,6 +239,9 @@ typedef struct {
 
   /* lookup table for phys.<->log. block mapping */
   mpio_zonetable_t zonetable;
+
+  /* version of chips used */
+  BYTE version;
 
 } mpio_smartmedia_t;
 

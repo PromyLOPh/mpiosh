@@ -1,5 +1,5 @@
 /*
- * $Id: smartmedia.h,v 1.2 2003/04/30 07:17:02 germeier Exp $
+ * $Id: smartmedia.h,v 1.3 2003/07/24 16:17:30 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -34,6 +34,7 @@ int	mpio_id2mem (BYTE);
 BYTE *	mpio_id2manufacturer(BYTE);
 void	mpio_id2geo(BYTE, mpio_disk_phy_t *);
 BYTE	mpio_id_valid(BYTE);
+BYTE    mpio_id2version(BYTE);  
 
 #ifdef __cplusplus
 }

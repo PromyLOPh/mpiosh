@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.6 2003/06/27 12:21:21 crunchy Exp $
+ * $Id: mpio.c,v 1.7 2003/07/24 16:17:30 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -155,6 +155,7 @@ mpio_init_internal(mpio_t *m)
       return;
     }
   
+  sm->version = mpio_id2version(sm->id);
   
   /* look for further installed memory chips 
    * models with 1, 2 and 4 chips are known
@@ -191,6 +192,9 @@ mpio_init_internal(mpio_t *m)
   debugn(2, "max_cluster: %d\n", sm->max_cluster);
                                             /* 16 bytes per cluster */
   sm->fat_size     = (sm->max_cluster * 16) / SECTOR_SIZE;   
+  /* the new chips seem to use some kind of mega-block (== 128KB) instead of 16KB */
+  if (sm->version)
+    sm->fat_size  /= 8;
   debugn(2, "fat_size: %04x\n", sm->fat_size * SECTOR_SIZE);
   sm->fat          = malloc(sm->fat_size * SECTOR_SIZE);
   /* fat will be read in mpio_init, so we can more easily handle
@@ -211,6 +215,11 @@ mpio_init_internal(mpio_t *m)
   sm->root->prev    = NULL;  
   mpio_rootdir_read(m, MPIO_INTERNAL_MEM);
   sm->cdir = sm->root;
+
+  if (sm->version)
+    debug("Warning, your player has a new SmartMedia chip which is not yet supported\n"
+	  "Support for this chip is scheduled for the 0.7.1 release\n"
+	  "Watch http://mpio.sf.net for further announcements\n");
 }
 
 void
@@ -229,6 +238,7 @@ mpio_init_external(mpio_t *m)
     {
       sm->manufacturer = m->version[e_offset];
       sm->id = m->version[e_offset + 1];
+      sm->version = mpio_id2version(sm->id);
     } else {
       sm->manufacturer = 0;
       sm->id = 0;

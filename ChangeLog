@@ -1,3 +1,10 @@
+2003-07-24  Markus Germeier  <mager@tzi.de>
+        * detect new SmartMedia chips and report them
+	* added version to mpio_smartmedia_t
+	* libmpio/src/smartmedia.c (mpio_id2version): 
+	  added function
+	* spare area read of new chips should work now
+
 2003-07-17  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/smartmedia.c (mpio_id2mem): 
 	  added non-standard SmartMedia chip ID, as reported by Andreas
