@@ -10,7 +10,7 @@ dnl AM_CONFIG_HEADER(src/config.h)
 AC_CANONICAL_SYSTEM()
 AC_MSG_RESULT(Building for a ${host} host.)
 
-AM_INIT_AUTOMAKE(mpio, 0.7.1_pre1-1)
+AM_INIT_AUTOMAKE(mpio, 0.7.1_pre2-1)
 
 dnl build release variable
 RELEASE=`echo $VERSION | cut -d- -f2`
