@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.10 2002/09/11 11:55:38 germeier Exp $
+ * $Id: mpio.c,v 1.11 2002/09/11 13:44:30 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -320,14 +320,15 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	      BYTE (*progress_callback)(int, int))
 {
   mpio_smartmedia_t *sm;
-  mpio_fatentry_t   *f, current, start;
+  mpio_fatentry_t   *f, current; 
+  WORD start;
   int data_offset;
   BYTE block[BLOCK_SIZE];
   int fd, toread;
   struct stat file_stat;
 
   BYTE *p=NULL;
-  DWORD filesize, fsize, free;
+  DWORD filesize, fsize, free, blocks;
   BYTE abort=0;
   
   if (mem==MPIO_INTERNAL_MEM) sm=&m->internal;  
@@ -364,15 +365,25 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
       debug("could not free cluster for file!\n");
       return 0;	
     } else {
-      memcpy(&start, f, sizeof(mpio_fatentry_t));
-    }
-  
+      start=f->entry;
+    }  
+
   /* find file-id for internal memory */
   if (mem==MPIO_INTERNAL_MEM) 
     {      
-      f->i_index=mpio_fat_internal_find_fileindex(m);      
-      debug("fileindex: %02x\n", f->i_index);
-    }
+      f->i_index=mpio_fat_internal_find_fileindex(m);
+      debugn(2, "fileindex: %02x\n", f->i_index);
+      f->i_fat[0x01]= f->i_index;
+      start         = f->i_index;
+
+      /* number of blocks needed for file */
+      blocks = filesize / 0x4000;
+      if (filesize % 0x4000)
+	blocks++;      
+      debugn(2, "blocks: %02x\n", blocks);      
+      f->i_fat[0x02]=(blocks / 0x100) & 0xff;
+      f->i_fat[0x03]= blocks          & 0xff;
+    }  
 
   /* open file for writing */
   fd = open(filename, O_RDONLY);    
@@ -436,11 +447,14 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (progress_callback)
     abort=(*progress_callback)((fsize-filesize), fsize);
 
+/*   if (mem == MPIO_INTERNAL_MEM)     */
+/*     start.entry=start.i_index; */
+
   /* FIXEME: add real values here!!! */
   mpio_dentry_put(m, mem,
 		  filename, strlen(filename),
 		  2002, 8, 13,
-		  2, 12, fsize, start.entry);
+		  2, 12, fsize, start);
 
   /* this writes the FAT *and* the root directory */
   mpio_fat_write(m, mem);

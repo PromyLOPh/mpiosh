@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.10 2002/09/11 11:55:37 germeier Exp $
+ * $Id: io.c,v 1.11 2002/09/11 13:44:30 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -769,8 +769,15 @@ mpio_io_block_write(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *data)
 	     0xff, CMD_SIZE);
 
       if (mem == MPIO_INTERNAL_MEM) 
-	memcpy((sendbuff+SECTOR_SIZE+(i * SECTOR_TRANS)), 
-	       f->i_fat, 0x10);
+	{	  
+	  if (i == 0)
+	    {	      
+	      memcpy((sendbuff+SECTOR_SIZE+(i * SECTOR_TRANS)), 
+		     f->i_fat, 0x10);
+/* 	      debug("address %02x:%06x\n", chip, address); */
+/* 	      hexdumpn(0, f->i_fat, 0x10); */
+	    }	  
+	}      
 
       /* fill in block information */
       if (mem == MPIO_EXTERNAL_MEM) 

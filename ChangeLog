@@ -1,5 +1,11 @@
 2002-09-11  Markus Germeier  <mager@tzi.de>
 
+	* libmpio/mpio.c (mpio_file_put): 
+	  finished support for writing to internal memory
+	  + changes to fat.c and io.c
+
+2002-09-11  Markus Germeier  <mager@tzi.de>
+
 	* libmpio/io.c (cluster2blockaddress): added function
 	(mpio_io_block_write, mpio_io_sector_write): 
 	  fixed block address in spare area

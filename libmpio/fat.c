@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.9 2002/09/11 00:18:34 germeier Exp $
+ * $Id: fat.c,v 1.10 2002/09/11 13:44:30 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -204,7 +204,7 @@ mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector)
 {
   mpio_smartmedia_t *sm;
   mpio_fatentry_t *new;
-  
+
   new = malloc (sizeof(mpio_fatentry_t));
   
   if (new) 
@@ -212,6 +212,16 @@ mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector)
       new->m      = m;
       new->mem    = mem;
       new->entry  = sector;      
+
+      /* init FAT entry */
+      memset(new->i_fat, 0xff, 0x10);
+      new->i_fat[0x00] = 0xaa;  /* start of file */
+      new->i_fat[0x06] = 0x01;  /* filetype, hmm ... */
+      new->i_fat[0x0b] = 0x00;  
+      new->i_fat[0x0c] = 0x00;  
+      new->i_fat[0x0d] = 0x00;  
+      new->i_fat[0x0e] = 'P';
+      new->i_fat[0x0f] = 'C';
     }  
 
   if (mem == MPIO_INTERNAL_MEM) 
@@ -496,8 +506,12 @@ mpio_fatentry_next_free(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
 
   while(mpio_fatentry_plus_plus(f))
     {
-      if (mpio_fatentry_free(m, mem, f))
-	return 1;
+      if (mpio_fatentry_free(m, mem, f)) 
+	{
+	  if (mem == MPIO_INTERNAL_MEM)
+	    f->i_fat[0x00] = 0xee;	  
+	  return 1;
+	}
     }
 
   /* no free entry found, restore entry */
@@ -705,8 +719,8 @@ mpio_fatentry_set_eof(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
     {    
       sm = &m->internal;
       e  = f->entry * 0x10;
-      memset((sm->fat+e), 0xff, 0x10);
       memset((f->i_fat+0x07), 0xff, 4);		    
+      memcpy((sm->fat+e), f->i_fat, 0x10);
     }
 
   if (mem == MPIO_EXTERNAL_MEM) 
@@ -729,10 +743,13 @@ mpio_fatentry_set_next(mpio_t *m, mpio_mem_t mem,
     {    
       sm = &m->internal;
       e  = f->entry * 0x10;
-      sm->fat[e+0x07]= value->hw_address / 0x1000000;  
-      sm->fat[e+0x08]=(value->hw_address / 0x10000  ) & 0xff;  
-      sm->fat[e+0x09]=(value->hw_address / 0x100    ) & 0xff;  
-      sm->fat[e+0x0a]= value->hw_address              & 0xff;
+
+      f->i_fat[0x07]= value->hw_address / 0x1000000;  
+      f->i_fat[0x08]=(value->hw_address / 0x10000  ) & 0xff;  
+      f->i_fat[0x09]=(value->hw_address / 0x100    ) & 0xff;  
+      f->i_fat[0x0a]= value->hw_address              & 0xff;
+
+      memcpy((sm->fat+e), f->i_fat, 0x10);
     }
   
   if (mem == MPIO_EXTERNAL_MEM) 
