@@ -19,8 +19,8 @@ libmpio_la_SOURCES= \
 		mplib/xmalloc.c
 
 pkginclude_HEADERS= \
-		src/mpio.h \
-		src/defs.h
+		mpio.h \
+		defs.h
 
 noinst_HEADERS= \
 		src/io.h \

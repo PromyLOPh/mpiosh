@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.1 2003/04/23 08:34:14 crunchy Exp $
+ * $Id: defs.h,v 1.24 2003/04/23 08:53:23 crunchy Exp $
  *
  * Library for USB MPIO-*
  *

@@ -46,11 +46,13 @@ AC_CACHE_CHECK([whether to use mplib],
 TEST_MPLIB
 
 if test "$ac_cv_use_mplib" = yes; then
-  AC_CONFIG_SUBDIRS(mplib)
   MPLIB_INCLUDE=-Implib
   MPLIB_CFLAGS=-DMPLIB
 fi
 
+AC_SUBST(MPLIB_INCLUDE)
+AC_SUBST(MPLIB_CFLAGS)
+:
 dnl --- check for kernel version
 kernel_version=`uname -r 2>&1`
 echo -n "checking for kernel version ... "
