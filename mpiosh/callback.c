@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.46 2003/07/27 20:50:01 crunchy Exp $
+ * $Id: callback.c,v 1.47 2003/10/19 21:06:35 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -51,6 +51,8 @@ mpiosh_ftype2ascii(BYTE ftype) {
     case FTYPE_DIR:
     case FTYPE_PLAIN:
       return ftype;
+    case FTYPE_DIR_RECURSION:
+      return 'r';
     case FTYPE_CHAN:
       return 'c';
     case FTYPE_MUSIC:
@@ -192,10 +194,15 @@ void
 mpiosh_cmd_mkdir(char *args[])
 {
   BYTE pwd[INFO_LINE];
+  BYTE r;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
-  mpio_directory_make(mpiosh.dev, mpiosh.card, args[0]);
+  r=mpio_directory_make(mpiosh.dev, mpiosh.card, args[0]);
+  if (r != MPIO_OK)
+    {
+      mpio_perror("ERROR");
+    }
   mpio_sync(mpiosh.dev, mpiosh.card);
 
 }
@@ -204,14 +211,20 @@ void
 mpiosh_cmd_cd(char *args[])
 {
   BYTE pwd[INFO_LINE];
+  BYTE r;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
   if ( args[ 0 ] != NULL )
-    mpio_directory_cd(mpiosh.dev, mpiosh.card, args[0]);
+    r=mpio_directory_cd(mpiosh.dev, mpiosh.card, args[0]);
   else
-    mpio_directory_cd(mpiosh.dev, mpiosh.card, ".");
+    r=mpio_directory_cd(mpiosh.dev, mpiosh.card, ".");
 
+  if (r != MPIO_OK)
+    {
+      mpio_perror("ERROR");
+    }
+  
   mpio_directory_pwd(mpiosh.dev, mpiosh.card, pwd);
   printf ("directory is now: %s\n", pwd);
   
@@ -370,7 +383,7 @@ void
 mpiosh_cmd_mget(char *args[])
 {
   BYTE *	p;
-  int		i = 0, error;
+  int		i = 0, error, ret;
   regex_t	regex;
   BYTE		fname[100];
   BYTE          errortext[100];
@@ -401,9 +414,13 @@ mpiosh_cmd_mget(char *args[])
 	  printf("getting '%s' ... \n", fname);
 	  if ((mpio_file_get(mpiosh.dev, mpiosh.card,
 				    fname, mpiosh_callback_get)) == -1) {
-	    debug("cancelled operation\n");
-	    mpio_perror("error");
-	    break;
+	    if ((ret=mpio_errno()) == MPIO_ERR_USER_CANCEL) {	      
+	      debug("cancelled operation\n");
+	      mpio_perror("error");
+	      break;
+	    } 	    
+	    mpio_error_set(ret);
+	    mpio_perror("error");	    
 	  } 
 	  printf("\n");
 	  if (mpiosh_cancel) {
@@ -839,7 +856,7 @@ mpiosh_cmd_health(char *args[])
       lost+=health.data[i].broken;      
     }    
     if (lost)
-      printf("You have lost %d KB due to bad blocks.\n", lost*16);
+      printf("You have lost %d KB due to bad blocks.\n", lost*health.block_size);
   } 
 
   if (mpiosh.card == MPIO_EXTERNAL_MEM) {

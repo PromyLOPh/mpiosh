@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.30 2003/09/22 19:15:37 germeier Exp $
+ * $Id: defs.h,v 1.31 2003/10/19 21:06:34 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -32,6 +32,10 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_USB
+#include "usb.h"
+#endif
+
 typedef unsigned char  BYTE;
 typedef unsigned short WORD;
 typedef unsigned int   DWORD;
@@ -56,12 +60,13 @@ typedef enum { MPIO_MODEL_DME      = 0x00,
 
 /* USB commands */
 typedef enum { GET_VERSION      = 0x01,
-	       GET_BLOCK        = 0x02,
+	       GET_BLOCK        = 0x02, /* GET_MEGABLOCK */
                PUT_SECTOR       = 0x03,
-               DEL_BLOCK        = 0x04,
+               DEL_BLOCK        = 0x04, /* DEL_MEGABLOCK */
                GET_SECTOR       = 0x06,
                GET_SPARE_AREA   = 0x07,
                PUT_BLOCK        = 0x08,
+	       PUT_MEGABLOCK    = 0x30,
                MODIFY_FIRMWARE  = 0xa0 } mpio_cmd_t; 
 
 /* file types on internal memory */
@@ -74,6 +79,7 @@ typedef enum { FTYPE_CHAN  = 0x00,
                FTYPE_WAV   = 'V',
                FTYPE_ENTRY = 'R',
                FTYPE_DIR   = 'D', 
+               FTYPE_DIR_RECURSION = 'r', 
 	       FTYPE_BROKEN = 'X', /* internal "dummy" type, used when
 				      internal FAT is broken */
                FTYPE_PLAIN = '-'} mpio_filetype_t;
@@ -120,6 +126,12 @@ typedef BYTE mpio_filename_t[MPIO_FILENAME_LEN];
 #define BLOCK_SIZE       (SECTOR_SIZE * BLOCK_SECTORS)
 #define BLOCK_TRANS      (BLOCK_SIZE + (SECTOR_ECC * BLOCK_SECTORS))
 
+#define MEGABLOCK_SECTORS 0x100
+#define MEGABLOCK_SIZE    (SECTOR_SIZE * MEGABLOCK_SECTORS) 
+#define MEGABLOCK_READ    (MEGABLOCK_SIZE + (SECTOR_ECC * MEGABLOCK_SECTORS))
+#define MEGABLOCK_WRITE   (MEGABLOCK_SIZE + (0x10 * MEGABLOCK_SECTORS))
+#define MEGABLOCK_TRANS_WRITE (BLOCK_SIZE + (0x10 * BLOCK_SECTORS))
+
 #define DIR_NUM          0x10
 #define DIR_SIZE         (SECTOR_SIZE*DIR_NUM)
 #define DIR_ENTRY_SIZE   0x20
@@ -152,8 +164,13 @@ typedef struct {
 #define MPIO_ERR_DEVICE_NOT_READY      -13
 #define MPIO_ERR_OUT_OF_MEMORY         -14
 #define MPIO_ERR_INTERNAL              -15
+#define MPIO_ERR_DIR_RECURSION         -16
+#define MPIO_ERR_FILE_IS_A_DIR         -17
+#define MPIO_ERR_USER_CANCEL           -18
 /* internal errors, occur when UI has errors! */
 #define MPIO_ERR_INT_STRING_INVALID	-101
+
+#define MPIO_USB_TIMEOUT 1000 /* in msec => 1 sec */
 
 /* get formatted information, about the MPIO player */
 
@@ -192,7 +209,7 @@ typedef struct {
 
 struct mpio_directory_tx {
   BYTE name[INFO_LINE];
-  BYTE dir[BLOCK_SIZE];
+  BYTE dir[MEGABLOCK_SIZE];
   
   BYTE *dentry;
     
@@ -245,6 +262,9 @@ typedef struct {
   /* version of chips used */
   BYTE version;
 
+  /* special "features" */
+  BYTE recursive_directory;
+
 } mpio_smartmedia_t;
 
 /* health status of a memory "card" */
@@ -256,6 +276,7 @@ typedef struct {
 
 typedef struct {
   BYTE num;        /* number of chips or zones */
+  BYTE block_size; /* block size in KB */
   /* internal: max 4 chips
    * external: max 8 zones (128MB) -> max 8 */
   mpio_health_single_t data[8];
@@ -266,6 +287,14 @@ typedef struct {
   BYTE version[CMD_SIZE];
   
   int fd;
+#ifdef HAVE_USB
+  int use_libusb;
+  struct usb_bus *usb_busses;
+  struct usb_bus *usb_bus;
+  struct usb_dev_handle *usb_handle;
+  int usb_out_ep;
+  int usb_in_ep;
+#endif
   BYTE *charset;                   /* charset used for filename conversion */
 
   BYTE id3;                        /* enable/disable ID3 rewriting support */

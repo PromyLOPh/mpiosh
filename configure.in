@@ -10,7 +10,7 @@ dnl AM_CONFIG_HEADER(src/config.h)
 AC_CANONICAL_SYSTEM()
 AC_MSG_RESULT(Building for a ${host} host.)
 
-AM_INIT_AUTOMAKE(mpio, 0.7.0)
+AM_INIT_AUTOMAKE(mpio, 0.7.1-2003101901)
 
 dnl Checks for programs.
 
@@ -52,7 +52,46 @@ fi
 
 AC_SUBST(MPLIB_INCLUDE)
 AC_SUBST(MPLIB_CFLAGS)
-:
+
+dnl -- check for libusb
+dnl -- this is stolen from libgphoto2
+
+AC_PATH_PROG(LIBUSB_CONFIG,libusb-config)
+if test -n "${LIBUSB_CONFIG}"; then
+    CPPFLAGS_save="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS `$LIBUSB_CONFIG --cflags`"
+    AC_CHECK_HEADER(usb.h,[
+	    LDFLAGS_orig="$LDFLAGS"
+	    LDFLAGS="`$LIBUSB_CONFIG --libs`"
+	    AC_CHECK_LIB(usb,usb_busses,[
+		    usb_msg="yes"
+		    IOLIB_SUBDIRS="$IOLIB_SUBDIRS usb"
+		    USB_LIBS="`$LIBUSB_CONFIG --libs`"
+		    USB_CFLAGS="`$LIBUSB_CONFIG --cflags`"
+		    LIBUSB_VER="`$LIBUSB_CONFIG --version`"],[
+		    usb_msg="no (available version too old)"])
+	    LDFLAGS="$LDFLAGS_orig"])
+    CPPFLAGS="$CPPFLAGS_save"
+fi
+
+        # This 'test' call uses non-standard syntax and will fail on most
+        # systems, but it's just informational so any warning can be ignored.
+if test "$LIBUSB_VER" \< "0.1.6"; then
+    AC_MSG_WARN([
+*** You need at least version 0.1.6 of the libusb library for USB support
+*** http://sourceforge.net/projects/libusb/
+*** If you cannot find the appropriate version, try CVS
+	    ])
+fi
+
+case "$usb_msg" in
+    yes*) AC_DEFINE(HAVE_USB,1,[Whether you have USB support enabled]);;
+       *)    ;;
+esac
+
+AC_SUBST(USB_CFLAGS)
+AC_SUBST(USB_LIBS)
+
 dnl --- check for kernel version
 kernel_version=`uname -r 2>&1`
 echo -n "checking for kernel version ... "

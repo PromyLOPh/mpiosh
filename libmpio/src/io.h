@@ -1,5 +1,5 @@
 /*
- * $Id: io.h,v 1.3 2003/04/27 12:08:21 germeier Exp $
+ * $Id: io.h,v 1.4 2003/10/19 21:06:35 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -33,6 +33,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* open/closes the device */
+int mpio_device_open(mpio_t *);
+int mpio_device_close(mpio_t *);  
 
 /* phys.<->log. block mapping */
 int   mpio_zone_init(mpio_t *, mpio_cmd_t);
@@ -81,6 +85,11 @@ int	mpio_io_block_write (mpio_t *, mpio_mem_t, mpio_fatentry_t *, BYTE *);
 int	mpio_io_block_delete(mpio_t *, mpio_mem_t, mpio_fatentry_t *);
 /* needed for formatting of external memory */
 int	mpio_io_block_delete_phys(mpio_t *, BYTE, DWORD);
+
+/* */
+int	mpio_io_megablock_read  (mpio_t *, mpio_mem_t, mpio_fatentry_t *, BYTE *);
+/* */
+int	mpio_io_megablock_write (mpio_t *, mpio_mem_t, mpio_fatentry_t *, BYTE *);
 
 /* */
 int	mpio_io_spare_read  (mpio_t *, BYTE, DWORD, WORD, BYTE, BYTE *, int,

@@ -1,5 +1,5 @@
 /*
- * $Id: smartmedia.c,v 1.5 2003/07/24 16:17:30 germeier Exp $
+ * $Id: smartmedia.c,v 1.6 2003/10/19 21:06:35 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -34,6 +34,7 @@ mpio_disk_phy_t MPIO_DISK_GEO_016={ 500, 4, 16,  32000 };
 mpio_disk_phy_t MPIO_DISK_GEO_032={ 500, 8, 16,  64000 };
 mpio_disk_phy_t MPIO_DISK_GEO_064={ 500, 8, 32, 128000 };
 mpio_disk_phy_t MPIO_DISK_GEO_128={ 500,16, 32, 256000 };
+mpio_disk_phy_t MPIO_DISK_GEO_256={ 500,32, 32, 512000 }; /* guessed values -mager */
 
 /* This comes from the Samsung documentation files */
 
@@ -69,11 +70,11 @@ mpio_id2mem(BYTE id)
       i=64;      
       break;
     case 0x79:
+    case 0xf1: /* new chip */
       i=128;
       break;
-    case 0xf1:
-      debug("Oops, non-standard chip ID, assuming chip is 128MB");
-      i=128;
+    case 0xda: /* new chip */
+      i=256;
       break;
     default:
       debug("This should never happen (id2mem)!\n");      
@@ -139,9 +140,12 @@ mpio_id2geo(BYTE id, mpio_disk_phy_t *geo)
     case 0x76:
       *geo = MPIO_DISK_GEO_064;
       break;
-    case 0xf1: /* non-standard ID */
     case 0x79:
+    case 0xf1: /* new chip */
       *geo = MPIO_DISK_GEO_128;
+      break;
+    case 0xda: /* new chip */
+      *geo = MPIO_DISK_GEO_256;
       break;
     default:
       debug("This should never happen!\n");      
@@ -157,6 +161,7 @@ mpio_id2version(BYTE id)
   switch(id) 
     {
     case 0xf1:   /* 128MB new Samsung */
+    case 0xda:   /* 256MB new Samsung */
       return 1;      
     default:
       ;

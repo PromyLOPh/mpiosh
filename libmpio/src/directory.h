@@ -1,5 +1,5 @@
 /*
- * $Id: directory.h,v 1.3 2003/04/27 12:08:21 germeier Exp $
+ * $Id: directory.h,v 1.4 2003/10/19 21:06:35 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -51,6 +51,7 @@ BYTE *	mpio_dentry_find_name_8_3(mpio_t *, BYTE, BYTE *);
 BYTE *	mpio_dentry_find_name(mpio_t *, BYTE, BYTE *);
 int	mpio_dentry_delete(mpio_t *, BYTE, BYTE *);
 int     mpio_dentry_get_filesize(mpio_t *, mpio_mem_t, BYTE *);
+BYTE    mpio_dentry_get_attrib(mpio_t *, mpio_mem_t, BYTE *);
 long    mpio_dentry_get_time(mpio_t *, mpio_mem_t, BYTE *);
 mpio_fatentry_t    *mpio_dentry_get_startcluster(mpio_t *, mpio_mem_t, BYTE *);
 BYTE    mpio_dentry_is_dir(mpio_t *, mpio_mem_t, BYTE *);

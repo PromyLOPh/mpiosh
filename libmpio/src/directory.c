@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.11 2003/07/15 08:26:37 germeier Exp $
+ * $Id: directory.c,v 1.12 2003/10/19 21:06:35 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -161,7 +161,8 @@ BYTE
 mpio_directory_is_empty(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
 {
   mpio_dir_entry_t *dentry;
-  BYTE r;
+  BYTE *p;
+  int size;
 
   UNUSED(m);
   UNUSED(mem);
@@ -169,11 +170,18 @@ mpio_directory_is_empty(mpio_t *m, mpio_mem_t mem, mpio_directory_t *dir)
   dentry = (mpio_dir_entry_t *)dir->dir;
   dentry += 2;
 
-  r = MPIO_OK;
-  if (dentry->name[0] != 0x00) 
-    r = !r;
+  if (dentry->name[0] == 0x00) 
+    return MPIO_OK;
+
+  /* check for a single recursive entry */
+  p = dir->dir + 0x40;
+  size = mpio_dentry_get_size(m, mem, p);
+  hexdumpn(2, p, size);
+  if ((p[size-0x20+0x0b] == 0x1a) &&
+      (p[size] == 0x00))
+    return MPIO_OK;
   
-  return r;
+  return MPIO_ERR_DIR_NOT_EMPTY;
 }
 
   
@@ -246,15 +254,27 @@ mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
   WORD self, parent;
   struct tm tt;
   time_t curr;
-
+  BYTE *p = NULL;
+  int size;
+  
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  /* check if filename already exists */
+  p = mpio_dentry_find_name(m, mem, dir);
+  if (!p)
+    p = mpio_dentry_find_name_8_3(m, mem, dir);
+  if (p) 
+    {
+      debugn(2, "filename already exists\n");
+      return mpio_error_set(MPIO_ERR_FILE_EXISTS);
+    }
 
   if ((strcmp(dir, "..") == 0) ||
       (strcmp(dir, ".") == 0))
     {
       debugn(2, "directory name not allowed: %s\n", dir);
-      return MPIO_ERR_DIR_NAME_ERROR;    
+      return mpio_error_set(MPIO_ERR_DIR_NAME_ERROR);    
     }
 
   /* find free sector */
@@ -262,7 +282,7 @@ mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
   if (!f) 
     {
       debug("could not free cluster for file!\n");
-      return (MPIO_ERR_FAT_ERROR);
+      return mpio_error_set(MPIO_ERR_FAT_ERROR);
     } else {
       self=f->entry;
     }  
@@ -290,7 +310,7 @@ mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
       current = mpio_dentry_get_startcluster(m, mem, sm->cdir->dentry);
       if (!current) {
 	debugn(2, "error creating directory");
-	return MPIO_ERR_FAT_ERROR;
+	return mpio_error_set(MPIO_ERR_FAT_ERROR);
       }
 
       if (mem==MPIO_INTERNAL_MEM)
@@ -303,16 +323,24 @@ mpio_directory_make(mpio_t *m, mpio_mem_t mem, BYTE *dir)
 
 
   new = malloc(sizeof(mpio_directory_t));
-  mpio_directory_init(m, mem, new, self, parent);  
+  mpio_directory_init(m, mem, new, self, parent);
 
   mpio_fatentry_set_eof(m ,mem, f);
-  mpio_io_block_write(m, mem, f, new->dir);
   time(&curr);
   tt = * localtime(&curr);
   mpio_dentry_put(m, mem,
-		  dir, strlen(dir),
-		      mktime(&tt), 
-		      0, self, 0x10);
+                  dir, strlen(dir),
+                      mktime(&tt),
+                      0, self, 0x10);
+
+  if (sm->recursive_directory) {
+    /* yuck, yuck, yuck */
+    p = mpio_dentry_find_name(m, mem, dir);
+    size=mpio_dentry_get_size(m, mem, p);
+    memcpy(new->dir+0x40, p, size);
+    memset(new->dir+0x40+size-0x20+0x0b, 0x1a, 1);
+  }  
+  mpio_io_block_write(m, mem, f, new->dir);
   
   free(new);
   
@@ -323,7 +351,10 @@ int
 mpio_directory_cd(mpio_t *m, mpio_mem_t mem, BYTE *dir)
 {
   mpio_smartmedia_t *sm;
+  mpio_fatentry_t *f1;
+  mpio_fatentry_t *f2;
   BYTE *p;
+  BYTE ret;
   BYTE month, day, hour, minute, type;
   BYTE fname[100];
   WORD year;  
@@ -356,9 +387,8 @@ mpio_directory_cd(mpio_t *m, mpio_mem_t mem, BYTE *dir)
   if ((strlen(pwd) + strlen(dir) + 2) > INFO_LINE)
   {
       debugn(2, "directory name gets to long!\n");
-      return MPIO_ERR_DIR_TOO_LONG;    
+      return mpio_error_set(MPIO_ERR_DIR_TOO_LONG);    
   }
-
 
   p = mpio_dentry_find_name(m, mem, dir);
   
@@ -369,9 +399,9 @@ mpio_directory_cd(mpio_t *m, mpio_mem_t mem, BYTE *dir)
   if (!p) 
     {
       debugn(2, "could not find directory: %s\n", dir);
-      return MPIO_ERR_DIR_NOT_FOUND;    
-    } 
-
+      return mpio_error_set(MPIO_ERR_DIR_NOT_FOUND);
+    }
+  
   mpio_dentry_get(m, mem, p,
 		  fname, 100,
 		  &year, &month, &day,
@@ -381,8 +411,21 @@ mpio_directory_cd(mpio_t *m, mpio_mem_t mem, BYTE *dir)
   if (type != FTYPE_DIR)
     {
       debugn(2, "this is not a directory: %s\n", dir);
-      return MPIO_ERR_DIR_NOT_A_DIR;    
+      return mpio_error_set(MPIO_ERR_DIR_NOT_A_DIR);    
     }
+
+  if (sm->cdir->dentry) {    
+    f1 = mpio_dentry_get_startcluster(m, mem, sm->cdir->dentry);
+    f2 = mpio_dentry_get_startcluster(m, mem, p);
+    ret = (f1->entry == f2->entry);
+    free(f1);
+    free(f2);
+    if (ret) 
+      {
+	debugn(2, "this is a recursive direcotry entry: %s\n", dir);
+	return mpio_error_set(MPIO_ERR_DIR_RECURSION);    
+      }
+  }
 
   new             = malloc(sizeof(mpio_directory_t));
   strcpy(new->name, dir);		   
@@ -805,6 +848,9 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
   if (dentry->attr & 0x10) {
     /* is this a directory? */
     *type = FTYPE_DIR;
+    if ((dentry->attr & 0x08) &&
+	(dentry->attr & 0x02)) 
+      *type = FTYPE_DIR_RECURSION;
   } else {
     *type = FTYPE_PLAIN;
     if (mem == MPIO_INTERNAL_MEM) {
@@ -827,17 +873,27 @@ int
 mpio_rootdir_read (mpio_t *m, mpio_mem_t mem)
 {
   mpio_smartmedia_t *sm;  
+  mpio_fatentry_t   *f;
   BYTE recvbuff[SECTOR_SIZE];
   int i;
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
   
-  for (i = 0; i < DIR_NUM; i++) {
-    if (mpio_io_sector_read(m, mem, (sm->dir_offset + i), recvbuff))
+  if (sm->version) {
+    /* new chip */
+    f = mpio_fatentry_new(m, mem, 0x00, FTYPE_MUSIC);  
+    if (!f)
       return 1;
-
-    memcpy(sm->root->dir + (i * SECTOR_SIZE), recvbuff, SECTOR_SIZE);
+    mpio_io_block_read(m, mem, f, sm->root->dir);
+    free (f);	
+  } else {
+    /* old chip */
+    for (i = 0; i < DIR_NUM; i++) {
+      if (mpio_io_sector_read(m, mem, (sm->dir_offset + i), recvbuff))
+	return 1;
+      memcpy(sm->root->dir + (i * SECTOR_SIZE), recvbuff, SECTOR_SIZE);
+    }
   }
 
   return (0);
@@ -912,6 +968,26 @@ mpio_dentry_get_filesize(mpio_t *m, mpio_mem_t mem, BYTE *p)
   }
   
   return fsize; 
+}
+
+BYTE
+mpio_dentry_get_attrib(mpio_t *m, mpio_mem_t mem, BYTE *p)
+{
+  int s;
+  int fsize;
+  mpio_dir_entry_t *dentry;
+
+  s  = mpio_dentry_get_size(m, mem, p);
+  s -= DIR_ENTRY_SIZE ;
+
+  dentry = (mpio_dir_entry_t *)p;
+
+  while (s != 0) {
+    dentry++;
+    s -= DIR_ENTRY_SIZE ;
+  }
+
+  return dentry->attr; 
 }
 
 long

@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.h,v 1.22 2003/06/26 19:53:58 germeier Exp $
+ * $Id: mpio.h,v 1.23 2003/10/19 21:06:34 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -60,6 +60,11 @@ void	mpio_get_info(mpio_t *, mpio_info_t *);
 mpio_model_t	mpio_get_model(mpio_t *);
 /* retrieves free memory in bytes */
 int	mpio_memory_free(mpio_t *, mpio_mem_t, int *free);
+
+/* report sectors in block for this memory */
+int     mpio_block_get_sectors(mpio_t *, mpio_mem_t);
+/* report size of block for this memory */
+int     mpio_block_get_blocksize(mpio_t *, mpio_mem_t);
 
 /*
  * charset for filename encoding/converting
@@ -197,6 +202,10 @@ char *	mpio_strerror(int err);
 
 /* prints the error message of the last error*/
 void	mpio_perror(char *prefix);
+
+/* set error code to given value */
+int	mpio_error_set(int err);
+
 
 /* 
  * debugging

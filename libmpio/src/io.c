@@ -1,5 +1,5 @@
 /*
- * $Id: io.c,v 1.6 2003/09/23 18:12:14 germeier Exp $
+ * $Id: io.c,v 1.7 2003/10/19 21:06:35 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -36,6 +36,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "io.h"
 #include "debug.h"
@@ -453,8 +455,146 @@ mpio_zone_block_get_logical(mpio_t *m, mpio_cmd_t mem, DWORD pblock)
 }
 
 
-  
+/*
+ * report sizes of selected memory
+ */
 
+int
+mpio_block_get_sectors(mpio_t *m, mpio_mem_t mem){
+  mpio_smartmedia_t *sm=0;
+  int sectors;
+  
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+  if (!sm)
+    {
+      debug("error in memory selection, aborting\n");      
+      exit (-1);
+    }
+
+  sectors = BLOCK_SECTORS;
+  if (sm->version)
+    sectors = MEGABLOCK_SECTORS;
+
+  return sectors;
+}
+
+int
+mpio_block_get_blocksize(mpio_t *m, mpio_mem_t mem) {
+  mpio_smartmedia_t *sm=0;
+  int size;
+  
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+  if (!sm)
+    {
+      debug("error in memory selection, aborting\n");      
+      exit (-1);
+    }
+
+  size = BLOCK_SIZE;
+  if (sm->version)
+    size = MEGABLOCK_SIZE;
+
+  return size;
+}
+
+/* 
+ * open/closes the device 
+ */
+int 
+mpio_device_open(mpio_t *m){
+#ifdef HAVE_USB
+  struct usb_device *dev;
+  struct usb_interface_descriptor *interface;
+  struct usb_endpoint_descriptor *ep;
+  int ret, i;
+#endif
+
+  m->use_libusb=0;
+  m->fd = open(MPIO_DEVICE, O_RDWR);
+  if (m->fd > 0) {
+    debug ("using kernel module\n");
+    return MPIO_OK;
+  }
+
+#ifdef HAVE_USB
+  debug("trying libusb\n");
+  usb_init();
+  usb_find_busses();
+  usb_find_devices();
+  
+  m->usb_busses = usb_get_busses();
+  
+  for (m->usb_bus = m->usb_busses; 
+       m->usb_bus; 
+       m->usb_bus = m->usb_bus->next) {
+
+    for (dev = m->usb_bus->devices; dev; dev = dev->next) {
+      if (dev->descriptor.idVendor == 0x2735) {
+	if ((dev->descriptor.idProduct != 0x01)  &&
+	    (dev->descriptor.idProduct != 0x71))
+	  debug("Found Product ID %02x, which is unknown. Proceeding anyway.\n",
+		dev->descriptor.idProduct);
+	m->usb_handle = usb_open(dev);
+	if (m->usb_handle) {
+	  /* found and opened the device,
+	     now find the communication endpoints */
+	  m->usb_in_ep = m->usb_out_ep = 0;
+	  
+	  ret = usb_claim_interface (m->usb_handle, 0);
+	  
+	  if (ret < 0)
+	    {
+	      debug ("Error claiming device: %d  \"%s\"\n", ret, usb_strerror());
+	      return MPIO_ERR_PERMISSION_DENIED;
+	    } else {
+	      debug ("claimed interface 0\n");
+	    }
+	  
+	  
+	  interface = dev->config->interface->altsetting;
+
+	  for (i = 0 ; i < interface->bNumEndpoints; i++) {
+	    ep = &interface->endpoint[i];
+	    debug("USB endpoint #%d (Addr:%02x, Attr:%02x)\n", i, 
+		 ep->bEndpointAddress, ep->bmAttributes);
+	    if (ep->bmAttributes == 2) {
+	      if (ep->bEndpointAddress & USB_ENDPOINT_IN) {
+		debug("FOUND incoming USB endpoint (%02x)\n", ep->bEndpointAddress);
+		m->usb_in_ep = ep->bEndpointAddress & ~(USB_ENDPOINT_IN);
+	      } else {
+		debug("FOUND outgoing USB endpoint (%02x)\n", ep->bEndpointAddress);
+		m->usb_out_ep = ep->bEndpointAddress;
+	      }
+	    }
+	  }
+	  
+	  if (!(m->usb_in_ep && m->usb_out_ep)) {
+	    debug("Did not find USB bulk endpoints");
+	    return MPIO_ERR_PERMISSION_DENIED;	    
+	  }	  
+	  
+	  m->use_libusb=1;
+	  return MPIO_OK;
+	  
+	}      
+      }
+    }
+  }
+  
+#endif
+  return MPIO_ERR_PERMISSION_DENIED;
+}
+
+int 
+mpio_device_close(mpio_t *m) {
+  usb_close(m->usb_handle);
+  
+  m->use_libusb = 0;
+  
+  return MPIO_OK;
+}
 
 /*
  * low-low level functions
@@ -543,6 +683,17 @@ mpio_io_bulk_write(int fd, BYTE *block, int num_bytes)
   return bytes_written;
 }
 
+int
+mpio_io_write(mpio_t *m, BYTE *block, int num_bytes)
+{
+  if (m->use_libusb) {
+    return usb_bulk_write(m->usb_handle, m->usb_out_ep, block, num_bytes, MPIO_USB_TIMEOUT);
+  } else {      
+    return mpio_io_bulk_write(m->fd, block, num_bytes);
+  }  
+}
+
+
 /*
  * read chunk of data from MPIO filedescriptor
  *
@@ -578,6 +729,16 @@ mpio_io_bulk_read (int fd, BYTE *block, int num_bytes)
   return total_read;
 }
 
+int
+mpio_io_read (mpio_t *m, BYTE *block, int num_bytes)
+{
+  if (m->use_libusb) {
+    return usb_bulk_read(m->usb_handle, m->usb_in_ep, block, num_bytes, MPIO_USB_TIMEOUT);
+  } else {    
+    return mpio_io_bulk_read(m->fd, block, num_bytes);
+  }
+}
+
 /*
  * low level functions
  */
@@ -603,7 +764,7 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
   debugn  (5, ">>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
 
-  nwrite = mpio_io_bulk_write (m->fd, cmdpacket, 0x40);
+  nwrite = mpio_io_write(m, cmdpacket, 0x40);
 
   if (nwrite != CMD_SIZE) 
     {
@@ -613,7 +774,7 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
     }
 
   /*  Receive packet from MPIO  */
-  nread = mpio_io_bulk_read (m->fd, status, 0x40);
+  nread = mpio_io_read(m, status, 0x40);
 
   if (nread == -1 || nread != 0x40) 
     {
@@ -684,7 +845,7 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
   debugn (5, "\n>>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
     
-  nwrite = mpio_io_bulk_write (m->fd, cmdpacket, 0x40);
+  nwrite = mpio_io_write(m, cmdpacket, 0x40);
 
   if(nwrite != CMD_SIZE) 
     {
@@ -694,7 +855,7 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
     }
 
   /*  Receive packet from MPIO   */
-  nread = mpio_io_bulk_read (m->fd, recvbuff, SECTOR_TRANS);
+  nread = mpio_io_read(m, recvbuff, SECTOR_TRANS);
 
   if(nread != SECTOR_TRANS) 
     {
@@ -823,7 +984,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
   debugn (5, "\n>>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
     
-  nwrite = mpio_io_bulk_write(m->fd, cmdpacket, 0x40);
+  nwrite = mpio_io_write(m, cmdpacket, 0x40);
 
   if(nwrite != CMD_SIZE) 
     {
@@ -876,13 +1037,73 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
   hexdump(sendbuff, SECTOR_TRANS);
 
   /*  write sector MPIO   */
-  nwrite = mpio_io_bulk_write(m->fd, sendbuff, SECTOR_TRANS);
+  nwrite = mpio_io_write(m, sendbuff, SECTOR_TRANS);
 
   if(nwrite != SECTOR_TRANS) 
     {
       debug ("\nFailed to read Sector.\n%x\n", nwrite);
       close (m->fd);
       return 1;
+    }
+
+  return 0;  
+}
+
+/*
+ * read/write of megablocks
+ */
+int
+mpio_io_megablock_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
+{
+  int i=0;
+  int j=0;
+  int nwrite, nread;
+  mpio_smartmedia_t *sm;
+  BYTE  chip;
+  DWORD address;
+  BYTE cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
+
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  fatentry2hw(f, &chip, &address);
+
+  mpio_io_set_cmdpacket(m, GET_BLOCK, chip, address, sm->size, 0, cmdpacket);
+
+  debugn(5, "\n>>> MPIO\n");
+  hexdump(cmdpacket, sizeof(cmdpacket));
+    
+  nwrite = mpio_io_write(m, cmdpacket, CMD_SIZE);
+
+/*   hexdumpn(0, cmdpacket, 16); */
+
+  if(nwrite != CMD_SIZE) 
+    {
+      debug ("\nFailed to send command.\n\n");
+      close (m->fd);
+      return 1;
+    }
+
+  /*  Receive packets from MPIO   */
+  for (i = 0; i < 8; i++) 
+    {      
+      nread = mpio_io_read(m, recvbuff, BLOCK_TRANS);
+      
+      if(nread != BLOCK_TRANS) 
+	{
+	  debug ("\nFailed to read (sub-)block.\n%x\n",nread);
+	  close (m->fd);
+	  return 1;
+	}
+      
+      debugn(5, "\n<<< MPIO (%d)\n", i);
+      hexdump(recvbuff, BLOCK_TRANS);
+
+      for (j = 0; j < BLOCK_SECTORS; j++) {
+	memcpy(output + (j * SECTOR_SIZE) + (i * BLOCK_SIZE), 
+	       recvbuff + (j * SECTOR_TRANS), 
+	       SECTOR_SIZE);
+      }
     }
 
   return 0;  
@@ -904,6 +1125,9 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
+  if (sm->version)
+    return mpio_io_megablock_read(m, mem, f, output);
+
   fatentry2hw(f, &chip, &address);
 
   mpio_io_set_cmdpacket(m, GET_BLOCK, chip, address, sm->size, 0, cmdpacket);
@@ -911,7 +1135,7 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));
     
-  nwrite = mpio_io_bulk_write(m->fd, cmdpacket, CMD_SIZE);
+  nwrite = mpio_io_write(m, cmdpacket, CMD_SIZE);
 
   if(nwrite != CMD_SIZE) 
     {
@@ -921,7 +1145,7 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
     }
 
   /*  Receive packet from MPIO   */
-  nread = mpio_io_bulk_read(m->fd, recvbuff, BLOCK_TRANS);
+  nread = mpio_io_read(m, recvbuff, BLOCK_TRANS);
 
   if(nread != BLOCK_TRANS) 
     {
@@ -994,7 +1218,7 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, WORD size,
       debugn(5, "\n>>> MPIO\n");
       hexdump(cmdpacket, sizeof(cmdpacket));
       
-      nwrite = mpio_io_bulk_write(m->fd, cmdpacket, CMD_SIZE);
+      nwrite = mpio_io_write(m, cmdpacket, CMD_SIZE);
       
       if(nwrite != CMD_SIZE) {
 	debug ("\nFailed to send command.\n\n");
@@ -1005,10 +1229,10 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, WORD size,
       /*  Receive packet from MPIO   */
       for (i = 0; i < (toread / chips / CMD_SIZE); i++) 
 	{	  
-	  nread = mpio_io_bulk_read (m->fd,
-				     output + (i * CMD_SIZE) +
-				     (toread / chips * (chip - 1)),
-				     CMD_SIZE);
+	  nread = mpio_io_read(m,
+			       output + (i * CMD_SIZE) +
+			       (toread / chips * (chip - 1)),
+			       CMD_SIZE);
 
 	  if ((progress_callback) && (i % 256))
 	    (*progress_callback)(mem, 
@@ -1059,6 +1283,7 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
   mpio_smartmedia_t *sm;
   int nwrite, nread;
   BYTE cmdpacket[CMD_SIZE], status[CMD_SIZE];
+  BYTE CMD_OK, CMD_ERROR;
   
   /*  Send command packet to MPIO  */
   
@@ -1075,12 +1300,20 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
       mpio_zone_block_set_free_phys(m, chip, address);
     }
 
+  if (sm->version) {
+    CMD_OK    = 0xe0;
+    CMD_ERROR = 0xe1; 
+  } else {
+    CMD_OK    = 0xc0;
+    CMD_ERROR = 0xc1; 
+  }
+
   mpio_io_set_cmdpacket(m, DEL_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
   debugn  (5, ">>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
 
-  nwrite = mpio_io_bulk_write(m->fd, cmdpacket, 0x40);
+  nwrite = mpio_io_write(m, cmdpacket, 0x40);
 
   if (nwrite != CMD_SIZE) 
     {
@@ -1090,11 +1323,11 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
     }
 
 /*  Receive packet from MPIO  */
-  nread = mpio_io_bulk_read (m->fd, status, CMD_SIZE);
+  nread = mpio_io_read(m, status, CMD_SIZE);
 
   if ((nread == -1) || (nread != CMD_SIZE)) 
     {
-      debug ("Failed to read Sector.\n%x\n",nread);
+      debug ("Failed to read Response.\n%x\n",nread);
       close (m->fd);
       return 0;
     }
@@ -1102,18 +1335,98 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
   debugn(5, "<<< MPIO\n");
   hexdump(status, CMD_SIZE);
 
-  if (status[0] != 0xc0) 
+  if (status[0] != CMD_OK) 
     {
-      debugn (2,"error formatting Block %02x:%06x\n", 
-	     chip, address);
+      if (status[0] == CMD_ERROR) {
+	debugn (0, "error formatting Block %02x:%06x\n", 
+		chip, address);
+      } else {
+	debugn (0,"UNKNOWN error (code: %02x) formatting Block %02x:%06x\n", 
+		status[0], chip, address);
+      }
+      
       if (chip == MPIO_EXTERNAL_MEM) 
 	{
 	  sm = &m->external;
 	  mpio_zone_block_set_defect_phys(m, chip, address);
 	}      
+      return 0;
     }
   
   return CMD_SIZE;
+}
+
+int  
+mpio_io_megablock_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
+{
+  mpio_smartmedia_t *sm;
+  int nwrite;
+  int i, j, k;
+  DWORD block_address, ba;
+  BYTE cmdpacket[CMD_SIZE], sendbuff[MEGABLOCK_TRANS_WRITE];
+  BYTE  chip=0;
+  DWORD address;
+
+  if (mem == MPIO_INTERNAL_MEM) 
+    {
+      sm = &m->internal;
+      fatentry2hw(f, &chip, &address);
+    }
+	
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {
+      printf ("This should never happen!");
+      exit(1);      
+    }
+
+  /* build and send cmd packet */
+  mpio_io_set_cmdpacket(m, PUT_MEGABLOCK, chip, address, sm->size, 0x10, cmdpacket);
+  cmdpacket[8] = 0x02; /* el yuck'o */  
+
+  debugn(5, "\n>>> MPIO\n");
+  hexdump(cmdpacket, sizeof(cmdpacket));
+  hexdump(f->i_fat, 0x10);
+
+  nwrite = mpio_io_write(m, cmdpacket, CMD_SIZE);
+
+  if(nwrite != CMD_SIZE) 
+    {
+      debug ("\nFailed to send command.\n\n");
+      close (m->fd);
+      return 1;
+    }
+  
+  for (i = 0; i < 8 ; i++) {
+    /* build block for transfer to MPIO */
+    for (j = 0; j < 8; j++) 
+      {
+	memcpy(sendbuff + (j * 0x840), 
+	       data + (j * 0x800) + (i * BLOCK_SIZE),	   
+	       0x800);
+	for (k = 0; k < 4; k++) {
+	  memcpy((sendbuff + (j * 0x840) + 0x800 + (k * 0x10)), 
+		 f->i_fat, 0x10);
+	  if (k) 
+	    memset((sendbuff + (j * 0x840) + 0x800 + (k * 0x10)), 0xee, 1);
+	}	
+      }
+    
+    /*  send packet to MPIO   */
+    debugn(5, "\n<<< MPIO (%d)\n", i);
+    hexdump(sendbuff, MEGABLOCK_TRANS_WRITE);
+      
+    nwrite = mpio_io_write(m, sendbuff, MEGABLOCK_TRANS_WRITE);
+    
+    if(nwrite != MEGABLOCK_TRANS_WRITE) 
+      {
+	debug ("\nFailed to write block (%d).\n%x\n", i, nwrite);
+	close (m->fd);
+	return 1;
+      }    
+    
+  }
+
+  return 0;
 }
 
 int  
@@ -1130,12 +1443,19 @@ mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
   if (mem == MPIO_INTERNAL_MEM) 
     {
       sm = &m->internal;
+      if (sm->version)
+	return mpio_io_megablock_write(m, mem, f, data);
       fatentry2hw(f, &chip, &address);
     }
 	
   if (mem == MPIO_EXTERNAL_MEM) 
     {
       sm = &m->external;
+      if (sm->version) {
+	printf ("This should never happen!");
+	exit(1);
+      }
+	
       /* find free physical block */
       chip = MPIO_EXTERNAL_MEM;
       address = mpio_zone_block_find_free_log(m, mem, f->entry);
@@ -1191,7 +1511,7 @@ mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));
     
-  nwrite = mpio_io_bulk_write(m->fd, cmdpacket, CMD_SIZE);
+  nwrite = mpio_io_write(m, cmdpacket, CMD_SIZE);
 
   if(nwrite != CMD_SIZE) 
     {
@@ -1203,7 +1523,7 @@ mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
   /*  send packet to MPIO   */
   debugn(5, "\n<<< MPIO\n");
   hexdump(sendbuff, BLOCK_TRANS);
-  nwrite = mpio_io_bulk_write (m->fd, sendbuff, BLOCK_TRANS);
+  nwrite = mpio_io_write(m, sendbuff, BLOCK_TRANS);
 
   if(nwrite != BLOCK_TRANS) 
     {

@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.9 2003/09/23 21:32:34 germeier Exp $
+ * $Id: mpio.c,v 1.10 2003/10/19 21:06:35 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -101,6 +101,12 @@ static mpio_error_t mpio_errors[] = {
     "Out of Memory." },
   { MPIO_ERR_INTERNAL,
     "Oops, internal ERROR. :-(" },
+  { MPIO_ERR_DIR_RECURSION,
+    "Ignoring recursive directory entry!" },
+  { MPIO_ERR_FILE_IS_A_DIR ,
+    "Requested file is a directory!" },
+  { MPIO_ERR_USER_CANCEL ,
+    "Operation canceled by user!" },
   { MPIO_ERR_INT_STRING_INVALID,
     "Internal Error: Supported is invalid!" } 	
 };
@@ -115,6 +121,12 @@ static int _mpio_errno = 0;
   if (!mpio_check_filename(filename)) { \
     MPIO_ERR_RETURN(MPIO_ERR_INT_STRING_INVALID); \
   }
+
+int
+mpio_error_set(int err) {
+  _mpio_errno = err;
+  return -1;
+}
 
 void
 mpio_bail_out(void){
@@ -190,13 +202,14 @@ mpio_init_internal(mpio_t *m)
 
   /* read FAT information from spare area */  
   sm->max_cluster  = (sm->size * 1024) / 16;      /* 1 cluster == 16 KB */
+  /* the new chips seem to use some kind of mega-block (== 128KB) instead of 16KB */
+  if (sm->version)
+    sm->max_cluster  /= 8;
   sm->max_blocks   = sm->max_cluster;
   debugn(2, "max_cluster: %d\n", sm->max_cluster);
                                             /* 16 bytes per cluster */
   sm->fat_size     = (sm->max_cluster * 16) / SECTOR_SIZE;   
-  /* the new chips seem to use some kind of mega-block (== 128KB) instead of 16KB */
-  if (sm->version)
-    sm->fat_size  /= 8;
+
   debugn(2, "fat_size: %04x\n", sm->fat_size * SECTOR_SIZE);
   sm->fat          = malloc(sm->fat_size * SECTOR_SIZE);
   /* fat will be read in mpio_init, so we can more easily handle
@@ -212,16 +225,27 @@ mpio_init_internal(mpio_t *m)
   /* Read directory from internal memory */
   sm->dir_offset=0;
   sm->root = malloc (sizeof(mpio_directory_t));
+  sm->root->dentry=0;
   sm->root->name[0]    = 0;
   sm->root->next    = NULL;
   sm->root->prev    = NULL;  
   mpio_rootdir_read(m, MPIO_INTERNAL_MEM);
   sm->cdir = sm->root;
 
-  if (sm->version)
-    debug("Warning, your player has a new SmartMedia chip which is not yet supported\n"
-	  "Support for this chip is scheduled for the 0.7.1 release\n"
-	  "Watch http://mpio.sf.net for further announcements\n");
+  if (sm->version) {
+    printf("*******************************************\n");
+    printf("This is a work-in-progress version, so BEWARE!\n");
+    printf("The assumed status of this code is:\n");
+    printf(" * reading:     assumed working\n");
+    printf(" * deleting:    assumed working, needs further testing\n");
+    printf(" * writing:     assumed working, needs further testing\n");
+    printf(" * formatting:  assumed working, needs further testing\n");
+
+    /* special features */
+    sm->recursive_directory=1;
+  } else {
+    sm->recursive_directory=0;
+  }
 }
 
 void
@@ -274,10 +298,14 @@ mpio_init_external(mpio_t *m)
   /* setup directory support */
   sm->dir_offset=0;
   sm->root = malloc (sizeof(mpio_directory_t));
+  sm->root->dentry=0;
   sm->root->name[0] = 0;
   sm->root->next    = NULL;
   sm->root->prev    = NULL;
   sm->cdir = sm->root;
+
+  /* special features */
+  sm->recursive_directory=0;
 }
 
 mpio_t *
@@ -295,9 +323,7 @@ mpio_init(mpio_callback_init_t progress_callback)
   }  
   memset(new_mpio, 0, sizeof(mpio_t));
 
-  new_mpio->fd = open(MPIO_DEVICE, O_RDWR);
-
-  if (new_mpio->fd < 0) {
+  if (mpio_device_open(new_mpio) != MPIO_OK) {
     _mpio_errno = MPIO_ERR_DEVICE_NOT_READY;
     return NULL;    
   }
@@ -438,6 +464,8 @@ mpio_memory_free(mpio_t *m, mpio_mem_t mem, int *free)
       return 0;
     }    
     *free=mpio_fat_free_clusters(m, mem);    
+    if (m->internal.version)
+      *free*=8;
     return (m->internal.geo.SumSector 
 	    * SECTOR_SIZE / 1000 * m->internal.chips);    
   }
@@ -551,7 +579,7 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 		   BYTE **memory)
 {
   mpio_smartmedia_t *sm;
-  BYTE block[BLOCK_SIZE];
+  BYTE block[MEGABLOCK_SIZE];
   int fd, towrite;
   BYTE   *p;
   mpio_fatentry_t *f = 0;
@@ -560,12 +588,15 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   DWORD filesize, fsize;
   BYTE abort = 0;
   int merror;
+  int block_size;
 
   MPIO_CHECK_FILENAME(filename);
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
+  block_size = mpio_block_get_blocksize(m, mem);
+  
   if(as==NULL) {
     as = filename;
   }
@@ -575,8 +606,11 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   if (!p)
     p = mpio_dentry_find_name_8_3(m, mem, filename);
 
-  if (p) 
+  if (p) {    
     f = mpio_dentry_get_startcluster(m, mem, p);
+    if (!mpio_dentry_is_dir(m, mem, p))
+      MPIO_ERR_RETURN(MPIO_ERR_FILE_IS_A_DIR);
+  }
   
   if (f && p) {    
     filesize=fsize=mpio_dentry_get_filesize(m, mem, p);
@@ -592,8 +626,8 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
       {
 	mpio_io_block_read(m, mem, f, block);
 
-	if (filesize > BLOCK_SIZE) {
-	  towrite = BLOCK_SIZE;
+	if (filesize > block_size) {
+	  towrite = block_size;
 	} else {
 	  towrite = filesize;
 	}    
@@ -681,14 +715,15 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
   mpio_smartmedia_t *sm;
   mpio_fatentry_t   *f, current, firstblock, backup; 
   WORD start;
-  BYTE block[BLOCK_SIZE];
+  BYTE block[MEGABLOCK_SIZE];
   BYTE use_filename[INFO_LINE];
   int fd, toread;
   struct stat file_stat;
   struct tm tt;
   time_t curr;
   int id3;
-
+  int block_size;
+  
   BYTE *p = NULL;
   DWORD filesize, fsize, free, blocks;
   BYTE abort = 0;
@@ -701,6 +736,8 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
   
   if (mem==MPIO_INTERNAL_MEM) sm=&m->internal;  
   if (mem==MPIO_EXTERNAL_MEM) sm=&m->external;
+
+  block_size = mpio_block_get_blocksize(m, mem);
 
   if (memory)
     {
@@ -756,8 +793,8 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
       start         = f->i_index;
 
       /* number of blocks needed for file */
-      blocks = filesize / 0x4000;
-      if (filesize % 0x4000)
+      blocks = filesize / block_size;
+      if (filesize % block_size)
 	blocks++;      
       debugn(2, "blocks: %02x\n", blocks);      
       f->i_fat[0x02]=(blocks / 0x100) & 0xff;
@@ -775,10 +812,10 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
 	}
     }
 
-  while ((filesize>BLOCK_SIZE) && (!abort)) {
+  while ((filesize>block_size) && (!abort)) {
 
-    if (filesize>=BLOCK_SIZE) {      
-      toread=BLOCK_SIZE;
+    if (filesize>=block_size) {      
+      toread=block_size;
     } else {
       toread=filesize;
     }
@@ -812,8 +849,8 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
 
   /* handle the last block to write */
 
-  if (filesize>=BLOCK_SIZE) {      
-    toread=BLOCK_SIZE;
+  if (filesize>=block_size) {      
+    toread=block_size;
   } else {
     toread=filesize;
   }
@@ -854,13 +891,16 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
       
       while (mpio_fatentry_next_entry(m, mem, &current))
 	{
-	  mpio_io_block_delete(m, mem, &backup);
-	  mpio_fatentry_set_free(m, mem, &backup);      
+	  if (!mpio_io_block_delete(m, mem, &backup)) {
+	    mpio_fatentry_set_defect(m, mem, &backup); 
+	  } else {
+	    mpio_fatentry_set_free(m, mem, &backup);      
+	  }
 	  memcpy(&backup, &current, sizeof(mpio_fatentry_t));
 
-	  if (filesize > BLOCK_SIZE) 
+	  if (filesize > block_size) 
 	    {
-	      filesize -= BLOCK_SIZE;
+	      filesize -= block_size;
 	    } else {
 	      filesize -= filesize;
 	    }	
@@ -868,12 +908,15 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
 	  if (progress_callback)
 	    (*progress_callback)((fsize-filesize), fsize);
 	}
-      mpio_io_block_delete(m, mem, &backup);
-      mpio_fatentry_set_free(m, mem, &backup);      
+      if (!mpio_io_block_delete(m, mem, &backup)) {
+	mpio_fatentry_set_defect(m, mem, &backup); 
+      } else {
+	mpio_fatentry_set_free(m, mem, &backup);      
+      }
 
-      if (filesize > BLOCK_SIZE) 
+      if (filesize > block_size) 
 	{
-	  filesize -= BLOCK_SIZE;
+	  filesize -= block_size;
 	} else {
 	  filesize -= filesize;
 	}	
@@ -927,6 +970,20 @@ mpio_file_rename(mpio_t *m, mpio_mem_t mem,
 {
   BYTE *p;
 
+  if ((strcmp(old, "..") == 0) ||
+      (strcmp(old, ".") == 0))
+    {
+      debugn(2, "directory name not allowed: %s\n", old);
+      MPIO_ERR_RETURN(MPIO_ERR_DIR_NAME_ERROR);
+    }
+
+  if ((strcmp(new, "..") == 0) ||
+      (strcmp(new, ".") == 0))
+    {
+      debugn(2, "directory name not allowed: %s\n", new);
+      MPIO_ERR_RETURN(MPIO_ERR_DIR_NAME_ERROR);
+    }
+
   /* find files */
   p = mpio_dentry_find_name(m, mem, old);
   if (!p)
@@ -957,9 +1014,13 @@ int mpio_file_move(mpio_t *m,mpio_mem_t mem, mpio_filename_t file,
 	MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
       }
     }
+    debugn(2, " -- moving '%s' after '%s'\n",file,after);
+  } else {
+    debugn(2, " -- moving '%s' to the top\n",file);
   }
+  
 
-  fprintf(stderr," -- moving '%s' after '%s'\n",file,after);
+
 
   mpio_dentry_move(m,mem,p1,p2);
 
@@ -1104,11 +1165,14 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   mpio_fatentry_t   *f, backup;
   DWORD filesize, fsize;
   BYTE abort=0;
+  int block_size;
 
   MPIO_CHECK_FILENAME(filename);
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  block_size = mpio_block_get_blocksize(m, mem);
 
   if ((strcmp(filename, "..") == 0) ||
       (strcmp(filename, ".") == 0))
@@ -1128,6 +1192,9 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   if (f && p) {    
     if (mpio_dentry_is_dir(m, mem, p) == MPIO_OK) 
       {
+	if (mpio_dentry_get_attrib(m, mem, p) == 0x1a) {
+	  MPIO_ERR_RETURN(MPIO_ERR_DIR_RECURSION);
+	}
 	/* ugly */
 	mpio_directory_cd(m, mem, filename);
 	if (mpio_directory_is_empty(m, mem, sm->cdir) != MPIO_OK)
@@ -1137,6 +1204,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 	  } else {	    
 	    mpio_directory_cd(m, mem, "..");
 	  }
+
       }
 
     filesize=fsize=mpio_dentry_get_filesize(m, mem, p);    
@@ -1151,9 +1219,9 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 
 	memcpy(&backup, f, sizeof(mpio_fatentry_t));	
 
-	if (filesize > BLOCK_SIZE) 
+	if (filesize > block_size) 
 	  {
-	    filesize -= BLOCK_SIZE;
+	    filesize -= block_size;
 	  } else {
 	    filesize -= filesize;
 	  }	
@@ -1223,6 +1291,8 @@ mpio_health(mpio_t *m, mpio_mem_t mem, mpio_health_t *r)
     {
       sm = &m->internal;
       r->num = sm->chips;
+
+      r->block_size = mpio_block_get_blocksize(m, mem) / 1024;
       
       f = mpio_fatentry_new(m, mem, 0x00, FTYPE_MUSIC);  
       
@@ -1248,10 +1318,11 @@ mpio_health(mpio_t *m, mpio_mem_t mem, mpio_health_t *r)
 
   if (mem == MPIO_EXTERNAL_MEM) 
     {
-      sm = &m->external;
+      sm = &m->external;      
 
       zones = sm->max_cluster / MPIO_ZONE_LBLOCKS + 1;
       r->num = zones;
+      r->block_size = BLOCK_SIZE/1024;
 
       for(i=0; i<zones; i++)
 	{
@@ -1278,13 +1349,29 @@ mpio_health(mpio_t *m, mpio_mem_t mem, mpio_health_t *r)
 int
 mpio_memory_dump(mpio_t *m, mpio_mem_t mem)
 {
-  BYTE block[BLOCK_SIZE];
+  BYTE block[MEGABLOCK_SIZE];
   int i;
+  mpio_fatentry_t   *f;
 
   if (mem == MPIO_INTERNAL_MEM) 
     {      
       hexdump(m->internal.fat, m->internal.max_blocks*0x10);
       hexdump(m->internal.root->dir, DIR_SIZE);
+      if (m->internal.version) {
+	/* new chip */
+	f = mpio_fatentry_new(m, mem, 0x00, FTYPE_MUSIC);  
+	mpio_io_block_read(m, mem, f, block);
+        for (i = 0 ; i<=0x05 ; i++) {
+	  mpio_fatentry_plus_plus(f);
+	  mpio_io_block_read(m, mem, f, block);
+	}
+	free (f);
+      } else {	
+	/* old chip */ 
+        for (i = 0 ; i<=0x100 ; i++) 
+	  mpio_io_sector_read(m, mem, i, block);
+      }      
+
     }
   
   if (mem == MPIO_EXTERNAL_MEM) 
@@ -1292,10 +1379,9 @@ mpio_memory_dump(mpio_t *m, mpio_mem_t mem)
       hexdump(m->external.spare, m->external.max_blocks*0x10);
       hexdump(m->external.fat,   m->external.fat_size*SECTOR_SIZE);
       hexdump(m->external.root->dir, DIR_SIZE);
+      for (i = 0 ; i<=0x100 ; i++) 
+	mpio_io_sector_read(m, mem, i, block);
     }
-  
-  for (i = 0 ; i<=0x100 ; i++) 
-    mpio_io_sector_read(m, mem, i, block);
   
   return 0;  
 }
@@ -1336,3 +1422,4 @@ mpio_perror(char *prefix)
   else
     fprintf(stderr, "%s\n", msg);
 }
+

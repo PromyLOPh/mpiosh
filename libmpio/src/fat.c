@@ -1,5 +1,5 @@
 /*
- * $Id: fat.c,v 1.4 2003/07/15 08:26:37 germeier Exp $
+ * $Id: fat.c,v 1.5 2003/10/19 21:06:35 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -257,7 +257,7 @@ mpio_fatentry_hw2entry(mpio_t *m,  mpio_fatentry_t *f)
 	chip++;
 
       value &= 0xffffff;
-      value /= 0x20;
+      value /= mpio_block_get_sectors(m, f->mem);
       value += chip * (sm->max_cluster / sm->chips);
       
       f->entry = value;
@@ -285,7 +285,7 @@ mpio_fatentry_entry2hw(mpio_t *m,  mpio_fatentry_t *f)
 
       chip     = f->entry /  (sm->max_cluster / sm->chips);
       cluster  = f->entry - ((sm->max_cluster / sm->chips) * chip);
-      cluster *= 0x20;
+      cluster *= mpio_block_get_sectors(m, f->mem);
       cluster += 0x01000000 * (1 << chip);
       
       f->hw_address=cluster;
@@ -689,7 +689,7 @@ mpio_fatentry_find_free(mpio_t *m, mpio_mem_t mem, BYTE ftype)
 {
   mpio_fatentry_t *f;
 
-  f = mpio_fatentry_new(m, mem, 1, ftype);
+  f = mpio_fatentry_new(m, mem, 0, ftype);
 
   while(mpio_fatentry_plus_plus(f))
     {
@@ -809,7 +809,7 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
 {
   mpio_smartmedia_t *sm;
   mpio_fatentry_t   *f;
-  BYTE dummy[BLOCK_SIZE];
+  BYTE dummy[MEGABLOCK_SIZE];
   WORD i;
   DWORD block;
   
@@ -822,21 +822,35 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
 	mpio_io_block_delete(m, mem, f);
 	free(f);
 	
-	memset(dummy, 0x00, BLOCK_SIZE);
+	if (sm->version) {	  
+	  /* write megablock */
+	  f=mpio_fatentry_new(m, mem, 0, FTYPE_ENTRY);
+	  /* another yuck! */
+	  f->i_fat[0x01] = 1; /* file index number */	
+	  f->i_fat[0x0e] = 1; /* file index number */	
+	  f->i_fat[0x02] = 0;
+	  f->i_fat[0x03] = 1; /* directory is one block long */	
+	  mpio_io_block_write(m, mem, f, sm->root->dir);
+	  free(f);
+	  
+	} else {	  
+	  memset(dummy, 0x00, MEGABLOCK_SIZE);
 	
-	/* only write the root dir */
-	for (i= 0; i< 0x20; i++)
-	  {
-	    
-	    if (i<DIR_NUM) 
-	      {
-		mpio_io_sector_write(m, mem, i, 
-				     (sm->root->dir + SECTOR_SIZE * i));
-	      } else {
-		/* fill the rest of the block with zeros */
-		mpio_io_sector_write(m, mem, i, dummy);
-	      }	
-	  }    
+	  /* only write the root dir */
+	  for (i= 0; i< 0x20; i++)
+	    {
+	      
+	      if (i<DIR_NUM) 
+		{
+		  mpio_io_sector_write(m, mem, i, 
+				       (sm->root->dir + SECTOR_SIZE * i));
+		} else {
+		  /* fill the rest of the block with zeros */
+		  mpio_io_sector_write(m, mem, i, dummy);
+		}	
+	    }    
+	}
+	
       } else {
 	mpio_directory_write(m, mem, sm->cdir);
       }
@@ -942,7 +956,7 @@ mpio_fatentry_set_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
 int
 mpio_fatentry_is_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
 {
-  int e;
+  int e, i, c;
   mpio_smartmedia_t *sm;  
   
   if (mem == MPIO_INTERNAL_MEM) 
@@ -952,8 +966,28 @@ mpio_fatentry_is_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
       if (mpio_fatentry_free(m, mem, f))
 	return 0;
       /* check if this block became defective */
+      /* check for all bytes are zero */
+      c=1;
+      for (i=0;i<0x10;i++) {
+	if (sm->fat[e+i]!=0)
+	  c=0;
+      }
+      if (c)
+	  {
+	    debug("defective block encountered, abort reading! (all bytes are zero)\n");
+	    return 1;
+	  }      
+      /* check for file state marker */
+      if ((sm->fat[e+0x00] != 0xaa) &&
+	     (sm->fat[e+0x00] != 0xee))
+	{
+	  debug("defective block encountered, abort reading! (wrong file state marker)\n");
+	  hexdumpn(0, (sm->fat+e), 0x10);
+	  return 1;
+	}      
       if (m->model >= MPIO_MODEL_FD100) {      
 	/* newer models */
+	/* magic marker not found, or file IDs are different */
 	if ((sm->fat[e+0x0f] != 0) ||
 	    (sm->fat[e+0x01] != sm->fat[e+0x0e]))
 	  {
@@ -961,10 +995,9 @@ mpio_fatentry_is_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
 	    return 1;
 	  }      
       } else 
+	/* magic marker not found */
 	if ((sm->fat[e+0x0e] != 'P') ||
-	    (sm->fat[e+0x0f] != 'C') ||
-	    ((sm->fat[e+0x00] != 0xaa) &&
-	     (sm->fat[e+0x00] != 0xee)))
+	    (sm->fat[e+0x0f] != 'C'))
 	  {
 	    debug("defective block encountered, abort reading! (older models check)\n");
 	    return 1;
