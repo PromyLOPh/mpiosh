@@ -4,19 +4,16 @@
 	functionality at the moment
 	(commands): removed completion for mpio files on the put command
 
-<<<<<<< ChangeLog
 2002-10-14  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/global.c (commands): reactivated switch command without
 	any functionality at the moment
 
-=======
 2002-10-18  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/directory.c (mpio_dentry_get_real): 
 	  another fix for the 8.3 handling needed for the config file
 
->>>>>>> 1.65
 2002-10-13  Markus Germeier  <mager@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_dump): fixed compile and
