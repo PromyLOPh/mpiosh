@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.8 2002/09/14 21:57:02 crunchy Exp $
+ * $Id: mpiosh.c,v 1.9 2002/09/14 23:22:26 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -446,8 +446,6 @@ main(int argc, char *argv[]) {
   }
 
   while ((line = readline(mpiosh.prompt))) {
-    printf("running... '%s'\n", line);
-    
     if ((*line == '\0') || mpiosh_cancel) {
       rl_clear_pending_input ();
       mpiosh_cancel = 0;
@@ -469,6 +467,7 @@ main(int argc, char *argv[]) {
 	char ** help, **args = mpiosh_command_get_args(*walk);
 	help = args;
       
+	if (!interactive) debug("running... '%s'\n", *walk);
 	cmd->func(args);
 	mpiosh_command_free_args(args);
       } else

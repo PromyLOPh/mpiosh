@@ -1,3 +1,8 @@
+2002-09-15  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpiosh/mpiosh.c: add a debug message, displaying the executed
+	command in script mode
+
 2002-09-15  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/directory.c: add debug informations,
