@@ -73,6 +73,7 @@ AC_OUTPUT(
     libmpio/Makefile
     mpiosh/Makefile
     etc/Makefile
+    tools/Makefile
     mpio.spec
 )
 

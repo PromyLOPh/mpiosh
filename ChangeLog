@@ -1,3 +1,8 @@
+2002-11-02  Yuji Touya  <salmoon@users.sourceforge.net>
+
+	* tools/logotool.c: add a tool to extract/change logo animation
+         data in config.dat file, and sample animation data.
+
 2002-11-01  Yuji Touya  <salmoon@users.sourceforge.net>
 
 	* kernel/mpio.c: Add usbdevfs filesystem support 
