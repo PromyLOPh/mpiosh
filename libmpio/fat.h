@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.h,v 1.9 2002/10/06 21:19:50 germeier Exp $
+ * $Id: fat.h,v 1.10 2002/10/26 13:07:43 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -27,6 +27,10 @@
 #define _MPIO_FAT_H_
 
 #include "defs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* generate fresh boot sectors for formatting of external mem */
 BYTE    *mpio_mbr_gen(BYTE);
@@ -73,5 +77,9 @@ BYTE	mpio_fat_internal_find_fileindex(mpio_t *);
 /* mapping logical <-> physical for internal memory only */
 void mpio_fatentry_hw2entry(mpio_t *,  mpio_fatentry_t *);
 void mpio_fatentry_entry2hw(mpio_t *,  mpio_fatentry_t *);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif /* _MPIO_FAT_H_ */

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.h,v 1.4 2002/09/14 22:54:41 germeier Exp $
+ * $Id: directory.h,v 1.5 2002/10/26 13:07:43 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -29,6 +29,10 @@
 #include "fat.h"
 #include "time.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* root directory operations */
 int     mpio_rootdir_read (mpio_t *, mpio_mem_t);
 int	mpio_rootdir_clear (mpio_t *, mpio_mem_t);
@@ -52,5 +56,9 @@ void    mpio_dentry_copy_to_slot(BYTE *, mpio_dir_slot_t *);
 int	mpio_dentry_get_real(mpio_t *, mpio_mem_t, BYTE *, BYTE *, 
 			     int, BYTE[12],
 			     WORD *, BYTE *, BYTE *, BYTE *, BYTE *, DWORD *);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif /* _MPIO_DIRECTORY_H_ */

@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.9 2002/09/24 15:38:03 germeier Exp $
+ * $Id: mpio.h,v 1.10 2002/10/26 13:07:43 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -40,6 +40,10 @@
 #include <string.h>
 
 #include "defs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* 
  *init and shutdown 
@@ -114,6 +118,10 @@ void	mpio_perror(char *prefix);
  * 2004: some functions to change the order of files
  * 2005: read mp3 tags of the files
  */
+
+#ifdef __cplusplus
+}
+#endif 
   
 #endif /* _MPIO_H_ */
 

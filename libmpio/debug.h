@@ -4,7 +4,7 @@
  * Author: Dirk Meyer  <dmeyer@tzi.de>
  *         Andreas Büsching <crunchy@tzi.de>
  *
- * $Id: debug.h,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: debug.h,v 1.2 2002/10/26 13:07:43 germeier Exp $
  */
 
 #ifndef _MPIO_DEBUG_H_
@@ -28,6 +28,10 @@
 #include <sys/int_types.h>
 #else
 #include <stdint.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #ifndef PBOOL
@@ -96,6 +100,10 @@ void _octetstr(const char *package, const char* file, int line,
 	       const unsigned int len, const char *what);
 
 int _use_debug(int level);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif /* _MPIO_DEBUG_H_ */
 

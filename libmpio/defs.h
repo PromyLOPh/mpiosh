@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.11 2002/09/28 00:32:41 germeier Exp $
+ * $Id: defs.h,v 1.12 2002/10/26 13:07:43 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -29,6 +29,10 @@
 
 #ifndef _MPIO_DEFS_H_
 #define _MPIO_DEFS_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef unsigned char  BYTE;
 typedef unsigned short WORD;
@@ -264,6 +268,10 @@ typedef struct  { // Up to 13 characters of a long name
   unsigned char start[2];         // starting cluster number
   unsigned char name11_12[4];     // last 2 characters in name
 } mpio_dir_slot_t;
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif /* _MPIO_DEFS_H_ */
 

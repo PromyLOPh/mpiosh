@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.33 2002/10/13 12:03:51 germeier Exp $
+ * $Id: mpio.c,v 1.34 2002/10/26 13:07:43 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -337,15 +337,16 @@ mpio_memory_free(mpio_t *m, mpio_mem_t mem, int *free)
 void
 mpio_close(mpio_t *m) 
 {
-  close(m->fd);
-  
-  if(m->internal.fat)
-    free(m->internal.fat);
-  if(m->external.fat)
-    free(m->external.fat);
-  
-  free(m);
-  
+  if (m) {
+    close(m->fd);
+    
+    if(m->internal.fat)
+      free(m->internal.fat);
+    if(m->external.fat)
+      free(m->external.fat);
+    
+    free(m);
+  }
 }
 
 void    

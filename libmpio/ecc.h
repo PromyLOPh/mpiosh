@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: ecc.h,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: ecc.h,v 1.2 2002/10/26 13:07:43 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -28,9 +28,17 @@
 
 #include "defs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* 256 Bytes Data, 3 Byte ECC to generate */
 int	mpio_ecc_256_gen(BYTE *, BYTE *);
 /* 256 Bytes Data, 3 Bytes ECC to check and possibly correct */
 int	mpio_ecc_256_check(BYTE *, BYTE*);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: smartmedia.h,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: smartmedia.h,v 1.2 2002/10/26 13:07:43 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -30,10 +30,18 @@
 
 #include "defs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* get our configuration for SmartMedia cards right */
 int	mpio_id2mem (BYTE);
 BYTE *	mpio_id2manufacturer(BYTE);
 void	mpio_id2geo(BYTE, mpio_disk_phy_t *);
 BYTE	mpio_id_valid(BYTE);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif /* _MPIO_SMARTMEDIA_H_ */
