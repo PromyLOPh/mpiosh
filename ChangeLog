@@ -1,3 +1,7 @@
+2004-01-13  Markus Germeier  <mager@tzi.de>
+        * Added FY200 informations which is reported to work
+	  external memory is supposed to work with these changes  
+	
 2004-01-12  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/smartmedia.c (mpio_id2mem): 
 	  updated chip IDs which were reported quite some time ago

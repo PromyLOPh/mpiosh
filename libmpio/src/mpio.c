@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.10 2003/10/19 21:06:35 germeier Exp $
+ * $Id: mpio.c,v 1.11 2004/01/13 11:37:34 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -63,6 +63,7 @@ static BYTE *mpio_model_name[] = {
   "MPIO-FD100",
   "MPIO-FL100",
   "MPIO-FY100",
+  "MPIO-FY200",
   "VirginPulse VP-01",
   "VirginPulse VP-02",
   "unknown"
@@ -389,6 +390,8 @@ mpio_init(mpio_callback_init_t progress_callback)
        look at a FY100 firmware yet. -mager */
     debug("FY100 found: Beware, this model is not tested and we don't know"
 	  " if it does work!\n");    
+  } else if (strncmp(new_mpio->version, "FY200", 5) == 0) {
+    new_mpio->model = MPIO_MODEL_FY200;
   } else if (strncmp(new_mpio->version, "VP-01", 5) == 0) {
     /* This is a FY100 clone! */
     new_mpio->model = MPIO_MODEL_VP_01;

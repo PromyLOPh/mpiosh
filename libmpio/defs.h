@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.31 2003/10/19 21:06:34 germeier Exp $
+ * $Id: defs.h,v 1.32 2004/01/13 11:37:34 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -54,9 +54,10 @@ typedef enum { MPIO_MODEL_DME      = 0x00,
 	       MPIO_MODEL_FD100    = 0x06,
 	       MPIO_MODEL_FL100    = 0x07,
 	       MPIO_MODEL_FY100    = 0x08,
-	       MPIO_MODEL_VP_01    = 0x09,
-	       MPIO_MODEL_VP_02    = 0x0a,
-               MPIO_MODEL_UNKNOWN  = 0x0b } mpio_model_t;
+	       MPIO_MODEL_FY200    = 0x09,
+	       MPIO_MODEL_VP_01    = 0x0a,
+	       MPIO_MODEL_VP_02    = 0x0b,
+               MPIO_MODEL_UNKNOWN  = 0x0c } mpio_model_t;
 
 /* USB commands */
 typedef enum { GET_VERSION      = 0x01,
