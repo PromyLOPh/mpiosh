@@ -1,5 +1,5 @@
 /*
- * $Id: io.c,v 1.11 2004/04/23 18:17:56 germeier Exp $
+ * $Id: io.c,v 1.12 2004/04/24 16:09:58 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
@@ -511,6 +511,9 @@ mpio_device_open(mpio_t *m){
   int ret, i;
   m->use_libusb=1;
 
+  if (m->fd)
+    return MPIO_OK;
+
 #ifdef USE_KMODULE
   debugn(2, "trying kernel module\n");
   m->fd = open(MPIO_DEVICE, O_RDWR);
@@ -549,11 +552,11 @@ mpio_device_open(mpio_t *m){
 	  if (ret < 0)
 	    {
 	      debugn(2, "Error claiming device: %d  \"%s\"\n", ret, usb_strerror());
+	      usb_close(m->usb_handle);
 	      return MPIO_ERR_PERMISSION_DENIED;
 	    } else {
 	      debugn(2, "claimed interface 0\n");
 	    }
-	  
 	  
 	  interface = dev->config->interface->altsetting;
 
@@ -572,8 +575,10 @@ mpio_device_open(mpio_t *m){
 	    }
 	  }
 	  
+	  m->fd=1;
 	  if (!(m->usb_in_ep && m->usb_out_ep)) {
 	    debugn(2, "Did not find USB bulk endpoints.\n");
+	    mpio_device_close(m);
 	    return MPIO_ERR_PERMISSION_DENIED;	    
 	  }	  
 	  
@@ -583,22 +588,28 @@ mpio_device_open(mpio_t *m){
       }
     }
   }
-
+  
+  if (m->usb_handle)
+    usb_close(m->usb_handle);
   return MPIO_ERR_PERMISSION_DENIED;
 }
 
 int 
 mpio_device_close(mpio_t *m) {
   if(m->use_libusb) {
-    debugn(2, "closing libusb\n");
-    usb_close(m->usb_handle);
-    m->fd=0;
+    if (m->fd) {      
+      debugn(2, "closing libusb\n");
+      usb_close(m->usb_handle);
+      m->fd=0;
+    }    
   } 
 #ifdef USE_KMODULE
   else {
-    debugn(2, "closing kernel module\n");
-    close(m->fd);
-    m->fd=0;
+    if (m->fd) {      
+      debugn(2, "closing kernel module\n");
+      close(m->fd);
+      m->fd=0;
+    }    
   }
 #endif
   

@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.14 2004/04/23 19:21:07 germeier Exp $
+ * $Id: mpio.c,v 1.15 2004/04/24 16:09:58 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
@@ -95,9 +95,9 @@ static mpio_error_t mpio_errors[] = {
   { MPIO_ERR_DIR_NOT_EMPTY,
     "The selected directory is not empty." },
   { MPIO_ERR_DEVICE_NOT_READY,
-    "Could not open " MPIO_DEVICE "\n"
-    "Verify that the mpio module is loaded and "
-    "your MPIO is\nconnected and powered up.\n" },
+    "Could not access the player\n"
+    "Verify that the the player is\n"
+    "connected and powered up.\n" },
   { MPIO_ERR_OUT_OF_MEMORY,
     "Out of Memory." },
   { MPIO_ERR_INTERNAL,
@@ -314,11 +314,14 @@ mpio_init(mpio_callback_init_t progress_callback)
   new_mpio = malloc(sizeof(mpio_t));
   if (!new_mpio) {
     debug ("Error allocating memory for mpio_t");
+    _mpio_errno = MPIO_ERR_OUT_OF_MEMORY;
     return NULL;
   }  
   memset(new_mpio, 0, sizeof(mpio_t));
 
+  new_mpio->fd=0;
   if (mpio_device_open(new_mpio) != MPIO_OK) {
+    free(new_mpio);
     _mpio_errno = MPIO_ERR_DEVICE_NOT_READY;
     return NULL;    
   }
