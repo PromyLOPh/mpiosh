@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.16 2003/03/15 13:24:58 germeier Exp $
+ * $Id: defs.h,v 1.17 2003/04/04 09:25:38 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -176,7 +176,7 @@ typedef struct {
 typedef struct {
   BYTE		id;
   BYTE		manufacturer;
-  BYTE		size;		/* MB */    
+  WORD		size;		/* MB */    
   BYTE          chips;          /* this is the hack for
                                    MPIO internal representation, because
 				   there might be up to four chips involved */
