@@ -4,7 +4,7 @@
  * Authors: Dirk Meyer  <dmeyer@tzi.de>
  *          Andreas Büsching <crunchy@tzi.de>
  *
- * $Id: debug.c,v 1.2 2003/03/19 16:41:57 crunchy Exp $
+ * $Id: debug.c,v 1.3 2003/03/20 13:34:05 crunchy Exp $
  */
 
 #include "debug.h"
@@ -19,6 +19,8 @@
 #define DFILE "_file"
 #define DSUFFIX "_debug"
 #define LEVEL_HEXDUMP 5
+
+#define CHECK_FD if (__debug_fd == NULL) return;
 
 char *__debug_color = NULL;
 int __debug_level = 0;
@@ -127,6 +129,8 @@ _hexdump (const char *package, const char* file, int line,
   char buf[17];
   int i;
 
+  CHECK_FD;
+
   if (_use_debug(LEVEL_HEXDUMP)) {
     fprintf (__debug_fd, "%s%s:\033[m %s(%d): %s: data=%p len=%d\n", 
 	    __debug_color, package, file, line, function, data, len);
@@ -154,6 +158,8 @@ _hexdump_n (const char *package, const int n, const char* file, int line,
   char buf[17];
   int i;
 
+  CHECK_FD;
+  
   if (_use_debug(n)) {
     fprintf (__debug_fd, "%s%s:\033[m %s(%d): %s: data=%p len=%d\n", 
 	    __debug_color, package, file, line, function, data, len);
@@ -180,6 +186,8 @@ _hexdump_text (const char *text,
 	       const char *package, const char *file, int line, 
 	       const char *function, const char *data, int len)
 {
+  CHECK_FD;
+  
   if (_use_debug(LEVEL_HEXDUMP)) {
     fprintf(__debug_fd, "%s%s: %s(%d): %s: %s\033[m", __debug_color, 
 	   package, file, line, function, text);
@@ -195,7 +203,11 @@ _error(const char *package, const char *file, int line,
 {
   char foo[2048];
   va_list ap;
+
+  CHECK_FD;
+
   va_start(ap, format);
+  
   
   vsnprintf(foo, sizeof(foo) - strlen(format) - 1, format, ap);
   if (_use_debug(0)) 
@@ -222,6 +234,8 @@ _debug(const char *package, const char *file, int line,
   va_list ap;
   va_start(ap, format);
   
+  CHECK_FD;
+  
   vsnprintf(foo, sizeof(foo) - strlen(format) - 1, format, ap);
   
   if (_use_debug(0)) {
@@ -242,6 +256,8 @@ _debug_n(const char *package, const int n, const char *file,
   va_list ap;
   va_start(ap, format);
   
+  CHECK_FD;
+  
   vsnprintf(foo, sizeof(foo) - strlen(format) - 1, format, ap);
   
   if (_use_debug(n)) {
@@ -259,6 +275,8 @@ _octetstr(const char *package, const char *file, int line,
 	  const char *function, const uint8_t *str,
 	  const unsigned int len, const char *what)
 {
+  CHECK_FD;
+  
   if (_use_debug(LEVEL_HEXDUMP)) {
     unsigned int i;
     
@@ -277,7 +295,8 @@ int
 _use_debug(int level)
 {
   if (__debug_level == -1) return 0;
-  if (__debug_fd == NULL) return 0;
+
+  CHECK_FD;
 
   if (level <= __debug_level) {
     return 1;
