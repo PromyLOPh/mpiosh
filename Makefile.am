@@ -1,1 +1,1 @@
-SUBDIRS=kernel libmpio mpio_tool
+SUBDIRS=kernel libmpio mpiosh
