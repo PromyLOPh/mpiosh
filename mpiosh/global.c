@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.6 2002/11/04 16:25:17 crunchy Exp $
+ * $Id: global.c,v 1.7 2003/03/06 23:41:30 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -112,6 +112,8 @@ struct mpiosh_cmd_t commands[] = {
     "  dump FAT, directory, spare area and the first 0x100 of the\n"
     "  selected memory card",
     mpiosh_cmd_dump_mem, NULL },
+#if 0
+  /* deactivated for the 0.6.0 release because the code is incomplete! -mager */
   { "config", (char *[]) { "conf", NULL }, "[read|write|show]",
     "  give access to the configuration file of the MPIO player\n"
     "   read     read the configuration file and dump it on the local disc\n"
@@ -124,6 +126,7 @@ struct mpiosh_cmd_t commands[] = {
     "   write    write the channel file back to the MPIO player\n"
     "   show     show the current channel configuration",
     mpiosh_cmd_channel, mpiosh_readline_comp_config },
+#endif
   { NULL, NULL, NULL, NULL, NULL, NULL }
 };
 
