@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.16 2004/05/30 16:28:52 germeier Exp $
+ * $Id: mpio.c,v 1.17 2004/05/31 09:28:50 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
@@ -251,14 +251,14 @@ mpio_init_external(mpio_t *m)
   BYTE e_offset = 0x20;
 
   /* these players have a MMC/SD slot */
-  if ((m->model != MPIO_MODEL_VP_02) &&
-      (m->model != MPIO_MODEL_FL100)) {
+  if ((m->model == MPIO_MODEL_VP_02) ||
+      (m->model == MPIO_MODEL_FL100)) {
     debugn(0, "Trying to detect external MMC. This is work in progress. BEWARE!!\n");
     debugn(0, "Please report your findings to mpio-devel@lists.sourceforge.net\n");
     debugn(0, "and include the following information block\n");
     hexdumpn(0, m->version, 64);
 
-    mpio_mmc_detect_memory(m, sm);
+    mpio_mmc_detect_memory(m, MPIO_EXTERNAL_MEM);
     
     if (sm->size) {
       debugn(0, "You are lucky! ;-) I found a %d MB MMC card.\n", sm->size);

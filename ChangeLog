@@ -1,3 +1,7 @@
+2004-05-31  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/mpio.c (mpio_init_external): 
+	  fixed stupid bugs
+
 2004-05-30  Markus Germeier  <mager@tzi.de>
 	* added Roberts MMC code (step 1)
 	* fixed a FAT bug he found on the way
