@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.12 2002/10/27 17:37:27 germeier Exp $
+ * $Id: mpio.h,v 1.13 2002/11/13 23:05:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -62,6 +62,12 @@ void	mpio_get_info(mpio_t *, mpio_info_t *);
 mpio_model_t	mpio_get_model(mpio_t *);
 /* retrieves free memory in bytes */
 int	mpio_memory_free(mpio_t *, mpio_mem_t, int *free);
+
+/*
+ * charset for filename encoding/converting
+ */
+BYTE  *mpio_charset_get(mpio_t *);
+BYTE   mpio_charset_set(mpio_t *, BYTE *);
 
 /* 
  * directory operations 

@@ -1,3 +1,15 @@
+2002-11-13  Markus Germeier  <mager@tzi.de>
+
+	* mpiosh/callback.c (mpiosh_cmd_format): backup and restore
+	  config files  (probably not complete yet!)
+	* libmpio/defs.h (MPIO_CHARSET): 
+	* libmpio/directory.c (mpio_dentry_put, mpio_dentry_get_real): 
+	  use ISO-8859-15 instead of ASCII as default charset encoding
+	  (much nicer now!)
+	* libmpio/directory.c (mpio_charset_get, mpio_charset_set): 
+	  added functions to allow changing of charset 
+	* mpiosh/config.c: read charset from config file
+
 2002-11-04  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_quit): writing configuration
@@ -31,7 +43,6 @@
 	mpiosh/config.h: added these new files to support global and user
 	configuration files.
 			 
-
 2002-10-27  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.{c,h}: split mpio_file_{get,put} into several

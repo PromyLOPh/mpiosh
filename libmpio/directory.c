@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.10 2002/10/27 17:37:25 germeier Exp $
+ * $Id: directory.c,v 1.11 2002/11/13 23:05:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -64,6 +64,44 @@ int date_dos2unix(unsigned short time,unsigned short date)
 	secs += sys_tz.tz_minuteswest*60;
 	return secs;
 }
+
+/*
+ * charset for filename encoding/converting
+ */
+BYTE *
+mpio_charset_get(mpio_t *m)
+{
+  return strdup(m->charset);
+}
+  
+BYTE   
+mpio_charset_set(mpio_t *m, BYTE *charset)
+{
+  iconv_t ic;
+  int     r = 1;
+  
+  ic = iconv_open("UNICODE", charset);
+  if (ic < 0)
+    r=0;
+  iconv_close(ic);
+  
+  ic = iconv_open(charset, "UNICODE");
+  if (ic < 0)
+    r=0;
+  iconv_close(ic);
+
+  if (r)
+    {
+      debugn(2, "setting new charset to: \"%s\"\n", charset);
+      free(m->charset);
+      m->charset=strdup(charset);
+    } else {
+      debugn(2, "could not set charset to: \"%s\"\n", charset);
+    }
+  
+  return r;
+}
+
 
 
 /* directory operations */
@@ -256,7 +294,7 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
   
   if (vfat) 
     {
-      ic = iconv_open("ASCII", "UNICODE");
+      ic = iconv_open(m->charset, "UNICODE");
       memset(fname, 0, filename_size);
       hexdumpn(4, unicode, in+2);
       debugn(4, "before iconv: in: %2d - out: %2d\n", in, out);
@@ -471,7 +509,7 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
   }
 
   /* generate vfat filename in UNICODE */
-  ic = iconv_open("UNICODE", "ASCII");
+  ic = iconv_open("UNICODE", m->charset);
   fin = in = filename_size + 1;
   fout = out = filename_size * 2 + 2 + 26;
   fname = malloc(in);

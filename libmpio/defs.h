@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.13 2002/10/27 02:45:28 germeier Exp $
+ * $Id: defs.h,v 1.14 2002/11/13 23:05:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -100,6 +100,7 @@ typedef BYTE mpio_filename_t[MPIO_FILENAME_LEN];
 #endif
 
 #define MPIO_DEVICE "/dev/usb/mpio"
+#define MPIO_CHARSET "ISO-8859-15"
 
 #define SECTOR_SIZE      0x200
 #define SECTOR_ECC       0x040
@@ -214,6 +215,7 @@ typedef struct {
   BYTE version[CMD_SIZE];
   
   int fd;
+  BYTE *charset;                   /* charset used for filename conversion */
 
   mpio_firmware_t firmware;  
 

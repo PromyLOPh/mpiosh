@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: config.h,v 1.1 2002/10/29 20:03:35 crunchy Exp $
+ * $Id: config.h,v 1.2 2002/11/13 23:05:28 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -32,6 +32,7 @@ struct mpiosh_config_t {
 
   char	 	*prompt_int;
   char 		*prompt_ext;
+  char          *charset;
   unsigned	default_mem;
 };
 

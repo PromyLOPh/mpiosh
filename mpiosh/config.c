@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: config.c,v 1.2 2002/11/04 16:25:17 crunchy Exp $
+ * $Id: config.c,v 1.3 2002/11/13 23:05:28 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -137,6 +137,14 @@ mpiosh_config_read(struct mpiosh_config_t *config)
 	config->default_mem = MPIO_EXTERNAL_MEM;
       }
     }
+    
+    value = mpiosh_config_read_key(config, "mpiosh", "charset");
+    if (value) {
+      config->charset = strdup(value);
+    } else {
+      config->charset = NULL;
+    }
+    
   }
 
   return 1;

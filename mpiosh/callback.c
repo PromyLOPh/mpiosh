@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.31 2002/11/04 16:25:17 crunchy Exp $
+ * $Id: callback.c,v 1.32 2002/11/13 23:05:28 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -212,6 +212,10 @@ mpiosh_cmd_open(char *args[])
     printf("error: could not open connection MPIO player\n");
   else
     printf("connection to MPIO player is opened\n");
+
+  if ((mpiosh.dev) && (mpiosh.config->charset))
+    mpio_charset_set(mpiosh.dev, mpiosh.config->charset);
+
 }
 
 void
@@ -592,27 +596,58 @@ void
 mpiosh_cmd_format(char *args[])
 {
   char answer[512];
+  BYTE *config, *fmconfig;
+  int  csize, fmsize;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
   UNUSED(args);
 
-  printf("WARNING\n");
-  printf("Support for formatting memory is not complete and has"
-	 " some known issues!!\n");
-  printf("WARNING\n");
-  
   printf("This will destroy all tracks saved on the memory card. "
 	 "Are you sure (y/n)? ");
 
   fgets(answer, 511, stdin);
   
   if (answer[0] == 'y' || answer[0] == 'Y') {
+    if (mpiosh.card == MPIO_INTERNAL_MEM) {
+      /* save config files and write them back after formatting */
+      config   = NULL;
+      fmconfig = NULL;
+
+      csize = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				      MPIO_CONFIG_FILE, NULL, &config);      
+      fmsize = mpio_file_get_to_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				       MPIO_CHANNEL_FILE, NULL, &fmconfig);
+    }
+
     if (mpio_memory_format(mpiosh.dev, mpiosh.card,
 			   mpiosh_callback_format) == -1)
       printf("\nfailed\n");
-    else
+    else {
       printf("\n");
+      
+      if (mpiosh.card == MPIO_INTERNAL_MEM) {
+	/* restore everything we saved */
+	if (config)
+	  if (mpio_file_put_from_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				      MPIO_CONFIG_FILE, FTYPE_CONF,
+				      NULL, config, csize)==-1)
+	    mpio_perror("error");
+	if (fmconfig)
+	  if (mpio_file_put_from_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+					MPIO_CHANNEL_FILE, FTYPE_CHAN,
+					NULL, fmconfig, fmsize)==-1)
+	    mpio_perror("error");
+
+	if (config || fmconfig)
+	  mpio_sync(mpiosh.dev, MPIO_INTERNAL_MEM);
+	if (config)
+	  free(config);
+	if (fmconfig)
+	  free(fmconfig);
+      }
+      
+    } 
   }
 }
 

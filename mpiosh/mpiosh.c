@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.22 2002/11/04 16:25:17 crunchy Exp $
+ * $Id: mpiosh.c,v 1.23 2002/11/13 23:05:28 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -63,6 +63,10 @@ mpiosh_init(void)
   mpiosh.dev = mpio_init(mpiosh_callback_init);
 
   printf("\n");
+  
+  if ((mpiosh.dev) && (mpiosh.config->charset))
+    mpio_charset_set(mpiosh.dev, mpiosh.config->charset);
+  
 }
 
 void

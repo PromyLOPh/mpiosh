@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.36 2002/10/27 17:37:27 germeier Exp $
+ * $Id: mpio.c,v 1.37 2002/11/13 23:05:28 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -105,7 +105,6 @@ mpio_check_filename(mpio_filename_t filename)
 
   return 0;
 }
-
 
 void 
 mpio_init_internal(mpio_t *m)
@@ -303,6 +302,9 @@ mpio_init(mpio_callback_init_t progress_callback)
 	  mpio_rootdir_read(new_mpio, MPIO_EXTERNAL_MEM);
 	}
     }
+
+  /* set default charset for filename conversion */
+  new_mpio->charset=strdup(MPIO_CHARSET);
   
   return new_mpio;  
 }
