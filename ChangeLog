@@ -1,3 +1,17 @@
+2002-10-29  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpiosh/mpiosh.c (mpiosh_init): uses the new configuration file
+	support to initialise the shell
+
+	* etc/mpio/mpioshrc: add a sample configuration file will be
+	install as a global configuration file in
+	@sysconfdir@/mpio/mpioshrc
+
+	* mpiosh/cfgio.c, mpiosh/cfgio.c, mpiosh/config.c,
+	mpiosh/config.h: added these new files to support global and user
+	configuration files.
+			 
+
 2002-10-27  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.{c,h}: split mpio_file_{get,put} into several

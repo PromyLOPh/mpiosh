@@ -1,4 +1,4 @@
-$Id: TODO,v 1.16 2002/10/13 17:14:51 germeier Exp $
+$Id: TODO,v 1.17 2002/10/29 20:03:34 crunchy Exp $
 
 * Kernel Module
   - the MPIO can no multitasking, so:
@@ -39,4 +39,6 @@ $Id: TODO,v 1.16 2002/10/13 17:14:51 germeier Exp $
   - using stdin for reading command sequences [DONE]
   - fill: uses current local directory to fill the current memory card
     + options: random, best(?)
+  - configuration files [almost DONE]
+  - save command history
 

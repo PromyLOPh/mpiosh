@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.4 2002/10/27 02:45:28 germeier Exp $
+ * $Id: global.c,v 1.5 2002/10/29 20:03:35 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -26,17 +26,24 @@
 #include "readline.h"
 
 /* structure containing current state */
-mpiosh_t mpiosh;
+struct mpiosh_t mpiosh;
+struct mpiosh_config_t	config;
 
 /* flag indicating a user-interrupt of the current command */
-int mpiosh_cancel = 0;
-int mpiosh_cancel_ack = 0;
+int mpiosh_cancel		= 0;
+int mpiosh_cancel_ack		= 0;
+
+/* configuration filenames */
+const char *CONFIG_GLOBAL	= SYSCONFDIR "/mpio/";
+const char *CONFIG_USER		= "~/.mpio/";
+const char *CONFIG_FILE		= "mpioshrc";
+const char *CONFIG_HISTORY	= "~/.mpio/mpiosh_history";
 
 /* prompt strings */
-const char *PROMPT_INT = "\033[;1mmpio <i>\033[m ";
-const char *PROMPT_EXT = "\033[;1mmpio <e>\033[m ";
+const char *PROMPT_INT		= "\033[;1mmpio <i>\033[m ";
+const char *PROMPT_EXT		= "\033[;1mmpio <e>\033[m ";
 
-mpiosh_cmd_t commands[] = {
+struct mpiosh_cmd_t commands[] = {
   { "debug", NULL , "[level|file|on|off] <value>",
     "  modify debugging options",
     mpiosh_cmd_debug, NULL },

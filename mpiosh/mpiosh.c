@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.20 2002/10/12 20:06:22 crunchy Exp $
+ * $Id: mpiosh.c,v 1.21 2002/10/29 20:03:35 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -26,6 +26,7 @@
  * */
 
 #include <signal.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -34,6 +35,7 @@
 
 #include "callback.h"
 #include "command.h"
+#include "config.h"
 #include "readline.h"
 #include "mpiosh.h"
 
@@ -41,9 +43,26 @@
 void
 mpiosh_init(void)
 {
+  /* set state */
   mpiosh.dev = NULL;
-  mpiosh.card = MPIO_INTERNAL_MEM;
-  mpiosh.prompt = PROMPT_INT;
+  mpiosh.config = NULL;
+  mpiosh.prompt = NULL;
+
+  /* read configuration */
+  mpiosh.config = mpiosh_config_new();
+  if (mpiosh.config)
+    mpiosh_config_read(mpiosh.config);
+
+  mpiosh.card = mpiosh.config->default_mem;
+  if (mpiosh.config->default_mem == MPIO_EXTERNAL_MEM)
+    mpiosh.prompt = mpiosh.config->prompt_ext;
+  else
+    mpiosh.prompt = mpiosh.config->prompt_int;
+
+  /* inital mpio library */
+  mpiosh.dev = mpio_init(mpiosh_callback_init);
+
+  printf("\n");
 }
 
 void
@@ -55,9 +74,9 @@ mpiosh_signal_handler(int signal)
 
 int
 main(int argc, char *argv[]) {
-  char *		line;
-  char **		cmds, **walk;
-  mpiosh_cmd_t *	cmd;
+  char			*line;
+  char			**cmds, **walk;
+  struct mpiosh_cmd_t 	*cmd;
   struct sigaction	sigc;
   int			interactive = 1;
   
@@ -80,13 +99,6 @@ main(int argc, char *argv[]) {
   debug_init();
   
   mpiosh_init();
-  mpiosh.dev = mpio_init(mpiosh_callback_init);
-  printf("\n");
-
-  if (mpiosh.card == MPIO_INTERNAL_MEM)
-    mpiosh.prompt = PROMPT_INT;
-  else
-    mpiosh.prompt = PROMPT_EXT;
 
   if (!isatty(fileno(stdin))) {
     interactive = 0;

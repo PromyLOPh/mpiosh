@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.h,v 1.1 2002/10/12 20:06:22 crunchy Exp $
+ * $Id: global.h,v 1.2 2002/10/29 20:03:35 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -26,30 +26,38 @@
 
 #include "libmpio/mpio.h"
 
+#include "config.h"
+
 /* type definitions */
 typedef void(*mpiosh_cmd_callback_t)(char *args[]);
 typedef char *(*mpiosh_comp_callback_t)(const char *text, int state);
   
-typedef struct {
-  mpio_t *	dev;
-  mpio_mem_t 	card;
-  const char *	prompt;
-} mpiosh_t;
+struct mpiosh_t {
+  mpio_t *			dev;
+  mpio_mem_t 			card;
+  const char *			prompt;
+  struct mpiosh_config_t	*config;
+};
   
-typedef struct {
-  char *	cmd;
-  char **	aliases;
-  char *	args;
-  char *	info;
+struct mpiosh_cmd_t {
+  char				*cmd;
+  char				**aliases;
+  char				*args;
+  char 				*info;
   mpiosh_cmd_callback_t		cmd_func;
   mpiosh_comp_callback_t	comp_func;
-} mpiosh_cmd_t;
+};
   
 /* global structures */
-extern mpiosh_t mpiosh;
-extern mpiosh_cmd_t commands[];
+extern struct mpiosh_t mpiosh;
+extern struct mpiosh_cmd_t commands[];
 extern int mpiosh_cancel;
 extern int mpiosh_cancel_ack;
+
+extern const char *CONFIG_GLOBAL;
+extern const char *CONFIG_USER;
+extern const char *CONFIG_FILE;
+extern const char *CONFIG_HISTORY;
 
 extern const char *PROMPT_INT;
 extern const char *PROMPT_EXT;

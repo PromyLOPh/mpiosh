@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: command.c,v 1.2 2002/10/12 20:06:22 crunchy Exp $
+ * $Id: command.c,v 1.3 2002/10/29 20:03:35 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -64,10 +64,10 @@ mpiosh_command_split_line(char *line)
   return cmds;
 }
 
-mpiosh_cmd_t *
+struct mpiosh_cmd_t *
 mpiosh_command_find(char *line)
 {
-  mpiosh_cmd_t *cmd = commands;
+  struct mpiosh_cmd_t *cmd = commands;
  
   while (cmd->cmd) {
     if (strstr(line, cmd->cmd) == line) {

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: readline.c,v 1.4 2002/10/18 08:39:23 crunchy Exp $
+ * $Id: readline.c,v 1.5 2002/10/29 20:03:35 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -41,10 +41,9 @@ mpiosh_readline_init(void)
 char *
 mpiosh_readline_comp_cmd(const char *text, int state)
 {
-  static mpiosh_cmd_t *	cmd = NULL;
-  static char **	alias = NULL;
-  
-  char *cmd_text = NULL;
+  static struct mpiosh_cmd_t	*cmd = NULL;
+  static char			**alias = NULL;
+  char				*cmd_text = NULL;
   
   if (state == 0) {
     cmd = commands;
@@ -123,9 +122,17 @@ mpiosh_readline_comp_mpio_file(const char *text, int state)
 char *
 mpiosh_readline_comp_config(const char *text, int state)
 {
-  char *arg = NULL;
+  static char *args[] = { "put", "write", "show", NULL };
+  static char **arg = NULL;
+  char *res = NULL;
+  
+  if (state == 0) arg = args;  
+  if (*arg && (strstr(*arg, text) == *arg)) {
+    res = strdup(*arg);
+    arg++;
+  }
 
-  return arg;
+  return res;
 }
 
 
@@ -139,7 +146,7 @@ mpiosh_readline_completion(const char *text, int start, int end)
   if (start == 0) /* command completion */
     matches = rl_completion_matches(text, mpiosh_readline_comp_cmd);
   else {
-    mpiosh_cmd_t	*scmd;
+    struct mpiosh_cmd_t	*scmd;
     char		*cmd, *help= rl_line_buffer;
 
     while (*help != ' ') help++;

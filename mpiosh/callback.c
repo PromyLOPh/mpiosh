@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.29 2002/10/27 17:37:27 germeier Exp $
+ * $Id: callback.c,v 1.30 2002/10/29 20:03:34 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -76,8 +76,8 @@ mpiosh_cmd_version(char *args[])
 void
 mpiosh_cmd_help(char *args[])
 {
-  mpiosh_cmd_t *cmd = commands;
-  int		ignore;
+  struct mpiosh_cmd_t	*cmd = commands;
+  int			ignore;
 
   while (cmd->cmd) {
     if (args[0] != NULL) {
@@ -418,17 +418,17 @@ mpiosh_cmd_mput(char *args[])
 			      FTYPE_MUSIC, mpiosh_callback_put) == -1) {
 	      mpio_perror("error");
 	      /* an existing file is no reason for a complete abort!! */
-	      if (mpio_errno()==MPIO_ERR_FILE_EXISTS)
+	      if (mpio_errno() == MPIO_ERR_FILE_EXISTS)
 		continue;
 	      break;
 	    } 
-	    written=1; /* we did write something, so do mpio_sync afterwards */
+	    written = 1; /* we did write something, so do mpio_sync afterwards */
 	    
 	    printf("\n");
 	  } else {
 	    regerror(error, &regex, errortext, 100);
-	    debugn (2, "file does not match: %s (%s)\n", 
-		    (*run)->d_name, errortext);
+	    debugn(2, "file does not match: %s (%s)\n", 
+		   (*run)->d_name, errortext);
 	  }
 	  free(*run);
 	}
@@ -646,7 +646,7 @@ mpiosh_cmd_dump_mem(char *args[])
 void
 mpiosh_cmd_config(char *args[])
 {
-  BYTE *config_data, *p;
+  BYTE *config_data;
   int  size;
 
   MPIOSH_CHECK_CONNECTION_CLOSED;
@@ -715,7 +715,6 @@ mpiosh_cmd_config(char *args[])
     fprintf(stderr, "error: no arguments given\n");
     printf("config [read|write|show] <\n");
   }  
-
 }
 
 void

@@ -1,0 +1,5 @@
+[mpiosh]
+default_mem=internal
+prompt_int=[;1mmpio <i>[m 
+prompt_ext=[;1mmpio <e>[m 
+

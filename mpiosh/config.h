@@ -1,8 +1,8 @@
-/* command.h
+/* config.h
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: command.h,v 1.2 2002/10/29 20:03:35 crunchy Exp $
+ * $Id: config.h,v 1.1 2002/10/29 20:03:35 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -21,18 +21,28 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef MPIOSH_COMMAND_HH
-#define MPIOSH_COMMAND_HH
+#ifndef MPIOSH_CONFIG_HH
+#define MPIOSH_CONFIG_HH
 
-#include "mpiosh.h"
+#include "cfgio.h"
 
-/* command(-line) functions */
-struct mpiosh_cmd_t *mpiosh_command_find(char *line);
-char **mpiosh_command_split_line(char *line);
-char **mpiosh_command_get_args(char *line);
-void mpiosh_command_regex_fix(char *argv[]);
-void mpiosh_command_free_args(char **args);
+struct mpiosh_config_t {
+  CfgHandle	*handle_global;
+  CfgHandle	*handle_user;
+
+  char	 	*prompt_int;
+  char 		*prompt_ext;
+  unsigned	default_mem;
+};
+
+struct mpiosh_config_t *mpiosh_config_new(void);
+void mpiosh_config_free(struct mpiosh_config_t *config);
+
+const char *mpiosh_config_read_key(struct mpiosh_config_t *config,
+				   const char *group, const char *key);
+int mpiosh_config_read(struct mpiosh_config_t *config);
+int mpiosh_config_write(struct mpiosh_config_t *config);
 
 #endif 
 
-/* end of command.h */
+/* end of config.h */
