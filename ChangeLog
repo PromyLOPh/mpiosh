@@ -4,6 +4,7 @@
 	* libmpio/src/smartmedia.c (mpio_id2version): 
 	  added function
 	* spare area read of new chips should work now
+	* bumped version to 0.7.0RC2
 
 2003-07-17  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/smartmedia.c (mpio_id2mem): 
