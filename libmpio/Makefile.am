@@ -1,6 +1,8 @@
-INCLUDES=
+INCLUDES=@MPLIB_INCLUDE@
+CFLAGS=@CFLAGS@ @MPLIB_CFLAGS@ 
 
-lib_LTLIBRARIES=libmpio.la
+lib_LTLIBRARIES=libmpio.la 
+libmpio_la_LIBADD=@MPLIB_LIBADD@
 
 libmpio_la_SOURCES= \
 		mpio.c \

@@ -29,6 +29,31 @@ dnl --- checking for readline
 AC_CHECK_HEADER(readline/readline.h,,
     AC_ERROR(could not find readline header files))
 
+dnl --- include mplib if not disabled manually
+
+AC_DEFUN([TEST_MPLIB],
+[AC_ARG_WITH([mplib],
+             AC_HELP_STRING([--without-mplib],
+                            [disable use of mplib]),
+             [ac_cv_use_mplib=$withval], [ac_cv_use_mplib=yes])
+AC_CACHE_CHECK([whether to use mplib],
+               [ac_cv_use_mplib], [ac_cv_use_mplib=yes])])
+
+TEST_MPLIB
+
+if test "$ac_cv_use_mplib" = yes; then
+  AC_CONFIG_SUBDIRS(mplib)
+  MPLIB_INCLUDE=-I../mplib/src
+  MPLIB_CFLAGS=-DMPLIB
+  MPLIB_LIBADD=../mplib/src/libmp.la 
+  MPLIB_SUBDIR=mplib
+fi
+
+AC_SUBST(MPLIB_INCLUDE)
+AC_SUBST(MPLIB_CFLAGS)
+AC_SUBST(MPLIB_LIBADD)
+AC_SUBST(MPLIB_SUBDIR)
+
 dnl --- check for kernel version
 kernel_version=`uname -r 2>&1`
 echo -n "checking for kernel version ... "

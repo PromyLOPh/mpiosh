@@ -1,4 +1,9 @@
-2003-04-18  Markus Germeier  <mager@informatik.uni-bremen.de>
+2003-04-18  Markus Germeier  <mager@tzi.de>
+	* integration of mplib 1.0.1 in source tree
+	* update build environment to use mplib if not
+	  disabled manually
+	
+2003-04-18  Markus Germeier  <mager@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_health):
 	  libmpio/mpio.c (mpio_health): new functions to report
