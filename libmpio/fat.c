@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.24 2003/03/26 00:05:50 germeier Exp $
+ * $Id: fat.c,v 1.25 2003/04/04 22:08:53 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -437,7 +437,7 @@ mpio_fat_read (mpio_t *m, mpio_mem_t mem,
   if (mem == MPIO_INTERNAL_MEM) 
     {    
       sm = &m->internal;
-      if (mpio_io_spare_read(m, mem, 0, (sm->size / sm->chips), 0, sm->fat,
+      if (mpio_io_spare_read(m, mem, 0, sm->size, 0, sm->fat,
 			     (sm->fat_size * SECTOR_SIZE), progress_callback))
 	return 1;
       return 0;
