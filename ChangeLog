@@ -1,5 +1,7 @@
-2003-04-29  Markus Germeier  <mager@tzi.de>
+2003-04-30  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/ecc.c: cleaned up ECC code
 
+2003-04-29  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/ecc.c (mpio_ecc_256_check): 
 	  fix level for debug messages
 

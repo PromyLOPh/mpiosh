@@ -1,5 +1,5 @@
 /*
- * $Id: ecc.c,v 1.4 2003/04/29 15:11:35 germeier Exp $
+ * $Id: ecc.c,v 1.5 2003/04/30 21:23:04 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -23,15 +23,12 @@
 #include "ecc.h"
 #include "debug.h"
 
-BYTE get_bit(BYTE, int);
-
-/* TODO: fix correctable errors */
-
-inline BYTE 
-get_bit(BYTE d, int offset)
-{
-  return ((d >> offset) & 0x01 );
-}
+#define GET_BIT(d, o) (((d) >> (o)) & 0x01 )
+#define XOR_BITS(d, x1, x2, x3, x4) (GET_BIT((d), (x1)) ^ \
+                                     GET_BIT((d), (x2)) ^ \
+                                     GET_BIT((d), (x3)) ^ \
+                                     GET_BIT((d), (x4)))
+#define ADD_BITS(c, d1, d2, v) if ((c)) d1 ^= (v); else d2 ^= (v)
 
 int 
 mpio_ecc_256_gen(BYTE *data, BYTE *ecc)
@@ -68,96 +65,50 @@ mpio_ecc_256_gen(BYTE *data, BYTE *ecc)
   p1024=p1024_=0;
 
   /* vertical */
-  for (i=0; i<256; i++) {
-    
+  for (i=0; i<256; i++) {    
     /* p1, p1_ */
-    p1 ^= (get_bit(data[i], 7) ^
-	   get_bit(data[i], 5) ^
-	   get_bit(data[i], 3) ^
-	   get_bit(data[i], 1));
-    p1_^= (get_bit(data[i], 6) ^
-	   get_bit(data[i], 4) ^
-	   get_bit(data[i], 2) ^
-	   get_bit(data[i], 0));
+    p1 ^= XOR_BITS(data[i], 7, 5, 3, 1);
+    p1_^= XOR_BITS(data[i], 6, 4, 2, 0);
 
     /* p2, p2_ */
-    p2 ^= (get_bit(data[i], 7) ^
-	   get_bit(data[i], 6) ^
-	   get_bit(data[i], 3) ^
-	   get_bit(data[i], 2));
-    p2_^= (get_bit(data[i], 5) ^
-	   get_bit(data[i], 4) ^
-	   get_bit(data[i], 1) ^
-	   get_bit(data[i], 0));
+    p2 ^= XOR_BITS(data[i], 7, 6, 3, 2);
+    p2_^= XOR_BITS(data[i], 5, 4, 1, 0);
 
     /* p4, p4_ */
-    p4 ^= (get_bit(data[i], 7) ^
-	   get_bit(data[i], 6) ^
-	   get_bit(data[i], 5) ^
-	   get_bit(data[i], 4));
-    p4_^= (get_bit(data[i], 3) ^
-	   get_bit(data[i], 2) ^
-	   get_bit(data[i], 1) ^
-	   get_bit(data[i], 0));
+    p4 ^= XOR_BITS(data[i], 7, 6, 5, 4);
+    p4_^= XOR_BITS(data[i], 3, 2, 1, 0);
   }
 
   /* horizontal */
   for (i=0; i<8; i++) {
-    
-    for (j=0; j<256; j++) {
-  
+    for (j=0; j<256; j++) {  
       /* p08, p08_ */
-      if ((j & 0x01) == 0) 
-	p08_^= get_bit(data[j], i);
-      if ((j & 0x01) == 1) 
-	p08 ^= get_bit(data[j], i);
+      ADD_BITS(GET_BIT(j, 0), p08, p08_, GET_BIT(data[j], i));      
       
       /* p16, p16_ */
-      if (((j/2) & 0x01) == 0)
-	p16_^= get_bit(data[j], i);
-      if (((j/2) & 0x01) == 1)
-	p16^= get_bit(data[j], i);
+      ADD_BITS(GET_BIT(j, 1), p16, p16_, GET_BIT(data[j], i));      
 
       /* p32, p32_ */
-      if (((j/4) & 0x01) == 0)
-	p32_^= get_bit(data[j], i);
-      if (((j/4) & 0x01) == 1)
-	p32^= get_bit(data[j], i);
+      ADD_BITS(GET_BIT(j, 2), p32, p32_, GET_BIT(data[j], i));
 
       /* p64, p64_ */
-      if (((j/8) & 0x01) == 0)
-	p64_^= get_bit(data[j], i);
-      if (((j/8) & 0x01) == 1)
-	p64^= get_bit(data[j], i);
-
+      ADD_BITS(GET_BIT(j, 3), p64, p64_, GET_BIT(data[j], i));
 
       /* p0128, p0128_ */
-      if (((j/16) & 0x01) == 0) 
-	p0128_^= get_bit(data[j], i);
-      if (((j/16) & 0x01) == 1) 
-	p0128 ^= get_bit(data[j], i);
+      ADD_BITS(GET_BIT(j, 4), p0128, p0128_, GET_BIT(data[j], i));
       
       /* p0256, p0256_ */
-      if (((j/32) & 0x01) == 0)
-	p0256_^= get_bit(data[j], i);
-      if (((j/32) & 0x01) == 1)
-	p0256^= get_bit(data[j], i);
+      ADD_BITS(GET_BIT(j, 5), p0256, p0256_, GET_BIT(data[j], i));
 
       /* p0512, p0512_ */
-      if (((j/64) & 0x01) == 0)
-	p0512_^= get_bit(data[j], i);
-      if (((j/64) & 0x01) == 1)
-	p0512^= get_bit(data[j], i);
+      ADD_BITS(GET_BIT(j, 6), p0512, p0512_, GET_BIT(data[j], i));
 
       /* p1024, p1024_ */
-      if (((j/128) & 0x01) == 0)
-	p1024_^= get_bit(data[j], i);
-      if (((j/128) & 0x01) == 1)
-	p1024^= get_bit(data[j], i);
-
+      ADD_BITS(GET_BIT(j, 7), p1024, p1024_, GET_BIT(data[j], i));
     }
   }  
 
+  /* calculate actual ECC */
   ecc[0]=~((p64 << 7) | (p64_ << 6) | 
 	   (p32 << 5) | (p32_ << 4) |
 	   (p16 << 3) | (p16_ << 2) |
@@ -186,51 +137,54 @@ mpio_ecc_256_check(BYTE *data, BYTE *ecc)
   int v, i;
   
   mpio_ecc_256_gen(data, own_ecc);
-  if ((own_ecc[0]^ecc[0])|
-      (own_ecc[1]^ecc[1])|
-      (own_ecc[2]^ecc[2])) {
-    debugn(2, "ECC %2x %2x %2x vs. %2x %2x %2x\n", 
-	  ecc[0], ecc[1], ecc[2], own_ecc[0], own_ecc[1], own_ecc[2]);
-    check[0] = (ecc[0] ^ own_ecc[0]);
-    check[1] = (ecc[1] ^ own_ecc[1]);
-    check[2] = (ecc[2] ^ own_ecc[2]);
+
+  check[0] = (ecc[0] ^ own_ecc[0]);
+  check[1] = (ecc[1] ^ own_ecc[1]);
+  check[2] = (ecc[2] ^ own_ecc[2]);
+
+  /* if ECC is wrong, try to fix one-bit errors */
+  if (check[0] | check[1] | check[2]) {
+    debugn(3, "ECC %2x %2x %2x vs. %2x %2x %2x\n", 
+	   ecc[0], ecc[1], ecc[2], own_ecc[0], own_ecc[1], own_ecc[2]);
     
     v=1;
     for(i=0; i<4; i++)
       {
-	if (!((get_bit(check[1], i*2) ^
-	       (get_bit(check[1], i*2+1)))))
+	if (!( (GET_BIT(check[1], i*2) ^
+	       (GET_BIT(check[1], i*2+1)))))
 	  v=0;
-	if (!((get_bit(check[0], i*2) ^
-	       (get_bit(check[0], i*2+1)))))
+	if (!( (GET_BIT(check[0], i*2) ^
+	       (GET_BIT(check[0], i*2+1)))))
 	  v=0;
       }
     for(i=1; i<4; i++)
       {
-	if (!((get_bit(check[2], i*2) ^
-	       (get_bit(check[2], i*2+1)))))
+	if (!( (GET_BIT(check[2], i*2) ^
+	       (GET_BIT(check[2], i*2+1)))))
 	  v=0;
       }
     
     if (v) {
-      debugn(2, "correctable error detected ... fixing the bit\n");
-      line = get_bit(check[1], 7) * 128 +
-	get_bit(check[1], 5) * 64  +
-	get_bit(check[1], 3) * 32  +
-	get_bit(check[1], 1) * 16  +
-	get_bit(check[0], 7) * 8   +
-	get_bit(check[0], 5) * 4   +
-	get_bit(check[0], 3) * 2   +
-	get_bit(check[0], 1);
-      col  = get_bit(check[2], 7) * 4 +
-	get_bit(check[2], 5) * 2 +
-	get_bit(check[2], 3);
-      debugn(3, "error in line: %d , col %d\n", line, col);
-      debugn(3, "defect byte is: %02x\n", data[line]);
+      debugn(0, "correctable error detected ... fixing the bit\n");
+      line = 
+	GET_BIT(check[1], 7) * 128 +
+	GET_BIT(check[1], 5) * 64  +
+	GET_BIT(check[1], 3) * 32  +
+	GET_BIT(check[1], 1) * 16  +
+	GET_BIT(check[0], 7) * 8   +
+	GET_BIT(check[0], 5) * 4   +
+	GET_BIT(check[0], 3) * 2   +
+	GET_BIT(check[0], 1);
+      col  = 
+	GET_BIT(check[2], 7) * 4 +
+	GET_BIT(check[2], 5) * 2 +
+	GET_BIT(check[2], 3);
+      debugn(3, "error in line: %d , col %d (byte is: %02x)\n", 
+	     line, col, data[line]);
       data[line] ^= ( 1 << col);
-      debugn(3, "fixed  byte is: %02x\n", data[line]);
+      debugn(3, "fixed byte is: %02x\n", data[line]);
     } else {				       
-      debugn(2, "uncorrectable error detected. Sorry you lose!\n");
+      debugn(0, "uncorrectable error detected. Sorry, you lose!\n");
       return 1;
     }
   }
