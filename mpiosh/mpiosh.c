@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.11 2002/09/15 12:03:23 germeier Exp $
+ * $Id: mpiosh.c,v 1.12 2002/09/15 14:55:58 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -109,9 +109,9 @@ mpiosh_cmd_t commands[] = {
   { "format", NULL,
     "format current memory card",
     mpiosh_cmd_format },
-  { "switch", "<file1> <file2>",
-    "switches the order of two files",
-    mpiosh_cmd_switch },
+/*   { "switch", "<file1> <file2>", */
+/*     "switches the order of two files", */
+/*     mpiosh_cmd_switch }, */
   { "ldir", NULL,
     "list local directory",
     mpiosh_cmd_ldir },

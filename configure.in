@@ -26,7 +26,18 @@ echo $kernel_version
 if test "$_k_verc_fail" ; then
   echo "  Your kernel version is to old."
   echo "  Please update your system to a kernel version of 2.2.x or higher."
+  AC_ERROR("too old")
 fi
+
+MODULE_PATH="/lib/modules/${kernel_version}"
+if test -d "${MODULE_PATH}/kernel/drivers/usb"; then
+    MODULE_PATH="${MODULE_PATH}/kernel/drivers/usb"
+else
+    MODULE_PATH="${MODULE_PATH}/misc"
+fi
+AC_MSG_RESULT(Using module path ${MODULE_PATH}.)
+
+AC_SUBST(MODULE_PATH)
 
 dnl Checks for header files.
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #------------------------------
 # Create device file for MPIO
 #------------------------------
@@ -9,11 +9,16 @@ MINOR=70
 PERM=666
 OWNER=root.root
 
-if [ -a $DEVFILE ]; then
-   rm -f $DEVFILE
+if test -c $DEVFILE; then
+    echo -n "Removing $DEVFILE ... "
+    rm -f $DEVFILE
+    echo "done"
 fi
-echo -n "Creating $DEVFILE..."
-mknod -m $PERM $DEVFILE c $MAJOR $MINOR
-chown $OWNER $DEVFILE
-echo " done"
+
+if test "$1" != "-r"; then
+    echo -n "Creating $DEVFILE ... "
+    mknod -m $PERM $DEVFILE c $MAJOR $MINOR
+    chown $OWNER $DEVFILE
+    echo "done"
+fi
 
