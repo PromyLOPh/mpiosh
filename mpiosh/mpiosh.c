@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.21 2002/10/29 20:03:35 crunchy Exp $
+ * $Id: mpiosh.c,v 1.22 2002/11/04 16:25:17 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -94,10 +94,7 @@ main(int argc, char *argv[]) {
   
   /* init readline and history */
   mpiosh_readline_init();
-  using_history();
-  
-  debug_init();
-  
+  debug_init();  
   mpiosh_init();
 
   if (!isatty(fileno(stdin))) {

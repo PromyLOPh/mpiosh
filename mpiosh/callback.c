@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.30 2002/10/29 20:03:34 crunchy Exp $
+ * $Id: callback.c,v 1.31 2002/11/04 16:25:17 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -237,6 +237,11 @@ mpiosh_cmd_quit(char *args[])
 
   UNUSED(args);
   
+  if (mpiosh.config) {
+    mpiosh_config_write(mpiosh.config);
+    mpiosh_config_free(mpiosh.config);
+  }
+
   exit(0);
 }
 

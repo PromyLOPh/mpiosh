@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: config.c,v 1.1 2002/10/29 20:03:35 crunchy Exp $
+ * $Id: config.c,v 1.2 2002/11/04 16:25:17 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -32,8 +32,7 @@ struct mpiosh_config_t *
 mpiosh_config_new(void)
 {
   struct mpiosh_config_t * cfg = malloc(sizeof(struct mpiosh_config_t));
-  char *filename;
-  char *tmp;
+  char *filename, *tmp;
   struct stat st;
   
   cfg->prompt_int = cfg->prompt_ext = NULL;
@@ -48,6 +47,8 @@ mpiosh_config_new(void)
   if (stat(tmp, &st) != -1)
     cfg->handle_global =
       cfg_handle_new_with_filename(tmp, 1);
+  else
+    cfg->handle_global = 0;
 
   free(tmp), free(filename);
   filename = malloc(strlen(CONFIG_USER) + strlen(CONFIG_FILE) + 1);
@@ -63,6 +64,18 @@ mpiosh_config_new(void)
     cfg->handle_user =
       cfg_handle_new_with_filename(tmp, 0);
     
+  free(tmp), free(filename);
+
+  /* initialise history */
+  using_history();
+
+  filename = malloc(strlen(CONFIG_USER) + strlen(CONFIG_HISTORY) + 1);
+  filename[0] = '\0';
+  strcat(filename, CONFIG_USER);
+  strcat(filename, CONFIG_HISTORY);
+  tmp = cfg_resolve_path(filename);
+
+  read_history(tmp);
   free(tmp), free(filename);
 
   return cfg;
@@ -87,7 +100,9 @@ mpiosh_config_read_key(struct mpiosh_config_t *config, const char *group,
 void
 mpiosh_config_free(struct mpiosh_config_t *config)
 {
-  cfg_close(config->handle_global);
+  if (config->handle_global)
+    cfg_close(config->handle_global);
+
   cfg_close(config->handle_user);
   free(config->prompt_int);
   free(config->prompt_ext);
@@ -141,6 +156,8 @@ mpiosh_config_write(struct mpiosh_config_t *config)
   free(path);
   
   if (config->handle_user) {
+    char *tmp, *filename;
+
     cfg_key_set_value(config->handle_user,
 		      "mpiosh", "prompt_int", config->prompt_int);
     cfg_key_set_value(config->handle_user,
@@ -153,6 +170,17 @@ mpiosh_config_write(struct mpiosh_config_t *config)
 			"mpiosh", "default_mem", "internal");
 
     cfg_save(config->handle_user, 0);
+
+    /* save history */
+    filename = malloc(strlen(CONFIG_USER) + strlen(CONFIG_HISTORY) + 1);
+    filename[0] = '\0';
+    strcat(filename, CONFIG_USER);
+    strcat(filename, CONFIG_HISTORY);
+    tmp = cfg_resolve_path(filename);
+
+    printf("writing history to file %s\n", filename);
+    write_history(tmp);
+    free(tmp), free(filename);
   }
   
   return 1;

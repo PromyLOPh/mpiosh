@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.5 2002/10/29 20:03:35 crunchy Exp $
+ * $Id: global.c,v 1.6 2002/11/04 16:25:17 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -37,7 +37,7 @@ int mpiosh_cancel_ack		= 0;
 const char *CONFIG_GLOBAL	= SYSCONFDIR "/mpio/";
 const char *CONFIG_USER		= "~/.mpio/";
 const char *CONFIG_FILE		= "mpioshrc";
-const char *CONFIG_HISTORY	= "~/.mpio/mpiosh_history";
+const char *CONFIG_HISTORY	= "history";
 
 /* prompt strings */
 const char *PROMPT_INT		= "\033[;1mmpio <i>\033[m ";
