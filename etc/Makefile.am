@@ -1,1 +1,3 @@
-sysconf_DATA = mpio/mpioshrc
+sysconfdir=$(sysconfdir)/mpio
+
+sysconf_DATA = etc/mpioshrc

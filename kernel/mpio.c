@@ -569,7 +569,7 @@ void usb_show_string(struct usb_device *dev, char *id, int index)
 	kfree(buf);
 }
 
-void usb_dump_urb (purb_t purb)
+void usb_dump_urb (struct urb * purb)
 {
 	printk ("urb                   :%p\n", purb);
 	printk ("next                  :%p\n", purb->next);
