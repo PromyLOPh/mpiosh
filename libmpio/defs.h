@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.34 2004/04/23 19:21:07 germeier Exp $
+ * $Id: defs.h,v 1.35 2004/05/30 16:28:51 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -65,6 +65,10 @@ typedef enum { GET_VERSION      = 0x01,
                GET_SECTOR       = 0x06,
                GET_SPARE_AREA   = 0x07,
                PUT_BLOCK        = 0x08,
+	       MMC_GET_BLOCK    = 0x11,
+	       MMC_GET_BIG_BLOCK= 0x12,
+	       MMC_WRITE_SECTOR = 0x18,
+	       MMC_WRITE_CLUSTER= 0x19,
 	       PUT_MEGABLOCK    = 0x30,
                MODIFY_FIRMWARE  = 0xa0 } mpio_cmd_t; 
 
@@ -264,6 +268,12 @@ typedef struct {
 
   /* special "features" */
   BYTE recursive_directory;
+
+  /* OK sue me, we can also handle the MMCs with this */
+  BYTE    mmc;                   /* Added for external MMC memory modules */
+  int     mmc_sector_size;       /* Bytes/sector */
+  BYTE    mmc_cluster_size;      /* Sectors/Cluster */
+  int     mmc_addressing_offset; /* Offset used in addressing - varies for mmc chip size */
 
 } mpio_smartmedia_t;
 

@@ -9,6 +9,7 @@ libmpio_la_SOURCES= \
 		src/io.c \
 		src/debug.c \
 		src/smartmedia.c \
+		src/mmc.c \
 		src/directory.c \
 		src/fat.c \
 		src/ecc.c \
@@ -27,6 +28,7 @@ noinst_HEADERS= \
 		debug.h \
 		src/io.h \
 		src/smartmedia.h \
+		src/mmc.h \
 		src/directory.h \
 		src/fat.h \
 		src/ecc.h \

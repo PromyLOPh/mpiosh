@@ -1,5 +1,5 @@
 /*
- * $Id: fat.c,v 1.5 2003/10/19 21:06:35 germeier Exp $
+ * $Id: fat.c,v 1.6 2004/05/30 16:28:52 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -211,11 +211,11 @@ mpio_pbr_eval(mpio_smartmedia_t *sm)
 		    *(sm->pbr+0x20));
   
   /* 128 MB need 2 Bytes instead of 1.5 */
-  if (sm->size != 128)
+  if (sm->size >= 128)
     {
-      temp = ((total_sector / 0x20 * 0x03 / 0x02 / 0x200) + 0x01);   
-    } else {       
       temp = ((total_sector / 0x20 * 0x02 / 0x200) + 0x01);   
+    } else {       
+      temp = ((total_sector / 0x20 * 0x03 / 0x02 / 0x200) + 0x01);   
     }   
   
   sm->fat_offset = sm->pbr_offset + 0x01;
@@ -541,7 +541,7 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
     }
     
 
-  if (sm->size == 128) {
+  if (sm->size >= 128) {
     /* 2 Byte per entry */
     e = f->entry * 2;
     v = sm->fat[e + 1] * 0x100 + sm->fat[e];
@@ -578,7 +578,7 @@ mpio_fatentry_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, WORD value)
       
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
-  if (sm->size == 128) 
+  if (sm->size >= 128) 
     {
       /* 2 Byte per entry */
       e = f->entry * 2;
@@ -753,7 +753,7 @@ mpio_fatentry_next_entry(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
       sm       = &m->external;
       f->entry = value;
       
-      if (sm->size==128) 
+      if (sm->size>=128) 
 	{
 	  endvalue = 0xfff8;
 	} else {
@@ -791,7 +791,7 @@ mpio_fat_clear(mpio_t *m, mpio_mem_t mem)
     sm->fat[1] = 0xff;
     sm->fat[2] = 0xff;
     /* for FAT 16 */
-    if (sm->size == 128)      
+    if (sm->size >= 128)      
       sm->fat[3] = 0xff;
   }
   

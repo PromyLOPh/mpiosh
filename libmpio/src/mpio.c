@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.15 2004/04/24 16:09:58 germeier Exp $
+ * $Id: mpio.c,v 1.16 2004/05/30 16:28:52 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
@@ -160,6 +160,7 @@ mpio_init_internal(mpio_t *m)
   BYTE i_offset         = 0x18;
 
   /* init main memory parameters */
+  sm->mmc          = 0;
   sm->manufacturer = m->version[i_offset];
   sm->id           = m->version[i_offset + 1];
   sm->chips        = 1;
@@ -249,14 +250,40 @@ mpio_init_external(mpio_t *m)
   mpio_smartmedia_t *sm = &(m->external);
   BYTE e_offset = 0x20;
 
+  /* these players have a MMC/SD slot */
+  if ((m->model != MPIO_MODEL_VP_02) &&
+      (m->model != MPIO_MODEL_FL100)) {
+    debugn(0, "Trying to detect external MMC. This is work in progress. BEWARE!!\n");
+    debugn(0, "Please report your findings to mpio-devel@lists.sourceforge.net\n");
+    debugn(0, "and include the following information block\n");
+    hexdumpn(0, m->version, 64);
+
+    mpio_mmc_detect_memory(m, sm);
+    
+    if (sm->size) {
+      debugn(0, "You are lucky! ;-) I found a %d MB MMC card.\n", sm->size);
+      debugn(0, "disabling memory, because low-level routines \n"
+	     "are not integrated, yet. Please stay tuned.\n");
+      sm->size = 0;
+    } else {
+      debugn(0, "I'm sorry, I did not detect a MMC card.\n"
+	     "If you think I should have, please report this to the mpio-devel list.\n");
+    }
+    
+    return;
+  } else {
+    sm->mmc=0;
+    sm->manufacturer = 0;
+    sm->id = 0;
+    sm->chips = 0;
+    sm->size = 0;
+  }
+
   /* heuristic to find the right offset for the external memory */
   while((e_offset < 0x3a) && !(mpio_id_valid(m->version[e_offset])))
     e_offset++;
   
-  if ((mpio_id_valid(m->version[e_offset])) &&
-      (m->model != MPIO_MODEL_VP_02) &&
-      (m->model != MPIO_MODEL_FL100)) /* ignore external memory ATM until
-					 we know how to support it! */
+  if ((mpio_id_valid(m->version[e_offset]))) 
     {
       sm->manufacturer = m->version[e_offset];
       sm->id = m->version[e_offset + 1];
@@ -417,11 +444,11 @@ mpio_init(mpio_callback_init_t progress_callback)
   mpio_init_external(new_mpio);
 
   /* read FAT/spare area */
-  if (new_mpio->internal.id)
+  if (new_mpio->internal.size)
     mpio_fat_read(new_mpio, MPIO_INTERNAL_MEM, progress_callback);
   
   /* read the spare area (for block mapping) */
-  if (new_mpio->external.id)
+  if (new_mpio->external.size)
     {      
       sm = &new_mpio->external;  
       mpio_io_spare_read(new_mpio, MPIO_EXTERNAL_MEM, 0,
@@ -523,28 +550,38 @@ mpio_get_info(mpio_t *m, mpio_info_t *info)
 	   m->firmware.day, m->firmware.month, m->firmware.year);
   snprintf(info->model, max, "%s", mpio_model_name[m->model]);
   
-  if (!m->internal.id) 
+  if (!m->internal.size) 
     {
       snprintf(info->mem_internal, max, "not available");
     } else {      
-      if (m->internal.chips == 1) 
-	{    
-	  snprintf(info->mem_internal, max, "%3dMB (%s)", 
-		   mpio_id2mem(m->internal.id), 
-		   mpio_id2manufacturer(m->internal.manufacturer));
-	} else {
-	  snprintf(info->mem_internal, max, "%3dMB (%s) - %d chips", 
-		   mpio_id2mem(m->internal.id)*m->internal.chips, 
-		   mpio_id2manufacturer(m->internal.manufacturer),
-		   m->internal.chips);
-	}
+      if (m->internal.mmc) {
+	snprintf(info->mem_internal, max, "%3dMB (MMC)", 
+		 m->internal.size);
+      } else {
+	if (m->internal.chips == 1) 
+	  {    
+	    snprintf(info->mem_internal, max, "%3dMB (%s)", 
+		     mpio_id2mem(m->internal.id), 
+		     mpio_id2manufacturer(m->internal.manufacturer));
+	  } else {
+	    snprintf(info->mem_internal, max, "%3dMB (%s) - %d chips", 
+		     mpio_id2mem(m->internal.id)*m->internal.chips, 
+		     mpio_id2manufacturer(m->internal.manufacturer),
+		     m->internal.chips);
+	  }
+      }
     }
   
-  if (m->external.id)
+  if (m->external.size)
     {      
-      snprintf(info->mem_external, max, "%3dMB (%s)", 
-	       mpio_id2mem(m->external.id), 
-	       mpio_id2manufacturer(m->external.manufacturer));
+      if (m->external.mmc) {
+	snprintf(info->mem_external, max, "%3dMB (MMC)", 
+		 m->external.size);
+      } else {	
+	snprintf(info->mem_external, max, "%3dMB (%s)", 
+		 mpio_id2mem(m->external.id), 
+		 mpio_id2manufacturer(m->external.manufacturer));
+      }
     } else {
       snprintf(info->mem_external, max, "not available");
     }
