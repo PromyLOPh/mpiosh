@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.h,v 1.12 2002/10/26 13:07:43 germeier Exp $
+ * $Id: io.h,v 1.13 2003/04/04 22:03:05 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -65,7 +65,7 @@ WORD mpio_zone_block_get_logical(mpio_t *, mpio_cmd_t, DWORD);
 
 /* real I/O */
 int	mpio_io_set_cmdpacket(mpio_t *, mpio_cmd_t, mpio_mem_t, 
-			      DWORD, BYTE, BYTE, BYTE *);
+			      DWORD, WORD, BYTE, BYTE *);
 
 int	mpio_io_bulk_read (int, BYTE *, int);
 int	mpio_io_bulk_write(int, BYTE *, int);
@@ -85,7 +85,7 @@ int	mpio_io_block_delete(mpio_t *, mpio_mem_t, mpio_fatentry_t *);
 int	mpio_io_block_delete_phys(mpio_t *, BYTE, DWORD);
 
 /* */
-int	mpio_io_spare_read  (mpio_t *, BYTE, DWORD, BYTE, BYTE, BYTE *, int,
+int	mpio_io_spare_read  (mpio_t *, BYTE, DWORD, WORD, BYTE, BYTE *, int,
 			     mpio_callback_init_t);
 
 #ifdef __cplusplus

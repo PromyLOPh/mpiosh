@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.23 2003/03/15 14:34:44 germeier Exp $
+ * $Id: io.c,v 1.24 2003/04/04 22:03:05 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -473,7 +473,7 @@ mpio_zone_block_get_logical(mpio_t *m, mpio_cmd_t mem, DWORD pblock)
 
 int
 mpio_io_set_cmdpacket(mpio_t *m, mpio_cmd_t cmd, mpio_mem_t mem, DWORD index,
-		      BYTE size, BYTE wsize, BYTE *buffer) 
+		      WORD size, BYTE wsize, BYTE *buffer) 
 {
   BYTE memory;
 
@@ -963,7 +963,7 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
  */
 
 int
-mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, BYTE size,
+mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, WORD size,
 		   BYTE wsize, BYTE *output, int toread,
 		   mpio_callback_init_t progress_callback)
 {
@@ -983,7 +983,8 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, BYTE size,
     {
       if (mem == MPIO_INTERNAL_MEM) 
 	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, (1 << (chip-1)), 
-			      index, size, wsize, cmdpacket);
+			      index, (size / sm->chips), 
+			      wsize, cmdpacket);
       if (mem == MPIO_EXTERNAL_MEM) 
 	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, mem, index, size, 
 			      wsize, cmdpacket);
