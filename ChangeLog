@@ -1,3 +1,8 @@
+2003-06-06  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/io.c (model2externalmem): added model
+	  FD100 for external memory support.
+	  reported by Thorsten to work this way
+
 2003-05-19  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/mpio.c (mpio_file_put_real): 
 	  fixed strncat bug found by Sergey. Thanks!
