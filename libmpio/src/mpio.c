@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.8 2003/09/22 19:15:37 germeier Exp $
+ * $Id: mpio.c,v 1.9 2003/09/23 21:32:34 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -267,7 +267,7 @@ mpio_init_external(mpio_t *m)
 	}
       
       /* for reading the spare area later! */
-      sm->max_blocks  = sm->size / 16 * 1024;      /* 1 cluster == 16 KB */
+      sm->max_blocks  = (sm->size * 1024) / 16 ;      /* 1 cluster == 16 KB */
       sm->spare       = malloc(sm->max_blocks * 0x10);
     }
 
