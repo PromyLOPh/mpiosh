@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.3 2002/09/03 21:20:53 germeier Exp $
+ * $Id: io.c,v 1.4 2002/09/09 13:29:52 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -63,8 +63,11 @@ cluster2block(int mem, int sector)
 
   if (mem == 32) 
     {
-      if (sector >= 998) 
-	a += 22;
+      /* I'm so large in *not* knowing! */
+      if (sector >= 830)
+      	a++;
+      if (a >= 1001) 
+	a += 21;
     }  
 
   if (mem == 64) 
@@ -354,10 +357,11 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
   /* check ECC Area information */
   if (mem==MPIO_EXTERNAL_MEM) 
     {    
-      mpio_ecc_256_check (recvbuff,
-			  (recvbuff + SECTOR_SIZE + 13));
-      mpio_ecc_256_check ((recvbuff + (SECTOR_SIZE / 2)),
-			  (recvbuff + SECTOR_SIZE + 8));
+      if (mpio_ecc_256_check (recvbuff,
+			      (recvbuff + SECTOR_SIZE + 13)) ||
+          mpio_ecc_256_check ((recvbuff + (SECTOR_SIZE / 2)),
+			      (recvbuff + SECTOR_SIZE + 8))    )
+      	debug ("ECC error @ (%02x : %06x)\n", mem, index);
     }
 
   if (mem==MPIO_INTERNAL_MEM) 
@@ -489,8 +493,8 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
   if (mem == MPIO_INTERNAL_MEM) 
     {
       sm = &m->internal;
-      hexdump(&f->entry, 4);
-      hexdump(&f->hw_address, 4);
+      hexdump((char *)&f->entry, 4);
+      hexdump((char *)&f->hw_address, 4);
       chip    = f->hw_address / 0x1000000;    
       address = f->hw_address & 0x0ffffff;
     }
@@ -537,11 +541,14 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
     {
       /* check ECC Area information */
       if (mem==MPIO_EXTERNAL_MEM) {      
-	mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS)),                   
-			    ((recvbuff +(i * SECTOR_TRANS) + SECTOR_SIZE +13)));
-	
-	mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS) + (SECTOR_SIZE / 2)),
-			    ((recvbuff +(i * SECTOR_TRANS) + SECTOR_SIZE + 8)));
+	if (mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS)),
+				((recvbuff +(i * SECTOR_TRANS) 
+				  + SECTOR_SIZE +13))) ||	
+	    mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS) 
+				 + (SECTOR_SIZE / 2)),
+				((recvbuff +(i * SECTOR_TRANS) 
+				  + SECTOR_SIZE + 8))))
+	  debug ("ECC error @ (%02x : %06x)\n", chip, address);
 	
       }
       

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.4 2002/09/08 23:22:48 germeier Exp $
+ * $Id: mpio.c,v 1.5 2002/09/09 13:29:52 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -181,13 +181,18 @@ mpio_init(void)
 int
 mpio_memory_free(mpio_t *m, mpio_mem_t mem, int *free)
 {
-  *free=mpio_fat_free_clusters(m, mem);
   if (mem==MPIO_INTERNAL_MEM) {    
+    *free=mpio_fat_free_clusters(m, mem);    
     return (m->internal.geo.SumSector 
 	    * SECTOR_SIZE / 1000 * m->internal.chips);    
   }
   
   if (mem==MPIO_EXTERNAL_MEM) {
+    if (!m->external.size) {
+      *free=0;
+      return 0;
+    }    
+    *free=mpio_fat_free_clusters(m, mem);    
     return (m->external.geo.SumSector * SECTOR_SIZE / 1000);    
   }
 
@@ -230,7 +235,7 @@ mpio_get_info(mpio_t *m, mpio_info_t *info)
 	       m->internal.chips);
     }
   
-  if (m->internal.id)
+  if (m->external.id)
     {      
       snprintf(info->firmware_mem_external, max, "%3dMB (%s)", 
 	       mpio_id2mem(m->external.id), 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: ecc.c,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: ecc.c,v 1.2 2002/09/09 13:29:52 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -193,6 +193,8 @@ mpio_ecc_256_check(BYTE *data, BYTE *ecc)
     debugn(2, "ECC Correction code not in place yet, Sorry\n");
     debugn(3, "got   ECC: %2x %2x %2x\n", ecc[0], ecc[1], ecc[2]);
     debugn(3, "calc. ECC: %2x %2x %2x\n", own_ecc[0], own_ecc[1], own_ecc[2]);
+
+    return 1;
   }
   
   return 0;  
