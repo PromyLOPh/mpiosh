@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.21 2002/10/12 18:31:45 crunchy Exp $
+ * $Id: callback.c,v 1.22 2002/10/12 20:06:22 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -100,8 +100,15 @@ mpiosh_cmd_help(char *args[])
 	printf(" %s\n", cmd->args);
       else
 	printf("\n");
+      if (cmd->aliases) {
+	char **go = cmd->aliases;
+	printf(" alias:\n  ");
+	while(*go) printf(( *(go+1) ? "%s" : "%s, "), *go++);
+	printf("\n");
+      }
+      
       if (cmd->info)
-	printf("%s\n", cmd->info);
+	printf(" description:\n%s\n", cmd->info);
       else
 	printf("\n");
     }

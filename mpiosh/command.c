@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: command.c,v 1.1 2002/10/12 18:31:45 crunchy Exp $
+ * $Id: command.c,v 1.2 2002/10/12 20:06:22 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -74,7 +74,17 @@ mpiosh_command_find(char *line)
       if (line[strlen(cmd->cmd)] == ' ' ||
 	  line[strlen(cmd->cmd)] == '\0') 
 	return cmd;
+    } else if (cmd->aliases) {
+      char **go = cmd->aliases;
+      while (*go) {
+	if ((strstr(line, *go) == line) &&
+	    ((line[strlen(*go)] == ' ') || (line[strlen(*go)] == '\0'))) {
+	  return cmd;
+	}
+	go++;
+      }
     }
+    
     cmd++;
   }
 

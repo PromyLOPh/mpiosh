@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: readline.c,v 1.1 2002/10/12 18:31:45 crunchy Exp $
+ * $Id: readline.c,v 1.2 2002/10/12 20:06:22 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -41,7 +41,9 @@ mpiosh_readline_init(void)
 char *
 mpiosh_readline_comp_cmd(const char *text, int state)
 {
-  static mpiosh_cmd_t *cmd = NULL;
+  static mpiosh_cmd_t *	cmd = NULL;
+  static char **	alias = NULL;
+  
   char *cmd_text = NULL;
   
   if (state == 0) {
@@ -49,12 +51,30 @@ mpiosh_readline_comp_cmd(const char *text, int state)
   }
   
   while (cmd->cmd) {
-    if ((*text == '\0') || (strstr(cmd->cmd, text) == cmd->cmd)) {
-      cmd_text = strdup(cmd->cmd);
-      cmd++;
-      break;
+    if (!alias) {
+      if ((*text == '\0') || (strstr(cmd->cmd, text) == cmd->cmd)) {
+	cmd_text = strdup(cmd->cmd);
+	if (cmd->aliases) alias = cmd->aliases;
+	else cmd++;
+	break;
+      }
+      if (cmd->aliases) alias = cmd->aliases;
+      else cmd++;
+    } else {
+      int break_it = 0;
+
+      while (*alias) {
+	if (strstr(*alias, text) == *alias) {
+	  cmd_text = strdup(*alias);
+	  alias++;
+	  break_it = 1;
+	  break;
+	}
+	alias++;
+      }
+      if (break_it) break;
+      if (*alias == NULL) cmd++, alias = NULL;
     }
-    cmd++;
   }
 
   return cmd_text;
