@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.12 2002/09/19 20:46:02 crunchy Exp $
+ * $Id: callback.c,v 1.13 2002/09/19 21:19:02 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -287,9 +287,15 @@ mpiosh_cmd_mget(char *args[])
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
 	  printf("getting '%s' ... \n", fname);
-	  size = mpio_file_get(mpiosh.dev, mpiosh.card,
-			       fname, mpiosh_callback_put);
-	  if (mpiosh_cancel) break;
+	  if ((size = mpio_file_get(mpiosh.dev, mpiosh.card,
+				    fname, mpiosh_callback_put)) == -1) {
+	      mpio_perror("error");
+	      break;
+	    }
+	  if (mpiosh_cancel) {
+	    debug("operation cancelled by user\n");
+	    break;
+	  }
 	  printf("\n");
 	} else {
 	  regerror(error, &regex, errortext, 100);
@@ -361,7 +367,11 @@ mpiosh_cmd_mput(char *args[])
 	      break;
 	    }
 	    
-	    if (mpiosh_cancel) break;
+	    if (mpiosh_cancel) {
+	      debug("operation cancelled by user\n");
+	      break;
+	    }
+	    
 	    printf("\n");
 	    written=1; /* we did write something, so do mpio_sync afterwards */
 	  } else {
