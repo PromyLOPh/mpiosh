@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.49 2003/04/11 21:42:57 germeier Exp $
+ * $Id: mpio.c,v 1.50 2003/04/11 22:53:10 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -91,6 +91,12 @@ static mpio_error_t mpio_errors[] = {
     "The selected directory name is not allowed." },
   { MPIO_ERR_DIR_NOT_EMPTY,
     "The selected directory is not empty." },
+  { MPIO_ERR_DEVICE_NOT_READY,
+    "Could not open " MPIO_DEVICE "\n"
+    "Verify that the mpio module is loaded and "
+    "your MPIO is\nconnected and powered up.\n" },
+  { MPIO_ERR_OUT_OF_MEMORY,
+    "Out of Memory." },
   { MPIO_ERR_INT_STRING_INVALID,
     "Internal Error: Supported is invalid!" } 	
 };
@@ -277,11 +283,7 @@ mpio_init(mpio_callback_init_t progress_callback)
   new_mpio->fd = open(MPIO_DEVICE, O_RDWR);
 
   if (new_mpio->fd < 0) {
-    
-    debug("Could not open %s\n"
-	  "Verify that the mpio module is loaded and "
-	  "your MPIO is\nconnected and powered up.\n\n" , MPIO_DEVICE);
-    
+    _mpio_errno = MPIO_ERR_DEVICE_NOT_READY;
     return NULL;    
   }
   
@@ -604,7 +606,8 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     utime(filename, &utbuf);
 
   } else {
-    debug("unable to locate the file: %s\n", filename);
+    debugn(2, "unable to locate the file: %s\n", filename);
+    _mpio_errno=MPIO_ERR_FILE_NOT_FOUND;
   }
 
   return (fsize-filesize);
@@ -1053,7 +1056,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
       (strcmp(filename, ".") == 0))
     {
       debugn(2, "directory name not allowed: %s\n", filename);
-      return MPIO_ERR_DIR_NAME_ERROR;    
+      MPIO_ERR_RETURN(MPIO_ERR_DIR_NAME_ERROR);
     }
 
   /* find file */
@@ -1072,7 +1075,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 	if (mpio_directory_is_empty(m, mem, sm->cdir) != MPIO_OK)
 	  {
 	    mpio_directory_cd(m, mem, "..");
-	    return MPIO_ERR_DIR_NOT_EMPTY;      
+	    MPIO_ERR_RETURN(MPIO_ERR_DIR_NOT_EMPTY);
 	  } else {	    
 	    mpio_directory_cd(m, mem, "..");
 	  }
@@ -1115,7 +1118,8 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     free(f);
   
   } else {
-    debug("unable to locate the file: %s\n", filename);
+    debugn(2, "unable to locate the file: %s\n", filename);
+    MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
   }
 
   mpio_dentry_delete(m, mem, filename);

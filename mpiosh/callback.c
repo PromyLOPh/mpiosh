@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.36 2003/04/11 21:42:58 germeier Exp $
+ * $Id: callback.c,v 1.37 2003/04/11 22:53:10 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -240,10 +240,13 @@ mpiosh_cmd_open(char *args[])
   UNUSED(args);
   
   mpiosh.dev = mpio_init(mpiosh_callback_init);
+
   printf("\n");
 
-  if (mpiosh.dev == NULL)	
-    printf("error: could not open connection MPIO player\n");
+  if (mpiosh.dev == NULL) {
+    mpio_perror("ERROR");
+    printf("could not open connection MPIO player\n");
+  }
   else
     printf("connection to MPIO player is opened\n");
 
@@ -484,8 +487,11 @@ mpiosh_cmd_mput(char *args[])
   if (mpiosh_cancel) 
     debug("operation cancelled by user\n");
 
-  if (written)
+  if (written) {
     mpio_sync(mpiosh.dev, mpiosh.card);
+  } else {
+    printf("file not found!\n");    
+  }
 }
 
 BYTE
@@ -560,7 +566,7 @@ mpiosh_cmd_mdel(char *args[])
 	     because the directory has changed !! */
 	  if (r != MPIO_OK)
 	    {
-	      printf("ERROR: %s\n", mpio_strerror(r));
+	      mpio_perror("ERROR");
 	      p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
 	      break;
 	    }
@@ -576,8 +582,11 @@ mpiosh_cmd_mdel(char *args[])
     i++;
   }
   regfree(&regex);
-  if (deleted)
+  if (deleted) {
     mpio_sync(mpiosh.dev, mpiosh.card);
+  } else {
+    printf("file not found!\n");
+  }
 }
 
 

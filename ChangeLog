@@ -1,3 +1,6 @@
+2003-04-12  Markus Germeier  <mager@tzi.de>
+	* small error messages changes
+
 2003-04-11  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/directory.c (mpio_directory_make): 

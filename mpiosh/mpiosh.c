@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.23 2002/11/13 23:05:28 germeier Exp $
+ * $Id: mpiosh.c,v 1.24 2003/04/11 22:53:10 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -108,6 +108,7 @@ main(int argc, char *argv[]) {
   }
   
   if (!mpiosh.dev && interactive) {
+    printf("ERROR: %s\n", mpio_strerror(mpio_errno()));
     printf("could not find MPIO player.\n");
   }
 

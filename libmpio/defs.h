@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.19 2003/04/11 21:42:57 germeier Exp $
+ * $Id: defs.h,v 1.20 2003/04/11 22:53:10 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -145,6 +145,8 @@ typedef struct {
 #define MPIO_ERR_DIR_NOT_A_DIR         -10
 #define MPIO_ERR_DIR_NAME_ERROR        -11
 #define MPIO_ERR_DIR_NOT_EMPTY         -12
+#define MPIO_ERR_DEVICE_NOT_READY      -13
+#define MPIO_ERR_OUT_OF_MEMORY         -14
 /* internal errors, occur when UI has errors! */
 #define MPIO_ERR_INT_STRING_INVALID	-101
 
