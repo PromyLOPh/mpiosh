@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.h,v 1.5 2002/09/23 22:38:03 germeier Exp $
+ * $Id: callback.h,v 1.6 2002/10/18 08:39:23 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -47,6 +47,7 @@ void mpiosh_cmd_free(char *args[]);
 void mpiosh_cmd_format(char *args[]);
 void mpiosh_cmd_switch(char *args[]);
 void mpiosh_cmd_dump_mem(char *args[]);
+void mpiosh_cmd_config(char *args[]);
 
 /* local command callbacks */
 void mpiosh_cmd_ldir(char *args[]);

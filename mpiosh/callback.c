@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.26 2002/10/13 21:44:32 germeier Exp $
+ * $Id: callback.c,v 1.27 2002/10/18 08:39:23 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -549,7 +549,6 @@ mpiosh_cmd_dump(char *args[])
 		    &year, &month, &day,
 		    &hour, &minute, &fsize);
 
-    arg[0] = fname;
     mpiosh_cmd_mget(arg);
     
     p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
@@ -624,6 +623,14 @@ mpiosh_cmd_dump_mem(char *args[])
   
   mpio_memory_dump(mpiosh.dev, mpiosh.card);
 
+}
+
+void
+mpiosh_cmd_config(char *args[])
+{
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+
+  UNUSED(args);  
 }
 
 

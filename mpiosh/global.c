@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.2 2002/10/14 12:52:01 crunchy Exp $
+ * $Id: global.c,v 1.3 2002/10/18 08:39:23 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -72,7 +72,7 @@ mpiosh_cmd_t commands[] = {
   { "mput", (char *[]){ "put", NULL }, "list of filenames and <regexp>",
     "  write all local files matching the regular expression\n"
     "  to the selected memory card",
-    mpiosh_cmd_mput, mpiosh_readline_comp_mpio_file },
+    mpiosh_cmd_mput, NULL },
   { "mdel", (char *[]){ "rm", "del", NULL }, "<regexp>",
     "  deletes all files matching the regular expression\n"
     "  from the selected memory card",
@@ -105,6 +105,12 @@ mpiosh_cmd_t commands[] = {
     "  dump FAT, directory, spare area and the first 0x100 of the\n"
     "  selected memory card",
     mpiosh_cmd_dump_mem, NULL },
+  { "config", (char *[]) { "conf", NULL }, "-w -r -s",
+    "  give access to the configuration file of the MPIO player\n"
+    "   -w     write the configuration back to the MPIO player\n"
+    "   -r     read the configuration file and dumps it on the local disc\n"
+    "   -s     show the current configuration",
+    mpiosh_cmd_config, mpiosh_readline_comp_config },
   { NULL, NULL, NULL, NULL, NULL, NULL }
 };
 

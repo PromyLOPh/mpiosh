@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: readline.c,v 1.3 2002/10/13 19:46:51 crunchy Exp $
+ * $Id: readline.c,v 1.4 2002/10/18 08:39:23 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -119,6 +119,15 @@ mpiosh_readline_comp_mpio_file(const char *text, int state)
   
   return arg;
 }
+
+char *
+mpiosh_readline_comp_config(const char *text, int state)
+{
+  char *arg = NULL;
+
+  return arg;
+}
+
 
 char **
 mpiosh_readline_completion(const char *text, int start, int end)
