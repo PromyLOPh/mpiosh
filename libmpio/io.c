@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.7 2002/09/10 12:31:09 germeier Exp $
+ * $Id: io.c,v 1.8 2002/09/10 13:41:21 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -488,11 +488,9 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
       sendbuff[SECTOR_SIZE + 0x0c] = ba;
     }
   
+  /* easy but working, we write back the FAT info we read before */
   if (mem==MPIO_INTERNAL_MEM) 
-    {
-      debug("WARNING, code for internal FAT entry (in ECC area)"
-	    " not yet in place!!\n");
-    }
+      memcpy((sendbuff+SECTOR_SIZE), sm->fat, 0x10);
 
   debugn (5, "\n>>> MPIO\n");
   hexdump(sendbuff, SECTOR_TRANS);
@@ -688,7 +686,8 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
 
   if (status[0] != 0xc0) 
     {
-      debug ("error formatting Block %04x\n", index);
+      debug ("error formatting Block (%04x) %02x:%06x\n", 
+	     f->entry, chip, address);
       return 0;
     }
   

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.7 2002/09/10 12:31:09 germeier Exp $
+ * $Id: mpio.c,v 1.8 2002/09/10 13:41:21 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -442,6 +442,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 		  2002, 8, 13,
 		  2, 12, fsize, startsector);
 
+  /* this writes the FAT *and* the root directory */
   mpio_fat_write(m, mem);
 
   return fsize-filesize;
@@ -460,9 +461,7 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
   if (mem == MPIO_INTERNAL_MEM) 
     {    
       sm=&m->internal;
-      data_offset=0x00;
-      debug("formatting of internal memory is not yet supported, sorry\n");
-      return 0;
+      data_offset = 0x01;
     }
   
   if (mem == MPIO_EXTERNAL_MEM) 
@@ -489,15 +488,18 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
     } while (mpio_fatentry_plus_plus(f));
   free(f);
 
-  /* format CIS area */
-  f = mpio_fatentry_new(m, mem,        /* yuck */
-			(1 - ((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2 )));
-  mpio_io_block_delete(m, mem, f);
-  free(f);
-  mpio_io_sector_write(m, mem, 0x20, sm->cis);
-  mpio_io_sector_write(m, mem, 0x21, sm->cis);
+  if (mem == MPIO_EXTERNAL_MEM) {    
+    /* format CIS area */
+    f = mpio_fatentry_new(m, mem,        /* yuck */
+			  (1-((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2)));
+    mpio_io_block_delete(m, mem, f);
+    free(f);
+    mpio_io_sector_write(m, mem, 0x20, sm->cis);
+    mpio_io_sector_write(m, mem, 0x21, sm->cis);    
+  }
 
   mpio_rootdir_clear(m, mem);
+  /* this writes the FAT *and* the root directory */
   mpio_fat_write(m, mem);
 
   if (progress_callback)
@@ -563,6 +565,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   }
 
   mpio_dentry_delete(m, mem, filename);
+  /* this writes the FAT *and* the root directory */
   mpio_fat_write(m, mem);
   
   return (fsize-filesize);

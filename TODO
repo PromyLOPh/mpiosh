@@ -1,4 +1,4 @@
-$Id: TODO,v 1.6 2002/09/09 15:48:56 germeier Exp $
+$Id: TODO,v 1.7 2002/09/10 13:41:21 germeier Exp $
 
 * Kernel Module
   - the MPIO can no multitasking, so:
@@ -12,13 +12,15 @@ $Id: TODO,v 1.6 2002/09/09 15:48:56 germeier Exp $
   - implement ECC code (we want a GPL code for this)
     [error checking works, TODO: error correction)
   - use ECC code for every read/write operation!! [done]
-  - implement reading of files
+  - implement reading of files [DONE]
   - implement writing of files
+  - implement deleting of files [DONE]
   
   If everything is done:
   - implement formating of external memory [partially done]
     * write code to fix defective CIS (??), MBR, PBR
   - implement formating of internal memory (BEWARE !!!!)
+    [DONE: BEWARE no config files are written!!!!]
 
 * mpio_tool [is deprecated, use mpiosh]
 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.7 2002/09/10 12:31:09 germeier Exp $
+ * $Id: fat.c,v 1.8 2002/09/10 13:41:21 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -226,13 +226,21 @@ mpio_fatentry_plus_plus(mpio_fatentry_t *f)
   f->entry++;
 
   if (f->mem == MPIO_INTERNAL_MEM) {
-    if (f->entry > f->m->internal.max_cluster)
-      return 0;    
+    if (f->entry >= f->m->internal.max_cluster)
+      {
+	f->entry--;
+	mpio_fatentry_entry2hw(f->m,  f);
+	return 0;    
+      }    
+    mpio_fatentry_entry2hw(f->m,  f);
   }
   
   if (f->mem == MPIO_EXTERNAL_MEM) {
     if (f->entry > f->m->external.max_cluster)
-      return 0;    
+      {
+	f->entry--;
+	return 0;    
+      }
   }
   
   return 1;
@@ -414,7 +422,8 @@ mpio_fat_free_clusters(mpio_t *m, mpio_mem_t mem)
   
   do 
     {
-      if (mpio_fatentry_free(m, mem, f)) e++;      
+      if (mpio_fatentry_free(m, mem, f)) 
+	e++;      
     } while (mpio_fatentry_plus_plus(f));
 
   free(f);
@@ -503,11 +512,16 @@ int
 mpio_fat_clear(mpio_t *m, mpio_mem_t mem)
 {
   mpio_smartmedia_t *sm;
+  mpio_fatentry_t   *f;
   
-  if (mem == MPIO_INTERNAL_MEM) {    
+  if (mem == MPIO_INTERNAL_MEM) {
     sm = &m->internal;
-    debug("clearing of the internal FAT not yet supported , sorry\n");
-    return 0;
+    
+    f = mpio_fatentry_new(m, mem, 1);
+    do {      
+      mpio_fatentry_set_free(m, mem, f) ;
+    } while(mpio_fatentry_plus_plus(f));
+    free(f);
   }
   
   if (mem == MPIO_EXTERNAL_MEM) {
@@ -540,41 +554,59 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
   
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
-    debug("ERROR: internal FAT is written during block or sector writes!\n");
-    exit(-1);
-  }
-  
-  if (mem == MPIO_EXTERNAL_MEM) sm=&m->external;
 
-  memset(dummy, 0xff, BLOCK_SIZE);
-  
-  for (i = 0x40; i < (sm->dir_offset + DIR_NUM) ; i++) {
-    if (((i / 0x20) * 0x20) == i) {
-      /* yuck */
-      f=mpio_fatentry_new(m, mem, 
-			  ((i / 0x20) - 
-			   ((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2 ))); 
-      mpio_io_block_delete(m, mem, f);
-      free(f);
-    }
-    
-    if (i == 0x40)
-      mpio_io_sector_write(m, mem, 0x40, sm->mbr);
-    if ((i > 0x40) && (i < sm->pbr_offset))
-      mpio_io_sector_write(m, mem, i, dummy);
-      
-    if (i == sm->pbr_offset)
-      mpio_io_sector_write(m, mem, sm->pbr_offset, sm->pbr);
-    
-    if ((i >= sm->fat_offset) && (i < (sm->fat_offset + (2 * sm->fat_size)))) 
-      mpio_io_sector_write(m, mem, i, 
-			   (sm->fat + SECTOR_SIZE *
-			    ((i - sm->fat_offset) % sm->fat_size)));
-    
-    if (i>=sm->dir_offset)
-      mpio_io_sector_write(m, mem, i, 
-			   (sm->dir + (i - sm->dir_offset) * SECTOR_SIZE));
+    f=mpio_fatentry_new(m, mem, 0);
+    mpio_io_block_delete(m, mem, f);
+    free(f);
+
+    memset(dummy, 0x00, BLOCK_SIZE);
+
+    for (i= 0; i< 0x20; i++)
+      {
+
+	if (i<DIR_NUM) 
+	  {
+	    mpio_io_sector_write(m, mem, i, (sm->dir + SECTOR_SIZE * i));
+	  } else {
+	    mpio_io_sector_write(m, mem, i, dummy);
+	  }	
+      }    
   }
+  
+  if (mem == MPIO_EXTERNAL_MEM) 
+    {      
+      sm=&m->external;
+
+      memset(dummy, 0xff, BLOCK_SIZE);
+  
+      for (i = 0x40; i < (sm->dir_offset + DIR_NUM) ; i++) {
+	if (((i / 0x20) * 0x20) == i) {
+	  /* yuck */
+	  f=mpio_fatentry_new(m, mem, 
+			      ((i / 0x20) - 
+			       ((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2 ))); 
+	  mpio_io_block_delete(m, mem, f);
+	  free(f);
+	}
+	
+	if (i == 0x40)
+	  mpio_io_sector_write(m, mem, 0x40, sm->mbr);
+	if ((i > 0x40) && (i < sm->pbr_offset))
+	  mpio_io_sector_write(m, mem, i, dummy);
+	
+	if (i == sm->pbr_offset)
+	  mpio_io_sector_write(m, mem, sm->pbr_offset, sm->pbr);
+	
+	if ((i >= sm->fat_offset) && (i < (sm->fat_offset + (2 * sm->fat_size)))) 
+	  mpio_io_sector_write(m, mem, i, 
+			       (sm->fat + SECTOR_SIZE *
+				((i - sm->fat_offset) % sm->fat_size)));
+	
+	if (i>=sm->dir_offset)
+	  mpio_io_sector_write(m, mem, i, 
+			       (sm->dir + (i - sm->dir_offset) * SECTOR_SIZE));
+      }
+    }  
     
   return 0;
 }
