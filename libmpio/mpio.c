@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.37 2002/11/13 23:05:28 germeier Exp $
+ * $Id: mpio.c,v 1.38 2003/01/16 17:37:07 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -178,6 +178,8 @@ mpio_init_external(mpio_t *m)
     } else {
       sm->manufacturer=0;
       sm->id=0;
+      sm->size=0;
+      sm->chips=0;      
     }  
 
   /* init memory parameters if external memory is found */
@@ -226,6 +228,9 @@ mpio_init(mpio_callback_init_t progress_callback)
     
     return NULL;    
   }
+
+  /* "just" to be sure */
+  memset(new_mpio, 0, sizeof(mpio_t));
   
   /* Read Version Information */
   mpio_io_version_read(new_mpio, new_mpio->version);  
