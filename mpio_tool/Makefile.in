@@ -81,10 +81,7 @@ VERSION = @VERSION@
 
 INCLUDES = -I..
 
-bin_PROGRAMS = mpio_tool mpiosh
-
-mpio_tool_SOURCES = mpio_tool.c
-mpio_tool_LDADD = ../libmpio/libmpio.la
+bin_PROGRAMS = mpiosh
 
 mpiosh_SOURCES = mpiosh.c
 mpiosh_LDADD = ../libmpio/libmpio.la -lreadline -lncurses
@@ -92,7 +89,7 @@ mpiosh_LDADD = ../libmpio/libmpio.la -lreadline -lncurses
 noinst_HEADERS = mpiosh.h
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
-bin_PROGRAMS =  mpio_tool$(EXEEXT) mpiosh$(EXEEXT)
+bin_PROGRAMS =  mpiosh$(EXEEXT)
 PROGRAMS =  $(bin_PROGRAMS)
 
 
@@ -100,9 +97,6 @@ DEFS = @DEFS@ -I. -I$(srcdir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
-mpio_tool_OBJECTS =  mpio_tool.$(OBJEXT)
-mpio_tool_DEPENDENCIES =  ../libmpio/libmpio.la
-mpio_tool_LDFLAGS = 
 mpiosh_OBJECTS =  mpiosh.$(OBJEXT)
 mpiosh_DEPENDENCIES =  ../libmpio/libmpio.la
 mpiosh_LDFLAGS = 
@@ -120,9 +114,9 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DEP_FILES =  .deps/mpio_tool.P .deps/mpiosh.P
-SOURCES = $(mpio_tool_SOURCES) $(mpiosh_SOURCES)
-OBJECTS = $(mpio_tool_OBJECTS) $(mpiosh_OBJECTS)
+DEP_FILES =  .deps/mpiosh.P
+SOURCES = $(mpiosh_SOURCES)
+OBJECTS = $(mpiosh_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
@@ -197,10 +191,6 @@ clean-libtool:
 distclean-libtool:
 
 maintainer-clean-libtool:
-
-mpio_tool$(EXEEXT): $(mpio_tool_OBJECTS) $(mpio_tool_DEPENDENCIES)
-	@rm -f mpio_tool$(EXEEXT)
-	$(LINK) $(mpio_tool_LDFLAGS) $(mpio_tool_OBJECTS) $(mpio_tool_LDADD) $(LIBS)
 
 mpiosh$(EXEEXT): $(mpiosh_OBJECTS) $(mpiosh_DEPENDENCIES)
 	@rm -f mpiosh$(EXEEXT)

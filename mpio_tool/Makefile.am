@@ -1,9 +1,6 @@
 INCLUDES=-I..
 
-bin_PROGRAMS=mpio_tool mpiosh
-
-mpio_tool_SOURCES=mpio_tool.c
-mpio_tool_LDADD=../libmpio/libmpio.la
+bin_PROGRAMS=mpiosh
 
 mpiosh_SOURCES=mpiosh.c
 mpiosh_LDADD=../libmpio/libmpio.la -lreadline -lncurses
