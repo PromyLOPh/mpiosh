@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.11 2002/11/13 23:05:28 germeier Exp $
+ * $Id: directory.c,v 1.12 2003/02/21 18:28:54 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -739,6 +739,97 @@ mpio_dentry_delete(mpio_t *m, BYTE mem, BYTE *filename)
   memcpy(sm->dir, tmp, DIR_SIZE);
   
   return 0;
+}
+
+void 
+mpio_dentry_move(mpio_t *m,mpio_mem_t mem,BYTE *m_file,BYTE *a_file) {
+  mpio_smartmedia_t *sm;
+
+  BYTE *t0,*t1,*t2,*t3;
+  
+  int  s0,s1,s2,s3;
+  int  m_file_s,a_file_s;
+  BYTE tmp[DIR_SIZE];
+  BYTE *b_file;
+
+  if (mem == MPIO_INTERNAL_MEM) 
+    sm = &m->internal;
+
+  if (mem == MPIO_EXTERNAL_MEM) 
+    sm = &m->external;
+
+  if (m_file == a_file)
+    return;
+
+  m_file_s = mpio_dentry_get_size(m, mem, m_file);
+  a_file_s = mpio_dentry_get_size(m, mem, a_file);
+
+  // -- we determine the 'befor' file. The start of the region which needs to be moved down
+  // -- if a_file == NULL this is the start of the directory.
+
+  if(a_file==NULL) {
+    b_file = sm->dir;
+  } else {
+    b_file = a_file + a_file_s;
+  }
+  
+  if(b_file == m_file) {
+    return;
+  }
+
+  /** We disect the whole directory in four pieces.
+      in different ways according to the direction 
+      the directoy entry is moved (up or down).
+  */
+
+  if(m_file > b_file) {
+    fprintf(stderr,"U ");
+    t0 = sm->dir;
+    s0 = b_file - sm->dir;
+
+    t1 = m_file;
+    s1 = m_file_s;
+    
+    t2 = b_file;
+    s2 = m_file - b_file;
+
+    t3 = m_file + m_file_s;
+    s3 = DIR_SIZE - (m_file-sm->dir) - m_file_s;
+  } else { 
+    fprintf(stderr,"D ");
+    t0 = sm->dir;
+    s0 = m_file - sm->dir;
+    
+    t1 = m_file + m_file_s;
+    s1 = a_file + a_file_s - (m_file + m_file_s);
+
+    t2 = m_file;
+    s2 = m_file_s;
+
+    t3 = b_file;
+    s3 = DIR_SIZE - (b_file - sm->dir);
+  }
+
+  if(s0) {
+    memcpy(tmp,t0,s0);
+  }
+
+  if(s1) {
+    memcpy(tmp + s0 , t1 , s1 );
+  }
+
+  if(s2) {
+    memcpy(tmp + s0 + s1, t2, s2);
+  }
+
+  if(s3) {
+    memcpy(tmp + s0 + s1 + s2, t3, s3);
+  }
+  
+  fprintf(stderr," -- t0=%ld, s0=%d, t1=%ld, s1=%d, t2=%ld, s2=%d, t3=%ld, s3=%d; sum=%d, DIRSIZE=%d\n",
+	  (long)t0,s0,(long)t1,s1,(long)t2,s2,(long)t3,s3,s0+s1+s2+s3,DIR_SIZE);
+
+  memcpy(sm->dir, tmp, DIR_SIZE);
 }
 
 void    

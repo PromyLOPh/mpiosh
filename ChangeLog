@@ -1,3 +1,11 @@
+2003-02-21    <crunchy@tzi.de>
+
+	* libmpio/directory.h, libmpio/directory.c, libmpio/mpio.h,
+	libmpio/mpio.c: add patch from Sebastian Kloska
+	<kloska@scienion.de>. containing possibility to chage name of
+	destination when copying files, moving files and reordering files
+	in directory
+
 2002-12-06    <crunchy@tzi.de>
 
 	* kernel/mpio.c: 2.4.20 does not contain the typedef purb_t

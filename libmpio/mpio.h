@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.13 2002/11/13 23:05:28 germeier Exp $
+ * $Id: mpio.h,v 1.14 2003/02/21 18:28:56 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -85,12 +85,20 @@ int	mpio_dentry_get(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int,WORD *,
  * reading/writing/deleting of files
  */
 
+int	mpio_file_get_as(mpio_t *, mpio_mem_t, mpio_filename_t,
+			 mpio_filename_t,mpio_callback_t); 
+
 /* context, memory bank, filename, callback */
 int	mpio_file_get(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
 
 /* context, memory bank, filename, filetype, callback */
 int	mpio_file_put(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_filetype_t,
 		      mpio_callback_t); 
+
+/* context, memory bank, filename, as, filetype, callback */
+int	mpio_file_put_as(mpio_t *, mpio_mem_t, mpio_filename_t,
+			 mpio_filename_t, mpio_filetype_t,
+			 mpio_callback_t); 
 
 /* context, memory bank, filename, callback */
 int	mpio_file_del(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t); 
@@ -118,11 +126,19 @@ int	mpio_file_put_from_memory(mpio_t *, mpio_mem_t, mpio_filename_t,
 /* context, memory bank, filename, filename */
 int	mpio_file_switch(mpio_t *, mpio_mem_t, 
 			 mpio_filename_t, mpio_filename_t);
+  
+
+
+/* Move a named file after a given file. If after==NULL move it
+   to the top of the list,
+*/
+  
+int mpio_file_move(mpio_t *,mpio_mem_t m,mpio_filename_t,mpio_filename_t);
 
 /* 
  * formating a memory (internal mem or external SmartMedia card)
  */
-
+  
 /* context, memory bank, callback */
 int	mpio_memory_format(mpio_t *, mpio_mem_t, mpio_callback_t); 
 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.38 2003/01/16 17:37:07 germeier Exp $
+ * $Id: mpio.c,v 1.39 2003/02/21 18:28:55 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -46,10 +46,11 @@ void mpio_init_internal(mpio_t *);
 void mpio_init_external(mpio_t *);
 int  mpio_check_filename(mpio_filename_t);
 
-int mpio_file_get_real(mpio_t *, mpio_mem_t, mpio_filename_t, 
+int mpio_file_get_real(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_filename_t,
 		       mpio_callback_t, BYTE **); 
-int mpio_file_put_real(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_filetype_t,
-		      mpio_callback_t, BYTE *, int);
+
+int mpio_file_put_real(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_filename_t,
+		       mpio_filetype_t, mpio_callback_t, BYTE *, int);
 
 static BYTE *mpio_model_name[] = {
   "MPIO-DME",
@@ -96,7 +97,7 @@ mpio_check_filename(mpio_filename_t filename)
 {
   BYTE *p=filename;
   
-  while (p < (filename+MPIO_FILENAME_LEN))
+  while (p < (filename + MPIO_FILENAME_LEN))
     {
       if (*p)
 	return 1;
@@ -114,7 +115,7 @@ mpio_init_internal(mpio_t *m)
 
   /* init main memory parameters */
   sm->manufacturer = m->version[i_offset];
-  sm->id           = m->version[i_offset+1];
+  sm->id           = m->version[i_offset + 1];
   sm->chips        = 1;
   if (mpio_id_valid(m->version[i_offset])) 
     {      
@@ -129,9 +130,9 @@ mpio_init_internal(mpio_t *m)
   
   
   /* look for a second installed memory chip */
-  if (mpio_id_valid(m->version[i_offset+2]))
+  if (mpio_id_valid(m->version[i_offset + 2]))
     {    
-      if(mpio_id2mem(sm->id) != mpio_id2mem(m->version[i_offset+3]))
+      if(mpio_id2mem(sm->id) != mpio_id2mem(m->version[i_offset + 3]))
 	{
 	  printf("Found a MPIO with two chips with different size!");
 	  printf("I'm utterly confused and aborting now, sorry!");
@@ -146,13 +147,13 @@ mpio_init_internal(mpio_t *m)
   mpio_id2geo(sm->id, &sm->geo);
 
   /* read FAT information from spare area */  
-  sm->max_cluster  = sm->size/16*1024;      /* 1 cluster == 16 KB */
+  sm->max_cluster  = sm->size / 16 * 1024;      /* 1 cluster == 16 KB */
   sm->max_blocks   = sm->max_cluster;
-  debugn(2,"max_cluster: %d\n", sm->max_cluster);
+  debugn(2, "max_cluster: %d\n", sm->max_cluster);
                                             /* 16 bytes per cluster */
-  sm->fat_size     = sm->max_cluster*16/SECTOR_SIZE;   
-  debugn(2,"fat_size: %04x\n", sm->fat_size*SECTOR_SIZE);
-  sm->fat          = malloc(sm->fat_size*SECTOR_SIZE);
+  sm->fat_size     = sm->max_cluster * 16 / SECTOR_SIZE;   
+  debugn(2, "fat_size: %04x\n", sm->fat_size * SECTOR_SIZE);
+  sm->fat          = malloc(sm->fat_size * SECTOR_SIZE);
   /* fat will be read in mpio_init, so we can more easily handle
      a callback function */
 
@@ -164,26 +165,24 @@ mpio_init_internal(mpio_t *m)
 void
 mpio_init_external(mpio_t *m)
 {
-  mpio_smartmedia_t *sm=&(m->external);
-  BYTE e_offset=0x20;
+  mpio_smartmedia_t *sm = &(m->external);
+  BYTE e_offset = 0x20;
 
   /* heuristic to find the right offset for the external memory */
-  while((e_offset<0x3a) && !(mpio_id_valid(m->version[e_offset])))
+  while((e_offset < 0x3a) && !(mpio_id_valid(m->version[e_offset])))
     e_offset++;
   
   if (mpio_id_valid(m->version[e_offset]))
     {
-      sm->manufacturer=m->version[e_offset];
-      sm->id=m->version[e_offset+1];
+      sm->manufacturer = m->version[e_offset];
+      sm->id = m->version[e_offset + 1];
     } else {
-      sm->manufacturer=0;
-      sm->id=0;
-      sm->size=0;
-      sm->chips=0;      
+      sm->manufacturer = 0;
+      sm->id = 0;
     }  
 
   /* init memory parameters if external memory is found */
-  if (sm->id!=0) 
+  if (sm->id != 0) 
     {
       /* Read things from external memory (if available) */
       sm->size  = mpio_id2mem(sm->id);
@@ -200,7 +199,7 @@ mpio_init_external(mpio_t *m)
 	}
       
       /* for reading the spare area later! */
-      sm->max_blocks  = sm->size/16*1024;      /* 1 cluster == 16 KB */
+      sm->max_blocks  = sm->size / 16 * 1024;      /* 1 cluster == 16 KB */
       sm->spare       = malloc(sm->max_blocks * 0x10);
     }
 }
@@ -213,6 +212,7 @@ mpio_init(mpio_callback_init_t progress_callback)
   int id_offset;
 
   new_mpio = malloc(sizeof(mpio_t));
+
   if (!new_mpio) {
     debug ("Error allocating memory for mpio_t");
     return NULL;
@@ -222,26 +222,23 @@ mpio_init(mpio_callback_init_t progress_callback)
 
   if (new_mpio->fd < 0) {
     
-    debug ("Could not open %s\n"
-	   "Verify that the mpio module is loaded and "
-	   "your MPIO is\nconnected and powered up.\n\n" , MPIO_DEVICE);
+    debug("Could not open %s\n"
+	  "Verify that the mpio module is loaded and "
+	  "your MPIO is\nconnected and powered up.\n\n" , MPIO_DEVICE);
     
     return NULL;    
   }
-
-  /* "just" to be sure */
-  memset(new_mpio, 0, sizeof(mpio_t));
   
   /* Read Version Information */
   mpio_io_version_read(new_mpio, new_mpio->version);  
 
   /* fill in values */
-  snprintf(new_mpio->firmware.id, 12, "%s", new_mpio->version);
+  snprintf(new_mpio->firmware.id,   12, "%s", new_mpio->version);
   snprintf(new_mpio->firmware.major, 3, "%s", new_mpio->version + 0x0c);
   snprintf(new_mpio->firmware.minor, 3, "%s", new_mpio->version + 0x0e);
-  snprintf(new_mpio->firmware.year, 5, "%s", new_mpio->version + 0x10);
+  snprintf(new_mpio->firmware.year,  5, "%s", new_mpio->version + 0x10);
   snprintf(new_mpio->firmware.month, 3, "%s", new_mpio->version + 0x14);
-  snprintf(new_mpio->firmware.day, 3, "%s", new_mpio->version + 0x16);
+  snprintf(new_mpio->firmware.day,   3, "%s", new_mpio->version + 0x16);
 
   /* there are different identification strings! */
   if (strncmp(new_mpio->version, "MPIO", 4) != 0)
@@ -414,29 +411,38 @@ mpio_get_info(mpio_t *m, mpio_info_t *info)
       
 }
 
+
+int
+mpio_file_get_as(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
+		 mpio_filename_t as, mpio_callback_t progress_callback)
+{
+  return mpio_file_get_real(m, mem, filename, as, progress_callback, NULL);
+}
+
 int
 mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
 	      mpio_callback_t progress_callback)
 {
-  return mpio_file_get_real(m, mem, filename, progress_callback, NULL);
+  return mpio_file_get_real(m, mem, filename, NULL, progress_callback, NULL);
 }
 
 int
 mpio_file_get_to_memory(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
 			mpio_callback_t progress_callback, BYTE **memory)
 {
-  return mpio_file_get_real(m, mem, filename, progress_callback, memory);
+  return mpio_file_get_real(m, mem, filename, NULL, progress_callback, memory);
 }
 
 int
-mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
-	      mpio_callback_t progress_callback, BYTE **memory)
+mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
+		   mpio_filename_t as, mpio_callback_t progress_callback,
+		   BYTE **memory)
 {
   mpio_smartmedia_t *sm;
   BYTE block[BLOCK_SIZE];
   int fd, towrite;
   BYTE   *p;
-  mpio_fatentry_t *f=0;
+  mpio_fatentry_t *f = 0;
   struct utimbuf utbuf;
   long mtime;
   DWORD filesize, fsize;
@@ -447,6 +453,10 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  if(as==NULL) {
+    as = filename;
+  }
 
   /* find file */
   p = mpio_dentry_find_name(m, mem, filename);
@@ -464,7 +474,7 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 	*memory = malloc(filesize);
       } else {
 	unlink(filename);    
-	fd = open(filename, (O_RDWR | O_CREAT), (S_IRWXU | S_IRGRP | S_IROTH));
+	fd = open(as, (O_RDWR | O_CREAT), (S_IRWXU | S_IRGRP | S_IROTH));
       }
     
     do
@@ -524,11 +534,19 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 }
 
 int
-mpio_file_put(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
-	      mpio_filetype_t filetype,
-	      mpio_callback_t progress_callback)
+mpio_file_put_as(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
+		 mpio_filename_t as, mpio_filetype_t filetype,
+		 mpio_callback_t progress_callback)
 {
-  return mpio_file_put_real(m, mem, filename, filetype, 
+  return mpio_file_put_real(m, mem, filename, as, filetype, 
+			    progress_callback, NULL,0);
+}
+
+int
+mpio_file_put(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
+	      mpio_filetype_t filetype, mpio_callback_t progress_callback)
+{
+  return mpio_file_put_real(m, mem, filename, NULL, filetype, 
 			    progress_callback, NULL,0);
 }
 
@@ -538,13 +556,13 @@ mpio_file_put_from_memory(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
 			  mpio_callback_t progress_callback,
 			  BYTE *memory, int memory_size)
 {
-  return mpio_file_put_real(m, mem, filename, filetype, 
+  return mpio_file_put_real(m, mem, filename,  NULL, filetype,
 			    progress_callback, memory, memory_size);
 }
 
 int
-mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename, 
-		   mpio_filetype_t filetype,
+mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
+		   mpio_filename_t o_filename, mpio_filetype_t filetype,
 		   mpio_callback_t progress_callback,
 		   BYTE *memory, int memory_size)
 {
@@ -556,11 +574,15 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   struct stat file_stat;
   struct tm tt;
 
-  BYTE *p=NULL;
+  BYTE *p = NULL;
   DWORD filesize, fsize, free, blocks;
-  BYTE abort=0;
+  BYTE abort = 0;
 
-  MPIO_CHECK_FILENAME(filename);
+  if(o_filename == NULL) {
+    o_filename = i_filename;
+  }
+
+  MPIO_CHECK_FILENAME(o_filename);
   
   if (mem==MPIO_INTERNAL_MEM) sm=&m->internal;  
   if (mem==MPIO_EXTERNAL_MEM) sm=&m->external;
@@ -570,8 +592,8 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
       fsize=filesize=memory_size;
       tt = (struct tm){ 0, 0, 0, 0, 0, 0, 0, 0, 0};
     } else {      
-      if (stat((const char *)filename, &file_stat)!=0) {
-	debug("could not find file: %s\n", filename);
+      if (stat((const char *)i_filename, &file_stat)!=0) {
+	debug("could not find file: %s\n", i_filename);
 	MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
       }
       fsize=filesize=file_stat.st_size;
@@ -586,9 +608,9 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   }
 
   /* check if filename already exists */
-  p = mpio_dentry_find_name(m, mem, filename);
+  p = mpio_dentry_find_name(m, mem, o_filename);
   if (!p)
-      p = mpio_dentry_find_name_8_3(m, mem, filename);
+      p = mpio_dentry_find_name_8_3(m, mem, o_filename);
   if (p) 
     {
       debug("filename already exists\n");
@@ -626,10 +648,10 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   if (!memory)
     {      
       /* open file for writing */
-      fd = open(filename, O_RDONLY);    
+      fd = open(i_filename, O_RDONLY);    
       if (fd==-1) 
 	{
-	  debug("could not open file: %s\n", filename);
+	  debug("could not open file: %s\n", i_filename);
 	  MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
 	}
     }
@@ -742,7 +764,7 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
       
     } else {
       mpio_dentry_put(m, mem,
-		      filename, strlen(filename),
+		      o_filename, strlen(o_filename),
 		      ((memory)?mktime(&tt):file_stat.st_ctime), 
 		      fsize, start);
     }  
@@ -773,8 +795,35 @@ mpio_file_switch(mpio_t *m, mpio_mem_t mem,
   return 0;
 }
 
+int mpio_file_move(mpio_t *m,mpio_mem_t mem, mpio_filename_t file,
+		   mpio_filename_t after)
+{
+  BYTE *p1,*p2;
+
+  if( ( p1 = mpio_dentry_find_name(m,mem,file)) == NULL ) {
+    if( (p1 = mpio_dentry_find_name_8_3(m, mem, file)) == NULL ) {
+      MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
+    }
+  }
+  
+  if(after!=NULL) {
+    if( ( p2 = mpio_dentry_find_name(m,mem,after)) == NULL ) {
+      if( (p2 = mpio_dentry_find_name_8_3(m, mem, after)) == NULL ) {
+	MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
+      }
+    }
+  }
+
+  fprintf(stderr," -- moving '%s' after '%s'\n",file,after);
+
+  mpio_dentry_move(m,mem,p1,p2);
+
+  return 0;
+}
+
 int
-mpio_memory_format(mpio_t *m, mpio_mem_t mem, mpio_callback_t progress_callback)
+mpio_memory_format(mpio_t *m, mpio_mem_t mem,
+		   mpio_callback_t progress_callback)
 {
   int data_offset;
   mpio_smartmedia_t *sm;

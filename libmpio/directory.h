@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.h,v 1.6 2002/10/27 17:37:26 germeier Exp $
+ * $Id: directory.h,v 1.7 2003/02/21 18:28:55 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -52,6 +52,11 @@ mpio_fatentry_t    *mpio_dentry_get_startcluster(mpio_t *, mpio_mem_t, BYTE *);
 
 /* switch two directory entries */
 void    mpio_dentry_switch(mpio_t *, mpio_mem_t, BYTE *, BYTE *);
+
+/* Move a given file to a new position in the file
+   list	relative to another file.	
+*/
+void	mpio_dentry_move(mpio_t *,mpio_mem_t, BYTE *, BYTE *);
 
 /* helper functions */
 void    mpio_dentry_copy_from_slot(BYTE *, mpio_dir_slot_t *);
