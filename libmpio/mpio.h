@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.11 2002/10/27 02:45:28 germeier Exp $
+ * $Id: mpio.h,v 1.12 2002/10/27 17:37:27 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -58,8 +58,8 @@ void	mpio_close(mpio_t *);
 
 /* get version */
 void	mpio_get_info(mpio_t *, mpio_info_t *);
-/* print version: deprecated */
-//void    mpio_print_version(mpio_t *);
+/* get model */
+mpio_model_t	mpio_get_model(mpio_t *);
 /* retrieves free memory in bytes */
 int	mpio_memory_free(mpio_t *, mpio_mem_t, int *free);
 
@@ -105,6 +105,13 @@ int	mpio_file_get_to_memory(mpio_t *, mpio_mem_t, mpio_filename_t,
 int	mpio_file_put_from_memory(mpio_t *, mpio_mem_t, mpio_filename_t, 
 				  mpio_filetype_t, mpio_callback_t,
 				  BYTE *, int); 
+
+/* 
+ * switch position of two files
+ */
+/* context, memory bank, filename, filename */
+int	mpio_file_switch(mpio_t *, mpio_mem_t, 
+			 mpio_filename_t, mpio_filename_t);
 
 /* 
  * formating a memory (internal mem or external SmartMedia card)

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.h,v 1.5 2002/10/26 13:07:43 germeier Exp $
+ * $Id: directory.h,v 1.6 2002/10/27 17:37:26 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -49,6 +49,9 @@ int	mpio_dentry_delete(mpio_t *, BYTE, BYTE *);
 int     mpio_dentry_get_filesize(mpio_t *, mpio_mem_t, BYTE *);
 long    mpio_dentry_get_time(mpio_t *, mpio_mem_t, BYTE *);
 mpio_fatentry_t    *mpio_dentry_get_startcluster(mpio_t *, mpio_mem_t, BYTE *);
+
+/* switch two directory entries */
+void    mpio_dentry_switch(mpio_t *, mpio_mem_t, BYTE *, BYTE *);
 
 /* helper functions */
 void    mpio_dentry_copy_from_slot(BYTE *, mpio_dir_slot_t *);

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.28 2002/10/27 02:45:28 germeier Exp $
+ * $Id: callback.c,v 1.29 2002/10/27 17:37:27 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -297,6 +297,7 @@ mpiosh_cmd_mget(char *args[])
   BYTE		month, day, hour, minute;
   WORD		year;  
   DWORD		fsize;  
+  int           found;
 
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
@@ -308,6 +309,7 @@ mpiosh_cmd_mget(char *args[])
       regerror(error, &regex, errortext, 100);
       debugn (2, "error in regular expression: %s (%s)\n", args[i], errortext);
     } else {
+      found = 0;
       p = mpio_directory_open(mpiosh.dev, mpiosh.card);
       while (p != NULL) {
 	memset(fname, '\0', 100);
@@ -315,13 +317,14 @@ mpiosh_cmd_mget(char *args[])
 			&year, &month, &day, &hour, &minute, &fsize);
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
+	  found = 1;
 	  printf("getting '%s' ... \n", fname);
 	  if ((mpio_file_get(mpiosh.dev, mpiosh.card,
 				    fname, mpiosh_callback_get)) == -1) {
 	    debug("cancelled operation\n");
 	    mpio_perror("error");
 	    break;
-	  }
+	  } 
 	  printf("\n");
 	  if (mpiosh_cancel) {
 	    debug("operation cancelled by user\n");
@@ -335,8 +338,11 @@ mpiosh_cmd_mget(char *args[])
 	p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
       }
     }
+    if (!found)
+      printf("file not found! (%s)\n", args[i]);
     i++;
   }
+
 
   regfree(&regex);
 }
@@ -610,7 +616,19 @@ mpiosh_cmd_switch(char *args[])
 {
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
-  UNUSED(args);
+  if(args[0] && args[1] && !args[2]) {
+    if ((mpio_file_switch(mpiosh.dev, mpiosh.card,
+			  args[0], args[1])) == -1) {
+      mpio_perror("error");
+    } else {
+      mpio_sync(mpiosh.dev, mpiosh.card);
+    }
+    
+  } else {
+    fprintf(stderr, "error: wrong number of arguments given\n");
+    printf("switch <file1> <file2>\n");
+  }
+
 }
 
 void
@@ -655,8 +673,38 @@ mpiosh_cmd_config(char *args[])
 				MPIO_CONFIG_FILE, NULL, &config_data))<=0) {
 	fprintf(stderr, "Could not read config file\n");
       } else {
-	hexdumpn(0, config_data, size);
-	fprintf(stderr, "please implement me!\n");
+	hexdump(config_data, size);
+
+	printf("current config:\n"
+	       "===============\n");
+	
+	printf("volume:\t\t%-2d\n", config_data[0x00]);
+	printf("repeat:\t\t");
+	switch(config_data[0x01]) 
+	  {
+	  case 0:
+	    printf("normal\n");
+	    break;
+	  case 1:
+	    printf("repeat one\n");
+	    break;
+	  case 2:
+	    printf("repeat all\n");
+	    break;
+	  case 3:
+	    printf("shuffel\n");
+	    break;
+	  case 4:
+	    printf("intro\n");
+	    break;
+	  default:
+	    printf("unknown\n" );
+	  }	      
+
+
+	fprintf(stderr, "\nfinish my implementation please!\n");
+	fprintf(stderr, "config values seem to be model dependant :-(\n");
+
 	free(config_data);
       }
     } else {
@@ -718,6 +766,19 @@ mpiosh_cmd_channel(char *args[])
 	  }
 	if (!i)
 	  printf("no channel defined!\n");
+
+	memcpy(channel_data, "mager", 5);
+
+	printf("deleting old config file ...\n");
+	mpio_file_del(mpiosh.dev, MPIO_INTERNAL_MEM, 
+		      MPIO_CHANNEL_FILE, NULL);
+	printf("writing new config file ...\n");
+	if (mpio_file_put_from_memory(mpiosh.dev, MPIO_INTERNAL_MEM, 
+				      MPIO_CHANNEL_FILE,
+				      FTYPE_CHAN, NULL,
+				      channel_data, size)==-1) 
+	  mpio_perror("error");
+	mpio_sync(mpiosh.dev, MPIO_INTERNAL_MEM);
 
 	free(channel_data);
       }

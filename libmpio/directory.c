@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.9 2002/10/27 02:45:28 germeier Exp $
+ * $Id: directory.c,v 1.10 2002/10/27 17:37:25 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -607,26 +607,10 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
   WORD wdummy;
   BYTE fname[129];
   BYTE fname_8_3[13];
-  BYTE filename_8_3[13];
   DWORD ddummy;
   BYTE *found = 0;
   int i, j, len;
 
-  /* format given filename to a "standard" 8.3 filename */
-  memset(filename_8_3, 0x20, 13);
-  filename_8_3[12]=0;
-  len=strlen(filename);
-  i=j=0;
-  while ((i<13) && (j <len))
-    {
-      if (filename[j] == '.')
-	i=8;
-      filename_8_3[i] = filename[j];      
-      
-      i++;
-      j++;
-    }
-  
   p = mpio_directory_open(m, mem);
   while ((p) && (!found)) {
     mpio_dentry_get_real (m, mem, p,
@@ -634,9 +618,8 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
 			  fname_8_3,
 			  &wdummy, &bdummy, &bdummy,
 			  &bdummy, &bdummy, &ddummy);
-    
-    if ((strcmp(fname_8_3, filename_8_3) == 0) &&
-	(strcmp(filename_8_3,fname_8_3) == 0)) {
+    if ((strcmp(fname_8_3, filename) == 0) &&
+	(strcmp(filename,fname_8_3) == 0)) {
       found = p;
       p = NULL;
     }
@@ -718,4 +701,56 @@ mpio_dentry_delete(mpio_t *m, BYTE mem, BYTE *filename)
   memcpy(sm->dir, tmp, DIR_SIZE);
   
   return 0;
+}
+
+void    
+mpio_dentry_switch(mpio_t *m, mpio_mem_t mem, BYTE *file1, BYTE *file2)
+{
+  mpio_smartmedia_t *sm;
+  BYTE *p1, *p2;
+  BYTE *current;
+  int size1 , size2;
+  BYTE tmp[DIR_SIZE];
+
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  if (file1 == file2)
+    return;
+
+  if (file1<file2)
+    {
+      p1 = file1;
+      p2 = file2;
+    } else {
+      p1 = file2;
+      p2 = file1;
+    } 
+  size1 = mpio_dentry_get_size(m, mem, p1);
+  size2 = mpio_dentry_get_size(m, mem, p2);
+
+  current = tmp;
+  memset(tmp, 0xff, DIR_SIZE);
+  /* before the first file */
+  if (p1 != sm->dir)
+    {      
+      memcpy(current, sm->dir, p1 - sm->dir);
+      current += (p1 - sm->dir);
+    }  
+  /* the second file*/
+  memcpy(current, p2, size2);
+  current += size2;
+  /* between the files */
+  memcpy(current, p1+size1, (p2-p1-size1));
+  current += (p2-p1-size1);  
+  /* the first file */
+  memcpy(current, p1, size1);
+  current += size1;
+  /* and the rest */
+  memcpy(current, p2+size2, (sm->dir+DIR_SIZE-p2-size2));
+
+  /* really update the directory */
+  memcpy(sm->dir, tmp, DIR_SIZE);
+
+  return;
 }

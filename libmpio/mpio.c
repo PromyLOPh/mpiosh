@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.35 2002/10/27 02:45:28 germeier Exp $
+ * $Id: mpio.c,v 1.36 2002/10/27 17:37:27 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -353,6 +353,21 @@ mpio_close(mpio_t *m)
   }
 }
 
+mpio_model_t
+mpio_get_model(mpio_t *m)
+{
+  mpio_model_t r;
+
+  if (m) 
+    {
+      r = m->model;
+    } else {
+      r = MPIO_MODEL_UNKNOWN;
+    }
+  
+  return r;
+}
+
 void    
 mpio_get_info(mpio_t *m, mpio_info_t *info)
 {
@@ -532,6 +547,7 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   BYTE block[BLOCK_SIZE];
   int fd, toread;
   struct stat file_stat;
+  struct tm tt;
 
   BYTE *p=NULL;
   DWORD filesize, fsize, free, blocks;
@@ -542,13 +558,19 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   if (mem==MPIO_INTERNAL_MEM) sm=&m->internal;  
   if (mem==MPIO_EXTERNAL_MEM) sm=&m->external;
 
-  if (stat((const char *)filename, &file_stat)!=0) {
-    debug("could not find file: %s\n", filename);
-    MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
-  }
-  fsize=filesize=file_stat.st_size;
-  debugn(2, "filesize: %d\n", fsize);
-
+  if (memory)
+    {
+      fsize=filesize=memory_size;
+      tt = (struct tm){ 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    } else {      
+      if (stat((const char *)filename, &file_stat)!=0) {
+	debug("could not find file: %s\n", filename);
+	MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
+      }
+      fsize=filesize=file_stat.st_size;
+      debugn(2, "filesize: %d\n", fsize);
+    }
+  
   /* check if there is enough space left */
   mpio_memory_free(m, mem, &free);
   if (free*1024<fsize) {
@@ -594,12 +616,15 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
       f->i_fat[0x03]= blocks          & 0xff;
     }  
 
-  /* open file for writing */
-  fd = open(filename, O_RDONLY);    
-  if (fd==-1) 
-    {
-      debug("could not open file: %s\n", filename);
-      MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
+  if (!memory)
+    {      
+      /* open file for writing */
+      fd = open(filename, O_RDONLY);    
+      if (fd==-1) 
+	{
+	  debug("could not open file: %s\n", filename);
+	  MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
+	}
     }
 
   while ((filesize>BLOCK_SIZE) && (!abort)) {
@@ -610,11 +635,16 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
       toread=filesize;
     }
     
-    if (read(fd, block, toread)!=toread) {
-      debug("error reading file data\n");
-      close(fd);
-      MPIO_ERR_RETURN(MPIO_ERR_READING_FILE);
-    }
+    if (memory) 
+      {
+	memcpy(block, memory+(fsize-filesize), toread);
+      } else {	
+	if (read(fd, block, toread)!=toread) {
+	  debug("error reading file data\n");
+	  close(fd);
+	  MPIO_ERR_RETURN(MPIO_ERR_READING_FILE);
+	}
+      }
     filesize -= toread;
 
     /* get new free block from FAT and write current block out */
@@ -640,18 +670,24 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     toread=filesize;
   }
 
-  if (read(fd, block, toread)!=toread) {
-    debug("error reading file data\n");
-    close(fd);
-    MPIO_ERR_RETURN(MPIO_ERR_READING_FILE);
-  }
+  if (memory)
+    {
+      memcpy(block, memory+(fsize-filesize), toread);
+    } else {      
+      if (read(fd, block, toread)!=toread) {
+	debug("error reading file data\n");
+	close(fd);
+	MPIO_ERR_RETURN(MPIO_ERR_READING_FILE);
+      }
+    }
   filesize -= toread;
   
   /* mark end of FAT chain and write last block */
   mpio_fatentry_set_eof(m ,mem, f);
   mpio_io_block_write(m, mem, f, block);
 
-  close(fd);
+  if (!memory)
+    close(fd);
 
   if (progress_callback)
     (*progress_callback)((fsize-filesize), fsize);
@@ -700,10 +736,34 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     } else {
       mpio_dentry_put(m, mem,
 		      filename, strlen(filename),
-		      file_stat.st_ctime, fsize, start);
+		      ((memory)?mktime(&tt):file_stat.st_ctime), 
+		      fsize, start);
     }  
 
   return fsize-filesize;
+}
+
+int	
+mpio_file_switch(mpio_t *m, mpio_mem_t mem, 
+		 mpio_filename_t file1, mpio_filename_t file2)
+{
+  BYTE *p1, *p2;
+
+  /* find files */
+  p1 = mpio_dentry_find_name(m, mem, file1);
+  if (!p1)
+    p1 = mpio_dentry_find_name_8_3(m, mem, file1);
+
+  p2 = mpio_dentry_find_name(m, mem, file2);
+  if (!p2)
+    p2 = mpio_dentry_find_name_8_3(m, mem, file2);
+
+  if ((!p1)  || (!p2))
+    MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
+
+  mpio_dentry_switch(m, mem, p1, p2);
+
+  return 0;
 }
 
 int
