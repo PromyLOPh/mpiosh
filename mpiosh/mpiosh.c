@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.1 2002/09/12 18:49:36 crunchy Exp $
+ * $Id: mpiosh.c,v 1.2 2002/09/13 07:00:46 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -331,7 +331,6 @@ main(int argc, char *argv[]) {
   char *	line;
   char **	cmds, **walk;
   mpiosh_cmd_t *cmd;
-  int		idx;
   
   UNUSED(argc);
   UNUSED(argv);

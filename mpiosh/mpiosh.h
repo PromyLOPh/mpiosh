@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: mpiosh.h,v 1.1 2002/09/12 18:49:36 crunchy Exp $
+ * $Id: mpiosh.h,v 1.2 2002/09/13 07:00:46 crunchy Exp $
  *
  * Copyright (C) 2002 Andreas Büsching <crunchy@tzi.de>
  *
@@ -23,14 +23,6 @@
 
 #ifndef _MPIOSH_H_
 #define _MPIOSH_H_
-
-#if !defined TRUE
-#	define TRUE 1
-#endif
-
-#if !defined FALSE
-#	define FALSE 1
-#endif
 
 typedef void(*cmd_callback)(char *args[]);
   
