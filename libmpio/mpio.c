@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.42 2003/03/15 13:24:59 germeier Exp $
+ * $Id: mpio.c,v 1.43 2003/03/22 19:31:05 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -60,6 +60,9 @@ static BYTE *mpio_model_name[] = {
   "MPIO-DMB",
   "MPIO-DMB+",
   "MPIO-DMK",
+  "MPIO-FD100",
+  "MPIO-FL100",
+  "MPIO-FY100",
   "unknown"
 };
 
