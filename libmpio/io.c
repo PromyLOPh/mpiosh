@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.1 2002/08/28 16:10:50 salmoon Exp $
+ * $Id: io.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -56,18 +56,20 @@ WORD index2blockaddress(WORD ba)
   low  = (ba * 2) & 0xff;
     
   c = high;
-  while (c) {
-    if (c & 0x01)
-      p ^= 1;
-    c /= 2;
-  }
+  while (c) 
+    {
+      if (c & 0x01)
+	p ^= 1;
+      c /= 2;
+    }
 
   c = low;
-  while (c) {
-    if (c & 0x01)
-      p ^= 0x01;
-    c /= 2;
-  }  
+  while (c) 
+    {
+      if (c & 0x01)
+	p ^= 0x01;
+      c /= 2;
+    }  
   
   addr = (high * 0x100) + low + p;
 
@@ -86,15 +88,15 @@ WORD index2blockaddress(WORD ba)
  * cmd:       commando code
  * mem:       internal/external
  * index:     sector/block
- * small:     FAT with less or equal 32MB
+ * size:      size of used memory chip
  * wsize:     write size, only for PUT_BLOCK
- *
+ * buffer:    output buffer of command packet
  *
  */
 
 int
 mpio_io_set_cmdpacket(mpio_cmd_t cmd, mpio_mem_t mem, DWORD index,
-		      BYTE small, BYTE wsize, BYTE *buffer) 
+		      BYTE size, BYTE wsize, BYTE *buffer) 
 {
 
   /* clear cmdpacket*/
@@ -108,15 +110,16 @@ mpio_io_set_cmdpacket(mpio_cmd_t cmd, mpio_mem_t mem, DWORD index,
    *  to address sectors or blocks.
    *  The highest byte has to be 0xff in that case!
    */
-  if (small <= 32) {
-    *(buffer + 0x05) = 0xff;
-  } else {  
-    *(buffer + 0x05) = (BYTE) (index >> 16);
-  }  
-  *(buffer + 0x06) = wsize;  /* is this always 0x48 in case of a write ?? */
+  if (size <= 32) 
+    {
+      *(buffer + 0x05) = 0xff;
+    } else {  
+      *(buffer + 0x05) = (BYTE) (index >> 16);
+    }  
+  /* is this always 0x48 in case of a block write ?? */
+  *(buffer + 0x06) = wsize;  
 
   memcpy((buffer + 0x3b), "jykim", 5);
-  
 
   return (0);
 }
@@ -217,20 +220,22 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
 
   nwrite = mpio_io_bulk_write (m->fd, cmdpacket, 0x40);
 
-  if (nwrite != CMD_SIZE) {
-    debug ("Failed to send command.\n\n");
-    close (m->fd);
-    return 0;    
-  }
+  if (nwrite != CMD_SIZE) 
+    {
+      debug ("Failed to send command.\n\n");
+      close (m->fd);
+      return 0;    
+    }
 
   /*  Receive packet from MPIO  */
   nread = mpio_io_bulk_read (m->fd, status, 0x40);
 
-  if (nread == -1 || nread != 0x40) {
+  if (nread == -1 || nread != 0x40) 
+    {
       debug ("Failed to read Sector.\n%x\n",nread);
-    close (m->fd);
-    return 0;    
-  }
+      close (m->fd);
+      return 0;    
+    }
 
   debugn (5, "<<< MPIO\n");
   hexdump (status, 0x40);
@@ -246,49 +251,70 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
  * parameter:
  *
  * m:         mpio context
- * area:      MPIO_{INTERNAL,EXTERNAL}_MEM
+ * mem:       MPIO_{INTERNAL,EXTERNAL}_MEM
  * index:     index number of sector to read
- * small:     size of memory chip to read from
- * wsize:     dummy
  * output:    return buffer (has to be SECTOR_SIZE)
  *
  */
+
+/* right now we assume we only want to read single sectors from 
+ * the _first_ internal memory chip 
+ */
+
 int
-mpio_io_sector_read(mpio_t *m, BYTE area, DWORD index, BYTE small,
-		    BYTE wsize, BYTE *output)
+mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
 {
+  mpio_smartmedia_t *sm;
+  
   int nwrite, nread;
   BYTE cmdpacket[CMD_SIZE], recvbuff[SECTOR_TRANS];
 
-  mpio_io_set_cmdpacket (GET_SECTOR, area, index, small, wsize, cmdpacket);
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+  if (!sm)
+    {
+      debug("error in memory selection, aborting\n");      
+      exit (-1);
+    }
+
+  mpio_io_set_cmdpacket (GET_SECTOR, mem, index, sm->size, 0, cmdpacket);
 
   debugn (5, "\n>>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
     
   nwrite = mpio_io_bulk_write (m->fd, cmdpacket, 0x40);
 
-  if(nwrite != CMD_SIZE) {
-    debug ("\nFailed to send command.\n\n");
-    close (m->fd);
-    return 1;
-  }
+  if(nwrite != CMD_SIZE) 
+    {
+      debug ("\nFailed to send command.\n\n");
+      close (m->fd);
+      return 1;
+    }
 
   /*  Receive packet from MPIO   */
   nread = mpio_io_bulk_read (m->fd, recvbuff, SECTOR_TRANS);
 
-  if(nread != SECTOR_TRANS) {
-    debug ("\nFailed to read Sector.\n%x\n", nread);
-    close (m->fd);
-    return 1;
-  }
+  if(nread != SECTOR_TRANS) 
+    {
+      debug ("\nFailed to read Sector.\n%x\n", nread);
+      close (m->fd);
+      return 1;
+    }
 
   /* check ECC Area information */
-  if (area==MPIO_EXTERNAL_MEM) {    
-    mpio_ecc_256_check (recvbuff,
-		  (recvbuff + SECTOR_SIZE + 13));
-    mpio_ecc_256_check ((recvbuff + (SECTOR_SIZE / 2)),
-		  (recvbuff + SECTOR_SIZE + 8));
-  }
+  if (mem==MPIO_EXTERNAL_MEM) 
+    {    
+      mpio_ecc_256_check (recvbuff,
+			  (recvbuff + SECTOR_SIZE + 13));
+      mpio_ecc_256_check ((recvbuff + (SECTOR_SIZE / 2)),
+			  (recvbuff + SECTOR_SIZE + 8));
+    }
+
+  if (mem==MPIO_INTERNAL_MEM) 
+    {
+      debugn(2, "WARNING, code for internal FAT entry (in ECC area)"
+	    " not yet in place!!\n");
+    }
   
   debugn (5, "\n<<< MPIO\n");
   hexdump (recvbuff, SECTOR_TRANS);
@@ -304,60 +330,82 @@ mpio_io_sector_read(mpio_t *m, BYTE area, DWORD index, BYTE small,
  * parameter:
  *
  * m:         mpio context
- * area:      MPIO_{INTERNAL,EXTERNAL}_MEM
+ * mem:       MPIO_{INTERNAL,EXTERNAL}_MEM
  * index:     index number of sector to read
- * small:     size of memory chip to read from
- * wsize:     dummy
  * input:     data buffer (has to be SECTOR_SIZE)
  *
  */
+
+/* right now we assume we only want to write single sectors from 
+ * the _first_ internal memory chip 
+ */
+
 int  
-mpio_io_sector_write(mpio_t *m, BYTE area, DWORD index, BYTE small,
-		     BYTE wsize, BYTE *input)
+mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
 {
-  DWORD block_address, ba;
   int nwrite;
+  mpio_smartmedia_t *sm;
+  DWORD block_address, ba;
   BYTE cmdpacket[CMD_SIZE], sendbuff[SECTOR_TRANS];
 
-  mpio_io_set_cmdpacket(PUT_SECTOR, area, index, small, wsize, cmdpacket);
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+  if (!sm)
+    {
+      debug("error in memory selection, aborting\n");      
+      exit (-1);
+    }
+
+  mpio_io_set_cmdpacket(PUT_SECTOR, mem, index, sm->size, 0, cmdpacket);
 
   debugn (5, "\n>>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
     
   nwrite = mpio_io_bulk_write(m->fd, cmdpacket, 0x40);
 
-  if(nwrite != CMD_SIZE) {
-    debug ("\nFailed to send command.\n\n");
-    close (m->fd);
-    return 1;
-  }
+  if(nwrite != CMD_SIZE) 
+    {
+      debug ("\nFailed to send command.\n\n");
+      close (m->fd);
+      return 1;
+    }
 
   memset(sendbuff, 0, SECTOR_TRANS);
   memset(sendbuff + SECTOR_SIZE, 0xff, 0x10);
   memcpy(sendbuff, input, SECTOR_SIZE);
   
-  if (index<0x40) {
-    block_address=0;
-  } else {  
-    ba= (index /0x20) - 2;
-    debugn(2, "foobar: %4x\n", ba);
-    block_address= index2blockaddress(ba);
-    debugn(2, "foobar: %4x\n", block_address);
-  }
+  if (index<0x40) 
+    {
+      block_address=0;
+    } else {  
+      ba= (index /0x20) - 2;
+      debugn(2, "foobar: %4x\n", ba);
+      block_address= index2blockaddress(ba);
+      debugn(2, "foobar: %4x\n", block_address);
+    }
   
-  /* generate ECC information for spare area ! */
-  mpio_ecc_256_gen(sendbuff, 
-	     sendbuff + SECTOR_SIZE + 0x0d);
-  mpio_ecc_256_gen(sendbuff + (SECTOR_SIZE / 2), 
-	     sendbuff + SECTOR_SIZE + 0x08);
+  if (mem==MPIO_EXTERNAL_MEM) 
+    {    
+      /* generate ECC information for spare area ! */
+      mpio_ecc_256_gen(sendbuff, 
+		       sendbuff + SECTOR_SIZE + 0x0d);
+      mpio_ecc_256_gen(sendbuff + (SECTOR_SIZE / 2), 
+		       sendbuff + SECTOR_SIZE + 0x08);
+      
+      ba = (block_address / 0x100) & 0xff;
+      sendbuff[SECTOR_SIZE + 0x06] = ba;
+      sendbuff[SECTOR_SIZE + 0x0b] = ba;
+      
+      ba = block_address & 0xff;
+      sendbuff[SECTOR_SIZE + 0x07] = ba;
+      sendbuff[SECTOR_SIZE + 0x0c] = ba;
+    }
   
-  ba = (block_address / 0x100) & 0xff;
-  sendbuff[SECTOR_SIZE + 0x06] = ba;
-  sendbuff[SECTOR_SIZE + 0x0b] = ba;
-  
-  ba = block_address & 0xff;
-  sendbuff[SECTOR_SIZE + 0x07] = ba;
-  sendbuff[SECTOR_SIZE + 0x0c] = ba;
+  if (mem==MPIO_INTERNAL_MEM) 
+    {
+      debug("WARNING, code for internal FAT entry (in ECC area)"
+	    " not yet in place!!\n");
+    }
 
   debugn (5, "\n>>> MPIO\n");
   hexdump(sendbuff, SECTOR_TRANS);
@@ -365,11 +413,12 @@ mpio_io_sector_write(mpio_t *m, BYTE area, DWORD index, BYTE small,
   /*  write sector MPIO   */
   nwrite = mpio_io_bulk_write(m->fd, sendbuff, SECTOR_TRANS);
 
-  if(nwrite != SECTOR_TRANS) {
-    debug ("\nFailed to read Sector.\n%x\n", nwrite);
-    close (m->fd);
-    return 1;
-  }
+  if(nwrite != SECTOR_TRANS) 
+    {
+      debug ("\nFailed to read Sector.\n%x\n", nwrite);
+      close (m->fd);
+      return 1;
+    }
 
   return 0;  
 }
@@ -378,76 +427,84 @@ mpio_io_sector_write(mpio_t *m, BYTE area, DWORD index, BYTE small,
  * read/write of blocks
  */
 int
-mpio_io_block_read(mpio_t *m, BYTE area, DWORD index, BYTE small,
-		   BYTE wsize, BYTE *output)
+mpio_io_block_read(mpio_t *m, BYTE area, DWORD index, BYTE size, BYTE *output)
 {
   int i=0;
   int nwrite, nread;
   DWORD rarea=0;
   BYTE cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
 
-  if (area == MPIO_INTERNAL_MEM) {
-    rarea = index / 0x1000000;    
-    index &= 0xffffff;
-  }
-  if (area == MPIO_EXTERNAL_MEM) {
-    rarea = area;
-  }
+  if (area == MPIO_INTERNAL_MEM) 
+    {
+      rarea = index / 0x1000000;    
+      index &= 0xffffff;
+    }
+  if (area == MPIO_EXTERNAL_MEM) 
+    {
+      rarea = area;
+    }
 
   index *= BLOCK_SECTORS;
 
-  mpio_io_set_cmdpacket(GET_BLOCK, rarea, index, small, wsize, cmdpacket);
+  mpio_io_set_cmdpacket(GET_BLOCK, rarea, index, size, 0, cmdpacket);
 
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));
     
   nwrite = mpio_io_bulk_write(m->fd, cmdpacket, CMD_SIZE);
 
-  if(nwrite != CMD_SIZE) {
-    debug ("\nFailed to send command.\n\n");
-    close (m->fd);
-    return 1;
-  }
+  if(nwrite != CMD_SIZE) 
+    {
+      debug ("\nFailed to send command.\n\n");
+      close (m->fd);
+      return 1;
+    }
 
   /*  Receive packet from MPIO   */
   nread = mpio_io_bulk_read(m->fd, recvbuff, BLOCK_TRANS);
 
-  if(nread != BLOCK_TRANS) {
-    debug ("\nFailed to read Block.\n%x\n",nread);
-    close (m->fd);
-    return 1;
-  }
+  if(nread != BLOCK_TRANS) 
+    {
+      debug ("\nFailed to read Block.\n%x\n",nread);
+      close (m->fd);
+      return 1;
+    }
 
   debugn(5, "\n<<< MPIO\n");
   hexdump(recvbuff, BLOCK_TRANS);
 
-  for (i = 0; i < BLOCK_SECTORS; i++) {
-    /* check ECC Area information */
-    if (area==MPIO_EXTERNAL_MEM) {      
-      mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS)),                   
-		    ((recvbuff + (i * SECTOR_TRANS) + SECTOR_SIZE + 13)));
-      mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS) + (SECTOR_SIZE / 2)), 
-		    ((recvbuff + (i * SECTOR_TRANS) + SECTOR_SIZE + 8)));
+  for (i = 0; i < BLOCK_SECTORS; i++) 
+    {
+      /* check ECC Area information */
+      if (area==MPIO_EXTERNAL_MEM) {      
+	mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS)),                   
+			    ((recvbuff +(i * SECTOR_TRANS) + SECTOR_SIZE +13)));
+	
+	mpio_ecc_256_check ((recvbuff + (i * SECTOR_TRANS) + (SECTOR_SIZE / 2)),
+			    ((recvbuff +(i * SECTOR_TRANS) + SECTOR_SIZE + 8)));
+	
+      }
+      
+      memcpy(output + (i * SECTOR_SIZE), 
+	     recvbuff + (i * SECTOR_TRANS), 
+	     SECTOR_SIZE);
     }
-    
-    memcpy(output + (i * SECTOR_SIZE), 
-	   recvbuff + (i * SECTOR_TRANS), 
-	   SECTOR_SIZE);
-  }
 
   return 0;  
 }
 
 /* Read spare is only usefull for the internal memory,
- * the FAT lies there.
- * 
- * For external SmartMedia cards we get and write the
- * informatione during {read,write}_{sector,block}
+ * the FAT lies there. It is updated during the
+ * mpio_io_{sector,block}_{read,write} operations.
+ *
+ * For external SmartMedia cards we have a "seperate" FAT
+ * which is read and updated just like on a regular floppy
+ * disc or hard drive.
  *
  */
 
 int
-mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE small,
+mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
 		   BYTE wsize, BYTE *output, int toread)
 {
   int i;
@@ -463,71 +520,75 @@ mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE small,
 
   chips = m->internal.chips;  
   
-  for (chip = 1; chip <= chips; chip++) {    
-    mpio_io_set_cmdpacket(GET_SPARE_AREA, chip, index, small, 
-			  wsize, cmdpacket);
-    debugn(5, "\n>>> MPIO\n");
-    hexdump(cmdpacket, sizeof(cmdpacket));
-    
-    nwrite = mpio_io_bulk_write(m->fd, cmdpacket, CMD_SIZE);
-    
-    if(nwrite != CMD_SIZE) {
-      debug ("\nFailed to send command.\n\n");
-      close (m->fd);
-      return 1;
-    }
-    
-    /*  Receive packet from MPIO   */
-    for (i = 0; i < (toread / chips / CMD_SIZE); i++) {
+  for (chip = 1; chip <= chips; chip++) 
+    {    
+      mpio_io_set_cmdpacket(GET_SPARE_AREA, chip, index, size, 
+			    wsize, cmdpacket);
+      debugn(5, "\n>>> MPIO\n");
+      hexdump(cmdpacket, sizeof(cmdpacket));
       
-      nread = mpio_io_bulk_read (m->fd,
-				 output + (i * CMD_SIZE) +
-				 (toread / chips * (chip - 1)),
-				 CMD_SIZE);
+      nwrite = mpio_io_bulk_write(m->fd, cmdpacket, CMD_SIZE);
       
-      if(nread != CMD_SIZE) {
-	debug ("\nFailed to read Block.\n%x\n",nread);
+      if(nwrite != CMD_SIZE) {
+	debug ("\nFailed to send command.\n\n");
 	close (m->fd);
 	return 1;
       }
-      debugn(5, "\n<<< MPIO\n");
-      hexdump(output + (i * CMD_SIZE) + (toread / chips * (chip - 1)), 
-	      CMD_SIZE);
+      
+      /*  Receive packet from MPIO   */
+      for (i = 0; i < (toread / chips / CMD_SIZE); i++) 
+	{	  
+	  nread = mpio_io_bulk_read (m->fd,
+				     output + (i * CMD_SIZE) +
+				     (toread / chips * (chip - 1)),
+				     CMD_SIZE);
+      
+	  if(nread != CMD_SIZE) 
+	    {
+	      debug ("\nFailed to read Block.\n%x\n",nread);
+	      close (m->fd);
+	      return 1;
+	    }
+	  debugn(5, "\n<<< MPIO\n");
+	  hexdump(output + (i * CMD_SIZE) + (toread / chips * (chip - 1)), 
+		  CMD_SIZE);
+	}
     }
-  }
-
+  
   return 0;  
 }
 
 int  
-mpio_io_block_delete(mpio_t *m, BYTE mem, DWORD index, BYTE small)
+mpio_io_block_delete(mpio_t *m, BYTE mem, DWORD index, BYTE size)
 {
   int nwrite, nread;
   BYTE cmdpacket[CMD_SIZE], status[CMD_SIZE];
 
 /*  Send command packet to MPIO  */
 
-  mpio_io_set_cmdpacket(DEL_BLOCK, mem, index, small, 0, cmdpacket);
+  mpio_io_set_cmdpacket(DEL_BLOCK, mem, index, size, 0, cmdpacket);
 
   debugn  (5, ">>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
 
   nwrite = mpio_io_bulk_write(m->fd, cmdpacket, 0x40);
 
-  if (nwrite != CMD_SIZE) {
-    debug ("Failed to send command.\n\n");
-    close (m->fd);
-    return 0;
-  }
+  if (nwrite != CMD_SIZE) 
+    {
+      debug ("Failed to send command.\n\n");
+      close (m->fd);
+      return 0;
+    }
 
 /*  Receive packet from MPIO  */
   nread = mpio_io_bulk_read (m->fd, status, CMD_SIZE);
 
-  if ((nread == -1) || (nread != CMD_SIZE)) {
+  if ((nread == -1) || (nread != CMD_SIZE)) 
+    {
       debug ("Failed to read Sector.\n%x\n",nread);
-    close (m->fd);
-    return 0;
-  }
+      close (m->fd);
+      return 0;
+    }
 
   if (status[0] != 0xc0) debug ("error formatting Block %04x\n", index);
   debugn(5, "<<< MPIO\n");
@@ -537,8 +598,7 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, DWORD index, BYTE small)
 }
 
 int  
-mpio_io_block_write(mpio_t *m, BYTE area, DWORD index, BYTE small, 
-		    BYTE wsize, BYTE *data)
+mpio_io_block_write(mpio_t *m, BYTE area, DWORD index, BYTE size, BYTE *data)
 {
   int i = 0;
   int nwrite;
@@ -546,73 +606,83 @@ mpio_io_block_write(mpio_t *m, BYTE area, DWORD index, BYTE small,
   DWORD rarea = 0;
   BYTE cmdpacket[CMD_SIZE], sendbuff[BLOCK_TRANS];
 
-  if (area == MPIO_INTERNAL_MEM) {
-    rarea = index / 0x1000000;    
-    index &= 0xffffff;
-  }
-  if (area == MPIO_EXTERNAL_MEM) {
-    rarea = area;
-  }
+  if (area == MPIO_INTERNAL_MEM) 
+    {
+      rarea = index / 0x1000000;    
+      index &= 0xffffff;
+    }
+  if (area == MPIO_EXTERNAL_MEM) 
+    {
+      rarea = area;
+    }
 
   index *= BLOCK_SECTORS;  
 
   /* build block for transfer to MPIO */
-  for (i = 0; i < BLOCK_SECTORS; i++) {
-    memcpy(sendbuff + (i * SECTOR_TRANS), 
-	   data + (i * SECTOR_SIZE),	   
-	   SECTOR_SIZE);
-    memset(sendbuff + (i * SECTOR_TRANS) + SECTOR_SIZE,
-	   0xff, CMD_SIZE);
-    /* fill in block information */
-    if (index < 0x40) {
-      block_address = 0;
-    } else {  
-      ba = (index / 0x20) - 2;
-/*       debugn(2, "foobar: %4x\n", ba); */
-      block_address = index2blockaddress(ba);
-/*       debugn(2, "foobar: %4x\n", block_address); */
-    }
-
-    ba = (block_address / 0x100) & 0xff;
-    sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] = ba;
-    sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0b] = ba;
-    
-    ba = block_address & 0xff;
-    sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x07] = ba;
-    sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0c] = ba;
-
-    /* generate ECC Area information */
-    if (area == MPIO_EXTERNAL_MEM) {      
-      mpio_ecc_256_gen ((sendbuff + (i * SECTOR_TRANS)),                   
-			((sendbuff + (i * SECTOR_TRANS) + SECTOR_SIZE + 13)));
-      mpio_ecc_256_gen ((sendbuff + (i * SECTOR_TRANS) + (SECTOR_SIZE / 2)), 
-			((sendbuff + (i * SECTOR_TRANS) + SECTOR_SIZE + 8)));
-    }
+  for (i = 0; i < BLOCK_SECTORS; i++) 
+    {
+      memcpy(sendbuff + (i * SECTOR_TRANS), 
+	     data + (i * SECTOR_SIZE),	   
+	     SECTOR_SIZE);
+      memset(sendbuff + (i * SECTOR_TRANS) + SECTOR_SIZE,
+	     0xff, CMD_SIZE);
+      /* fill in block information */
+      if (index < 0x40) 
+	{
+	  block_address = 0;
+	} else {  
+	  ba = (index / 0x20) - 2;
+	  /*       debugn(2, "foobar: %4x\n", ba); */
+	  block_address = index2blockaddress(ba);
+	  /*       debugn(2, "foobar: %4x\n", block_address); */
+	}
+      
+      ba = (block_address / 0x100) & 0xff;
+      sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] = ba;
+      sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0b] = ba;
+      
+      ba = block_address & 0xff;
+      sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x07] = ba;
+      sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0c] = ba;
+      
+      /* generate ECC Area information */
+      if (area == MPIO_EXTERNAL_MEM) 
+	{      
+	  mpio_ecc_256_gen ((sendbuff + (i * SECTOR_TRANS)),                   
+			    ((sendbuff + (i * SECTOR_TRANS) 
+			      + SECTOR_SIZE + 13)));
+	  mpio_ecc_256_gen ((sendbuff + (i * SECTOR_TRANS) 
+			      + (SECTOR_SIZE / 2)), 
+			    ((sendbuff + (i * SECTOR_TRANS) 
+			      + SECTOR_SIZE + 8)));
+	}
   }
 
-  mpio_io_set_cmdpacket(PUT_BLOCK, rarea, index, small, wsize, cmdpacket);
+  mpio_io_set_cmdpacket(PUT_BLOCK, rarea, index, size, 0x48 , cmdpacket);
 
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));
     
   nwrite = mpio_io_bulk_write(m->fd, cmdpacket, CMD_SIZE);
 
-  if(nwrite != CMD_SIZE) {
-    debug ("\nFailed to send command.\n\n");
-    close (m->fd);
-    return 1;
-  }
+  if(nwrite != CMD_SIZE) 
+    {
+      debug ("\nFailed to send command.\n\n");
+      close (m->fd);
+      return 1;
+    }
 
   /*  send packet to MPIO   */
   debugn(5, "\n<<< MPIO\n");
   hexdump(sendbuff, BLOCK_TRANS);
   nwrite = mpio_io_bulk_write (m->fd, sendbuff, BLOCK_TRANS);
 
-  if(nwrite != BLOCK_TRANS) {
-    debug ("\nFailed to read Block.\n%x\n",nwrite);
-    close (m->fd);
-    return 1;
-  }
+  if(nwrite != BLOCK_TRANS) 
+    {
+      debug ("\nFailed to read Block.\n%x\n",nwrite);
+      close (m->fd);
+      return 1;
+    }
 
   return 0;
 }

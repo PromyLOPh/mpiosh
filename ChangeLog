@@ -1,3 +1,7 @@
+2002-09-03  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/*: various "little" code cleanups
+
 2002-09-01  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpio_tool/mpiosh.c: add commands lcd and ldir

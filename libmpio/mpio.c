@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.1 2002/08/28 16:10:50 salmoon Exp $
+ * $Id: mpio.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -48,43 +48,47 @@ void mpio_init_external(mpio_t *);
 void 
 mpio_init_internal(mpio_t *m)
 {
-  BYTE i_offset = 0x18;
+  mpio_smartmedia_t *sm = &(m->internal);
+  BYTE i_offset         = 0x18;
+
   /* init main memory parameters */
-  m->internal.manufacturer = m->version[i_offset];
-  m->internal.id = m->version[i_offset+1];
-  m->internal.size = mpio_id2mem(m->internal.id);
-  m->internal.max_cluster = m->internal.size/16*1024;
-  m->internal.chips = 1;
+  sm->manufacturer = m->version[i_offset];
+  sm->id           = m->version[i_offset+1];
+  sm->size         = mpio_id2mem(sm->id);
+  sm->max_cluster  = sm->size/16*1024;
+  sm->chips        = 1;
   
   /* look for a second installed memory chip */
   if (mpio_id_valid(m->version[i_offset+2]))
     {    
-      if(mpio_id2mem(m->internal.id) != mpio_id2mem(m->version[i_offset+3]))
+      if(mpio_id2mem(sm->id) != mpio_id2mem(m->version[i_offset+3]))
 	{
 	  printf("Found a MPIO with two chips with different size!");
 	  printf("I'm utterly confused and aborting now, sorry!");
 	  printf("Please report this to: mpio-devel@lists.sourceforge.net\n");
 	  exit(1);	  
 	}
-    m->internal.size = 2 * mpio_id2mem(m->internal.id);
-    m->internal.chips = 2;
+    sm->size  = 2 * mpio_id2mem(sm->id);
+    sm->chips = 2;
   }
-  
-  mpio_id2geo(m->internal.id, &m->internal.geo);
+
+  /* this probably is not needed, but anyways ... */
+  mpio_id2geo(sm->id, &sm->geo);
 
   /* read FAT information from spare area */
-  m->internal.fat_size=m->internal.size*2;
-  m->internal.fat=malloc(m->internal.fat_size*SECTOR_SIZE);
+  sm->fat_size=sm->size*2;          /* the *2 is need here! */
+  sm->fat=malloc(sm->fat_size*SECTOR_SIZE);
   mpio_fat_read(m, MPIO_INTERNAL_MEM);
 
   /* Read directory from internal memory */
-  m->internal.dir_offset=0;
+  sm->dir_offset=0;
   mpio_rootdir_read(m, MPIO_INTERNAL_MEM);
 }
 
 void
 mpio_init_external(mpio_t *m)
 {
+  mpio_smartmedia_t *sm=&(m->external);
   BYTE e_offset=0x20;
 
   /* heuristic to find the right offset for the external memory */
@@ -93,36 +97,35 @@ mpio_init_external(mpio_t *m)
   
   if (mpio_id_valid(m->version[e_offset]))
     {
-      m->external.manufacturer=m->version[e_offset];
-      m->external.id=m->version[e_offset+1];
+      sm->manufacturer=m->version[e_offset];
+      sm->id=m->version[e_offset+1];
     } else {
-      m->external.manufacturer=0;
-      m->external.id=0;
+      sm->manufacturer=0;
+      sm->id=0;
     }  
 
-  if (m->external.id!=0) {
+  /* init memory parameters if external memory is found */
+  if (sm->id!=0) 
+    {
+      /* Read things from external memory (if available) */
+      sm->size  = mpio_id2mem(sm->id);
+      sm->chips = 1;                   /* external is always _one_ chip !! */
 
-    m->external.fat=0;
-    /* Read things from external memory (if available) */
-    m->external.size = mpio_id2mem(m->external.id);
-    m->external.chips = 1; /* external is always _one_ chip !! */    
-    mpio_id2geo(m->external.id, &m->external.geo);
-    
-    if (m->external.size < 16) {
-      printf("Sorry, I don't believe this software works with " 
-	    "SmartMedia Cards less than 16MB\n"
-	    "Proceed with care and send any findings to: "
-	     "mpio-devel@lists.sourceforge.net\n");
+      mpio_id2geo(sm->id, &sm->geo);
+      
+      if (sm->size < 16) 
+	{
+	  debug("Sorry, I don't believe this software works with " 
+		"SmartMedia Cards less than 16MB\n"
+		"Proceed with care and send any findings to: "
+		"mpio-devel@lists.sourceforge.net\n");
+	}
+      
+      mpio_bootblocks_read(m, MPIO_EXTERNAL_MEM);
+      sm->fat = malloc(SECTOR_SIZE*sm->fat_size);
+      mpio_fat_read(m, MPIO_EXTERNAL_MEM);
+      mpio_rootdir_read(m, MPIO_EXTERNAL_MEM);
     }
-    
-    mpio_bootblocks_read(m, MPIO_EXTERNAL_MEM);
-    m->external.fat = malloc(SECTOR_SIZE*m->external.fat_size);
-    mpio_fat_read(m, MPIO_EXTERNAL_MEM);
-    mpio_rootdir_read(m, MPIO_EXTERNAL_MEM);
-  }  
-
-
-
 }
 
 mpio_t *
@@ -388,7 +391,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
     }
     
     mpio_io_block_read(m, mem, realsector + (data_offset / BLOCK_SECTORS),
-		       sm->size, 0, block);
+		       sm->size, block);
 
     if (filesize > BLOCK_SIZE) {
       towrite = BLOCK_SIZE;
@@ -423,7 +426,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	
 	mpio_io_block_read(m, mem,
 			   (realsector + (data_offset / BLOCK_SECTORS)),
-			   sm->size, 0, block);
+			   sm->size, block);
 	if (filesize > BLOCK_SIZE) {
 	  towrite=BLOCK_SIZE;
 	} else {
@@ -559,7 +562,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
     mpio_io_block_delete(m, mem, ((realsector*BLOCK_SECTORS) + data_offset),
 			 sm->size);
     mpio_io_block_write(m, mem, realsector + (data_offset/BLOCK_SECTORS), 
-			sm->size, 0x48, block);
+			sm->size, block);
 
     filesize -= toread;
 	
@@ -614,8 +617,8 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
 
   /* format CIS area */
   mpio_io_block_delete(m, mem, 0x20, sm->size);
-  mpio_io_sector_write(m, mem, 0x20, sm->size, 0, sm->cis);
-  mpio_io_sector_write(m, mem, 0x21, sm->size, 0, sm->cis);
+  mpio_io_sector_write(m, mem, 0x20, sm->cis);
+  mpio_io_sector_write(m, mem, 0x21, sm->cis);
 
   mpio_fat_clear(m, mem);
   mpio_rootdir_clear(m, mem);

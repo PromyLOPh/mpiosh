@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: smartmedia.c,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: smartmedia.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -104,13 +104,14 @@ mpio_id2manufacturer(BYTE id)
 BYTE
 mpio_id_valid(BYTE id)
 {
-  switch(id) {
-  case 0xec:   /* Samsung */
-  case 0x98:   /* Toshiba */
-    return 1;      
-  default:
-    ;
-  }  
+  switch(id) 
+    {
+    case 0xec:   /* Samsung */
+    case 0x98:   /* Toshiba */
+      return 1;      
+    default:
+      ;
+    }  
 
   return 0;
 }
@@ -118,7 +119,8 @@ mpio_id_valid(BYTE id)
 void
 mpio_id2geo(BYTE id, mpio_disk_phy_t *geo)
 {
-  switch(id) {
+  switch(id) 
+    {
     case 0xea:
       *geo = MPIO_DISK_GEO_002;
       break;
@@ -144,10 +146,7 @@ mpio_id2geo(BYTE id, mpio_disk_phy_t *geo)
     default:
       debug("This should never happen!\n");      
       exit (1);      
-  }
-
+    }
+  
   return;
 }
-
-    
-  

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: fat.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -36,34 +36,40 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
   BYTE *pe;  /* partition entry */
   BYTE *bpb; /* BIOS Parameter Block */
 
-  mpio_smartmedia_t *sm;  
+  mpio_smartmedia_t *sm=0;  
 
   int sector, head, cylinder, total_sector;
   long temp;
 
+  /* this should not be needed for internal memory, but ... */
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+  if (!sm)
+    return 1;
 
   /* TODO: check a few things more, just to be sure */
 
   /* read CIS (just in case it might me usefull) */
   /* fixed @ offset 0x20 */
-  if (mpio_io_sector_read(m, mem, 0x20, sm->size, 0, sm->cis)) {
-    debug("error reading CIS\n");    
-    return 1;
-  }
+  if (mpio_io_sector_read(m, mem, 0x20, sm->cis)) 
+    {
+      debug("error reading CIS\n");    
+      return 1;
+    }
 
   /* read MBR */
   /* fixed @ offset 0x40 */
-  if (mpio_io_sector_read(m, mem, 0x40, sm->size, 0, sm->mbr)) {
-    debug("error reading MBR\n");    
-    return 1;
-  }
+  if (mpio_io_sector_read(m, mem, 0x40, sm->mbr)) 
+    {
+      debug("error reading MBR\n");    
+      return 1;
+    }
 
-  if ((sm->mbr[0x1fe] != 0x55) || (sm->mbr[0x1ff] != 0xaa)) {
-    debug("This is not the MBR!\n");
-    return 1;
-  }
+  if ((sm->mbr[0x1fe] != 0x55) || (sm->mbr[0x1ff] != 0xaa)) 
+    {
+      debug("This is not the MBR!\n");
+      return 1;
+    }
   
   /* always use the first partition */
   /* we probably don't need to support others */
@@ -77,18 +83,23 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
     sm->geo.NumSector + sector - 1 + OFFSET_MBR; 
 
   /* read PBR */
-  if (mpio_io_sector_read(m, mem, sm->pbr_offset, sm->size, 0, sm->pbr))
+  if (mpio_io_sector_read(m, mem, sm->pbr_offset, sm->pbr))
+    {
+      debug("error reading PBR\n");    
       return 1;
+    }
 
-  if ((sm->pbr[0x1fe] != 0x55) || (sm->pbr[0x1ff] != 0xaa)) {
-    debug("This is not the PBR!\n");
-    return 1;
-  }
+  if ((sm->pbr[0x1fe] != 0x55) || (sm->pbr[0x1ff] != 0xaa)) 
+    {
+      debug("This is not the PBR!\n");
+      return 1;
+    }
 
-  if (strncmp((sm->pbr+0x36),"FAT", 3) != 0) {
-    debug("Did not find an FAT signature, *not* good!, aborting!\n");
-    exit (1);
-  }
+  if (strncmp((sm->pbr+0x36),"FAT", 3) != 0) 
+    {
+      debug("Did not find an FAT signature, *not* good!, aborting!\n");
+      exit (1);
+    }
 
   bpb = sm->pbr + 0x0b;
   
@@ -101,9 +112,11 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
 
    /* 128 MB need 2 Bytes instead of 1.5 */
    if (sm->size != 128)
-     temp = ((total_sector / 0x20 * 0x03 / 0x02 / 0x200) + 0x01);   
-   else
-     temp = ((total_sector / 0x20 * 0x02 / 0x200) + 0x01);   
+     {
+       temp = ((total_sector / 0x20 * 0x03 / 0x02 / 0x200) + 0x01);   
+     } else {       
+       temp = ((total_sector / 0x20 * 0x02 / 0x200) + 0x01);   
+     }   
 
   sm->max_cluster = (total_sector / BLOCK_SECTORS);
   debugn(2,"max_cluster: %d\n", sm->max_cluster);
@@ -123,19 +136,22 @@ mpio_fat_read (mpio_t *m, mpio_mem_t mem)
   BYTE recvbuff[SECTOR_SIZE];
   int i;
 
-  if (mem == MPIO_INTERNAL_MEM) {    
-    sm = &m->internal;
-    if (mpio_io_spare_read(m, mem, 0, (sm->size / sm->chips), 0, sm->fat,
-			   (sm->fat_size * SECTOR_SIZE)))
-      return 1;
-    return 0;
-  }
+  if (mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+      if (mpio_io_spare_read(m, mem, 0, (sm->size / sm->chips), 0, sm->fat,
+			     (sm->fat_size * SECTOR_SIZE)))
+	return 1;
+      return 0;
+    }
   
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+
+  if (!sm)
+    return 1;
   
   for (i = 0; i < sm->fat_size; i++) {
-    if (mpio_io_sector_read(m, mem, (sm->fat_offset + i),
-			    sm->size, 0, recvbuff))
+    if (mpio_io_sector_read(m, mem, (sm->fat_offset + i), recvbuff))
       return 1;
 
     memcpy(sm->fat + (i * SECTOR_SIZE), recvbuff, SECTOR_SIZE);
@@ -393,20 +409,20 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
     }
     
     if (i == 0x40)
-      mpio_io_sector_write(m, mem, 0x40, sm->size, 0, sm->mbr);
+      mpio_io_sector_write(m, mem, 0x40, sm->mbr);
     if ((i > 0x40) && (i < sm->pbr_offset))
-      mpio_io_sector_write(m, mem, i, sm->size, 0, dummy);
+      mpio_io_sector_write(m, mem, i, dummy);
       
     if (i == sm->pbr_offset)
-      mpio_io_sector_write(m, mem, sm->pbr_offset, sm->size, 0, sm->pbr);
+      mpio_io_sector_write(m, mem, sm->pbr_offset, sm->pbr);
     
     if ((i >= sm->fat_offset) && (i < (sm->fat_offset + (2 * sm->fat_size)))) 
-      mpio_io_sector_write(m, mem, i, sm->size, 0, 
+      mpio_io_sector_write(m, mem, i, 
 			   (sm->fat + SECTOR_SIZE *
 			    ((i - sm->fat_offset) % sm->fat_size)));
     
     if (i>=sm->dir_offset)
-      mpio_io_sector_write(m, mem, i, sm->size, 0, 
+      mpio_io_sector_write(m, mem, i, 
 			   (sm->dir + (i - sm->dir_offset) * SECTOR_SIZE));
   }
     

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: directory.c,v 1.2 2002/09/03 10:22:24 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -251,8 +251,7 @@ mpio_rootdir_read (mpio_t *m, mpio_mem_t mem)
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
   
   for (i = 0; i < DIR_NUM; i++) {
-    if (mpio_io_sector_read(m, mem,
-			    (sm->dir_offset + i), sm->size, 0, recvbuff))
+    if (mpio_io_sector_read(m, mem, (sm->dir_offset + i), recvbuff))
       return 1;
 
     memcpy(sm->dir + (i * SECTOR_SIZE), recvbuff, SECTOR_SIZE);
