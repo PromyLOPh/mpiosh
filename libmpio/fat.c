@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.5 2002/09/09 15:48:58 germeier Exp $
+ * $Id: fat.c,v 1.6 2002/09/09 15:51:37 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -193,8 +193,8 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
       temp-=BLOCK_SECTORS;
     }
   
-  debug("max_cluster: %d\n", sm->max_cluster);
-  debug("temp: %04x\n", temp);
+/*   debug("max_cluster: %d\n", sm->max_cluster); */
+/*   debug("temp: %04x\n", temp); */
   
   return 0;  
 }
