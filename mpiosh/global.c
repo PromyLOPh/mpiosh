@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.1 2002/10/12 20:06:22 crunchy Exp $
+ * $Id: global.c,v 1.2 2002/10/14 12:52:01 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -86,9 +86,9 @@ mpiosh_cmd_t commands[] = {
   { "format", NULL, NULL,
     "  format current memory card",
     mpiosh_cmd_format, NULL },
-/*   { "switch", "<file1> <file2>", */
-/*     "switches the order of two files", */
-/*     mpiosh_cmd_switch }, */
+  { "switch", NULL, "<file1> <file2>",
+    "  switches the order of two files",
+    mpiosh_cmd_switch, mpiosh_readline_comp_mpio_file },
   { "ldir", (char *[]){ "lls", NULL }, NULL,
     "  list local directory",
     mpiosh_cmd_ldir, NULL },
