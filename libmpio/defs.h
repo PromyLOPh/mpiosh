@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.21 2003/04/18 13:53:01 germeier Exp $
+ * $Id: defs.h,v 1.22 2003/04/19 09:32:48 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -108,6 +108,8 @@ typedef BYTE mpio_filename_t[MPIO_FILENAME_LEN];
 #define MPIO_DEVICE "/dev/usb/mpio"
 #define MPIO_CHARSET "ISO-8859-15"
 
+#define MPIO_ID3_FORMAT "%p - %t"
+
 #define SECTOR_SIZE      0x200
 #define SECTOR_ECC       0x040
 #define SECTOR_TRANS     (SECTOR_SIZE + SECTOR_ECC)
@@ -124,7 +126,7 @@ typedef BYTE mpio_filename_t[MPIO_FILENAME_LEN];
 
 #define CMD_SIZE         0x40
 
-#define INFO_LINE        81
+#define INFO_LINE        129
 
 /* error codes */
 typedef struct {
@@ -261,6 +263,10 @@ typedef struct {
   int fd;
   BYTE *charset;                   /* charset used for filename conversion */
 
+  BYTE id3;                        /* enable/disable ID3 rewriting support */
+  BYTE id3_format[INFO_LINE];
+  BYTE id3_temp[INFO_LINE];
+  
   mpio_firmware_t firmware;  
 
   mpio_model_t model;

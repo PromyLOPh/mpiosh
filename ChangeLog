@@ -1,3 +1,18 @@
+2003-04-19  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/id3.h: 
+	  libmpio/id3.c: added files to support ID3 rewriting
+	* libmpio/mpio.c (mpio_file_put_real): 
+	  add support for ID3 rewriting
+	* mplib/src/mplib_s.c:
+	  small changes for MPIO use
+	* mpiosh/callback.c (mpiosh_cmd_id3, mpiosh_cmd_id3_format): 
+	  added function for commands "id3" and "id3_format"
+	* mpiosh/config.c (mpiosh_config_read): 
+	  add new config file options:
+	  id3_rewriting [on|off]
+	  id3_format <format>
+
 2003-04-18  Markus Germeier  <mager@tzi.de>
 	* integration of mplib 1.0.1 in source tree
 	* update build environment to use mplib if not

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.38 2003/04/18 13:53:01 germeier Exp $
+ * $Id: callback.c,v 1.39 2003/04/19 09:32:48 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -252,7 +252,8 @@ mpiosh_cmd_open(char *args[])
 
   if ((mpiosh.dev) && (mpiosh.config->charset))
     mpio_charset_set(mpiosh.dev, mpiosh.config->charset);
-
+  if (mpiosh.dev)
+    mpio_id3_set(mpiosh.dev, mpiosh.config->id3_rewriting);
 }
 
 void
@@ -1036,5 +1037,46 @@ mpiosh_cmd_lmkdir(char *args[])
     perror("error");
   }
 }
+
+void 
+mpiosh_cmd_id3(char *args[])
+{  
+  BYTE status;
+  int n;
+
+  MPIOSH_CHECK_CONNECTION_CLOSED;  
+
+  if (args[0] == NULL) {
+    status = mpio_id3_get(mpiosh.dev);
+    printf("ID3 rewriting is %s\n", (status?"ON":"OFF"));
+    return;
+  } else {
+    if (!strcmp(args[0], "on")) {
+      status = mpio_id3_set(mpiosh.dev, 1);
+    } else if (!strcmp(args[0], "off")) {
+      status = mpio_id3_set(mpiosh.dev, 0);
+    } else {
+      fprintf(stderr, "unknown id3 command\n");
+      return;
+    }
+    printf("ID3 rewriting is now %s\n", (status?"ON":"OFF"));
+  }
+}
+
+void 
+mpiosh_cmd_id3_format(char *args[])
+{ 
+  BYTE format[INFO_LINE];
+
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+
+  if (args[0] == NULL) {
+    mpio_id3_format_get(mpiosh.dev, format);
+    printf("current format line: \"%s\"\n", format);
+  } else {
+    mpio_id3_format_set(mpiosh.dev, args[0]);
+  }
+}
+
 
 /* end of callback.c */

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: config.c,v 1.3 2002/11/13 23:05:28 germeier Exp $
+ * $Id: config.c,v 1.4 2003/04/19 09:32:48 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -143,6 +143,22 @@ mpiosh_config_read(struct mpiosh_config_t *config)
       config->charset = strdup(value);
     } else {
       config->charset = NULL;
+    }
+
+    value = mpiosh_config_read_key(config, "mpiosh", "id3_rewriting");
+    if (value) {
+      if (!strcmp("on", value)) {
+	config->id3_rewriting = 1;
+      } else  {
+	config->id3_rewriting = 0;
+      }
+    }
+
+    value = mpiosh_config_read_key(config, "mpiosh", "id3_format");
+    if (value) {
+      config->id3_format = strdup(value);
+    } else {
+      config->id3_format = strdup(MPIO_ID3_FORMAT);
     }
     
   }

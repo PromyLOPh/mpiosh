@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.51 2003/04/18 13:53:01 germeier Exp $
+ * $Id: mpio.c,v 1.52 2003/04/19 09:32:48 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -107,7 +107,7 @@ static const int mpio_error_num = sizeof mpio_errors / sizeof(mpio_error_t);
 
 static int _mpio_errno = 0;
 
-#define MPIO_ERR_RETURN(err) { _mpio_errno = err; return -1 ; }
+#define MPIO_ERR_RETURN(err) { mpio_id3_end(m); _mpio_errno = err; return -1 ; }
 
 #define MPIO_CHECK_FILENAME(filename) \
   if (!mpio_check_filename(filename)) { \
@@ -388,7 +388,12 @@ mpio_init(mpio_callback_init_t progress_callback)
 
   /* set default charset for filename conversion */
   new_mpio->charset=strdup(MPIO_CHARSET);
-  
+
+  /* disable ID3 rewriting support */
+  new_mpio->id3=0; 
+  strncpy(new_mpio->id3_format, MPIO_ID3_FORMAT, INFO_LINE);
+  new_mpio->id3_temp[0]=0x00;
+
   return new_mpio;  
 }
 
@@ -652,10 +657,12 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
   mpio_fatentry_t   *f, current, firstblock, backup; 
   WORD start;
   BYTE block[BLOCK_SIZE];
+  BYTE use_filename[INFO_LINE];
   int fd, toread;
   struct stat file_stat;
   struct tm tt;
   time_t curr;
+  int id3;
 
   BYTE *p = NULL;
   DWORD filesize, fsize, free, blocks;
@@ -674,8 +681,11 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
     {
       fsize=filesize=memory_size;
     } else {      
-      if (stat((const char *)i_filename, &file_stat)!=0) {
-	debug("could not find file: %s\n", i_filename);
+      id3 = mpio_id3_do(m, i_filename, use_filename);
+      if (!id3)
+	strncat(use_filename, i_filename, INFO_LINE);
+      if (stat((const char *)use_filename, &file_stat)!=0) {
+	debug("could not find file: %s\n", use_filename);
 	MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
       }
       fsize=filesize=file_stat.st_size;
@@ -731,11 +741,11 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
 
   if (!memory)
     {      
-      /* open file for writing */
-      fd = open(i_filename, O_RDONLY);    
+      /* open file for reading */
+      fd = open(use_filename, O_RDONLY);    
       if (fd==-1) 
 	{
-	  debug("could not open file: %s\n", i_filename);
+	  debug("could not open file: %s\n", use_filename);
 	  MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
 	}
     }
@@ -857,6 +867,8 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
 		      ((memory)?mktime(&tt):file_stat.st_ctime), 
 		      fsize, start, 0x20);
     }  
+
+  mpio_id3_end(m);
 
   return fsize-filesize;
 }

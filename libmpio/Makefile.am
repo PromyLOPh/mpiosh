@@ -12,7 +12,8 @@ libmpio_la_SOURCES= \
 		directory.c \
 		fat.c \
 		ecc.c \
-		cis.c
+		cis.c \
+		id3.c
 
 pkginclude_HEADERS= \
 		mpio.h \
@@ -25,4 +26,5 @@ noinst_HEADERS= \
 		directory.h \
 		fat.h \
 		ecc.h \
-		cis.h
+		cis.h \
+		id3.h

@@ -3,3 +3,5 @@ default_mem=internal
 prompt_int=[;1mmpio <i>[m 
 prompt_ext=[;1mmpio <e>[m 
 charset=ISO-8859-15
+id3_rewriting=off
+id3_format=%p - %t

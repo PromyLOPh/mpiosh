@@ -1,7 +1,7 @@
 #/* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.16 2003/04/18 13:53:01 germeier Exp $
+ * $Id: mpio.h,v 1.17 2003/04/19 09:32:48 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -155,6 +155,20 @@ int	mpio_memory_format(mpio_t *, mpio_mem_t, mpio_callback_t);
  */
 /* context, memory bank */
 int	mpio_sync(mpio_t *, mpio_mem_t);
+
+/*
+ * ID3 rewriting support
+ */
+
+/* enable disable ID3 rewriting support */
+BYTE   mpio_id3_set(mpio_t *, BYTE);
+/* query ID3 rewriting support */
+BYTE   mpio_id3_get(mpio_t *);
+
+/* set format string for rewriting*/
+void   mpio_id3_format_set(mpio_t *, BYTE *);
+/* get format string for rewriting*/
+void   mpio_id3_format_get(mpio_t *, BYTE *);
 
 /*
  * "special" functions
