@@ -1,3 +1,8 @@
+2003-08-01  Markus Germeier  <mager@tzi.de>
+
+	* configure.in: bumped version to 0.7.0
+	* today is "release day"! :-)
+
 2003-07-27  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/callback.c (mpiosh_cmd_cd): checking argument.
