@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.6 2002/09/19 20:46:02 crunchy Exp $
+ * $Id: mpio.h,v 1.7 2002/09/19 22:23:01 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -102,7 +102,7 @@ int	mpio_memory_debug(mpio_t *, mpio_mem_t);
 int 	mpio_errno(void);
 
 /* returns the description of the error <errno> */
-char *	mpio_strerror(int errno);
+char *	mpio_strerror(int err);
 
 /* prints the error message of the last error*/
 void	mpio_perror(char *prefix);

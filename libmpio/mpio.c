@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.22 2002/09/19 21:25:07 germeier Exp $
+ * $Id: mpio.c,v 1.23 2002/09/19 22:23:01 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -770,16 +770,14 @@ mpio_errno(void)
 }
 
 char *
-mpio_strerror(int errno)
+mpio_strerror(int err)
 {
   int i;
 
-  printf("mpio_strerror %d\n", errno);
-  
-  if (errno >= 0) return NULL;
+  if (err >= 0) return NULL;
   
   for (i = 0; i < mpio_error_num; i++) {
-    if (mpio_errors[i].id == errno)
+    if (mpio_errors[i].id == err)
       return mpio_errors[i].msg;
   }
 
@@ -790,7 +788,7 @@ void
 mpio_perror(char *prefix)
 {
   char *msg = mpio_strerror(_mpio_errno);
-  
+
   if (msg == NULL) return;
   
   if (prefix)

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.14 2002/09/19 21:25:07 germeier Exp $
+ * $Id: callback.c,v 1.15 2002/09/19 22:23:01 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -240,20 +240,22 @@ mpiosh_callback_get(int read, int total)
   printf("\rretrieved %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
 
+  if (mpiosh_cancel) 
+    debug ("user cancelled operation\n");
+  
   return mpiosh_cancel; // continue
 }
 
 void
 mpiosh_cmd_get(char *args[])
 {
-  int size;
-  
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
   
-  size = mpio_file_get(mpiosh.dev, mpiosh.card, args[0], mpiosh_callback_get);
-
-  printf("\n");
+  if (mpio_file_get(mpiosh.dev, mpiosh.card, args[0], 
+		    mpiosh_callback_get) == -1) {
+    mpio_perror("error");
+  } 
 }
 
 void
@@ -287,11 +289,12 @@ mpiosh_cmd_mget(char *args[])
 	
 	if (!(error = regexec(&regex, fname, 0, NULL, 0))) {
 	  printf("getting '%s' ... \n", fname);
-	  if ((size = mpio_file_get(mpiosh.dev, mpiosh.card,
+	  if ((mpio_file_get(mpiosh.dev, mpiosh.card,
 				    fname, mpiosh_callback_put)) == -1) {
-	      mpio_perror("error");
-	      break;
-	    }
+	    debug("cancelled operation\n");
+	    mpio_perror("error");
+	    break;
+	  }
 	  if (mpiosh_cancel) {
 	    debug("operation cancelled by user\n");
 	    break;
@@ -324,14 +327,16 @@ void
 mpiosh_cmd_put(char *args[])
 {
   int size;
-  
+
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
   
-  size = mpio_file_put(mpiosh.dev, mpiosh.card, args[0], mpiosh_callback_put);
-  mpio_sync(mpiosh.dev, mpiosh.card);
-
-  printf("\n");
+  if ((size = mpio_file_put(mpiosh.dev, mpiosh.card, args[0], 
+			    mpiosh_callback_put)) == -1) {
+    mpio_perror("error");
+  } else {
+    mpio_sync(mpiosh.dev, mpiosh.card);
+  }
 }
 
 void
@@ -340,6 +345,7 @@ mpiosh_cmd_mput(char *args[])
   char			dir_buf[NAME_MAX];
   int			size, j, i = 0;
   struct dirent **	dentry, **run;
+  struct stat		st;
   regex_t	        regex;
   int                   error;
   BYTE                  errortext[100];
@@ -359,6 +365,17 @@ mpiosh_cmd_mput(char *args[])
       if ((size = scandir(dir_buf, &dentry, NULL, alphasort)) != -1) {
 	run = dentry;
 	for (j = 0; ((j < size) && (!mpiosh_cancel)); j++, run++) {
+	  if (stat((*run)->d_name, &st) == -1) {
+	    free(*run);
+	    continue;
+	  } else {
+	    if (!S_ISREG(st.st_mode)) {
+	      debugn(2, "not a regular file: '%s'\n", (*run)->d_name);
+	      free(*run);
+	      continue;
+	    }
+	  }
+	  
 	  if (!(error = regexec(&regex, (*run)->d_name, 0, NULL, 0))) {
 	    printf("putting '%s' ... \n", (*run)->d_name);
 	    if (mpio_file_put(mpiosh.dev, mpiosh.card,

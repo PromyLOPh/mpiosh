@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.15 2002/09/19 21:02:45 crunchy Exp $
+ * $Id: mpiosh.c,v 1.16 2002/09/19 22:23:01 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -259,7 +259,7 @@ mpiosh_command_regex_fix(char *argv[])
       if (*help == '*' && ((help == *walk) || (*(help - 1) != '.'))) {
 	*new_pos++ = '.';
 	*new_pos = *help;
-      } else if ((*help == '.') && (*help != '*')) {
+      } else if ((*help == '.') && (*(help + 1) != '*')) {
 	*new_pos++ = '\\';
 	*new_pos = *help;
       } else if (*help == '?' && ((help == *walk) || (*(help - 1) != '\\'))) {
@@ -273,7 +273,6 @@ mpiosh_command_regex_fix(char *argv[])
     *new_pos = '$';
     free(*walk);
     *walk = strdup(buffer);
-    printf("new regex: '%s'\n", *walk);
     
     walk++;
   }
