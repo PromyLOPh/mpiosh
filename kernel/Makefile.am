@@ -9,14 +9,9 @@ all: mpio.o
 mpio.o: mpio.c
 	$(CC) -c $(KCFLAGS) $(INCLUDES) $<
 
+clean:
+	rm -f mpio.o
+
 install-data-local:
 	$(mkinstalldirs) $(DESTDIR)@MODULE_PATH@
-	$(INSTALL_PROGRAM) -m 644 mpio.o $(DESTDIR)@MODULE_PATH@
-
-# install-strip:
-# 	$(mkinstalldirs) $(DESTDIR)@MODULE_PATH@
-# 	$(INSTALL_PROGRAM) -m 644 mpio.o $(DESTDIR)@MODULE_PATH@
-
-# install:
-# 	$(mkinstalldirs) $(DESTDIR)@MODULE_PATH@
-# 	$(INSTALL_PROGRAM) -m 644 mpio.o $(DESTDIR)@MODULE_PATH@
+	$(INSTALL_SCRIPT) -m 644 mpio.o $(DESTDIR)@MODULE_PATH@
