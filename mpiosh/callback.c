@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.1 2002/09/13 06:59:38 crunchy Exp $
+ * $Id: callback.c,v 1.2 2002/09/13 13:07:06 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -283,6 +283,7 @@ mpiosh_cmd_put(char *args[])
   MPIOSH_CHECK_ARG;
   
   size = mpio_file_put(mpiosh.dev, mpiosh.card, args[0], mpiosh_callback_put);
+  mpio_sync(mpiosh.dev, mpiosh.card);
 
   printf("\n");
 }
@@ -297,6 +298,7 @@ mpiosh_cmd_mput(char *args[])
   int                   error;
   BYTE                  errortext[100];
   int                   fsize;
+  int                   written = 0;
 
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
@@ -315,6 +317,7 @@ mpiosh_cmd_mput(char *args[])
 	    fsize = mpio_file_put(mpiosh.dev, mpiosh.card,
 				 (*run)->d_name, mpiosh_callback_put);
 	    printf("\n");
+	    written=1; /* we did write something, so do mpio_sync afterwards */
 	  } else {
 	    regerror(error, &regex, errortext, 100);
 	    debugn (2, "file does not match: %s (%s)\n", 
@@ -327,6 +330,8 @@ mpiosh_cmd_mput(char *args[])
     }
     i++;
   }
+  if (written)
+    mpio_sync(mpiosh.dev, mpiosh.card);
 }
 
 BYTE
@@ -346,6 +351,7 @@ mpiosh_cmd_del(char *args[])
   MPIOSH_CHECK_ARG;
   
   size = mpio_file_del(mpiosh.dev, mpiosh.card, args[0], mpiosh_callback_del);
+  mpio_sync(mpiosh.dev, mpiosh.card);
 
   printf("\n");
 }
@@ -362,6 +368,7 @@ mpiosh_cmd_mdel(char *args[])
   BYTE		month, day, hour, minute;
   WORD		year;  
   DWORD		fsize;  
+  int           deleted = 0;
 
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
@@ -382,6 +389,7 @@ mpiosh_cmd_mdel(char *args[])
 	  size = mpio_file_del(mpiosh.dev, mpiosh.card,
 			       fname, mpiosh_callback_del);
 	  printf("\n");
+	  deleted=1;
 	  /* if we delete a file, start again from the beginning, 
 	     because the directory has changed !! */
 	  p = mpio_directory_open(mpiosh.dev, mpiosh.card);
@@ -395,6 +403,8 @@ mpiosh_cmd_mdel(char *args[])
     }
     i++;
   }
+  if (deleted)
+    mpio_sync(mpiosh.dev, mpiosh.card);
 }
 
 

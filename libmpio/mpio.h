@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.1 2002/08/28 16:10:51 salmoon Exp $
+ * $Id: mpio.h,v 1.2 2002/09/13 13:07:05 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -78,12 +78,18 @@ int	mpio_file_get(mpio_t *, mpio_mem_t, BYTE *, BYTE (*)(int, int));
 int	mpio_file_put(mpio_t *, mpio_mem_t, BYTE *, BYTE (*)(int, int)); 
 
 /* context, memory bank, filename, callback */
-int	mpio_file_del(mpio_t *, mpio_mem_t, BYTE *, BYTE (*)(int, int)); 
-
+int	mpio_file_del(mpio_t *, mpio_mem_t, BYTE *, BYTE (*)(int, int));
 
 /* context, memory bank, callback */
 int	mpio_memory_format(mpio_t *, mpio_mem_t, BYTE (*)(int, int)); 
 
+/* mpio_sync has to be called after every set of mpio_file_{del,put}
+ * operations to write the current state of FAT and root directory.
+ * This is done explicitly to avoid writing these informations to often
+ * and thereby exhausting the SmartMedia chips
+ */
+/* context, memory bank */
+int	mpio_sync(mpio_t *, mpio_mem_t); 
 
 /* 
  * timeline:

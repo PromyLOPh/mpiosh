@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.12 2002/09/11 21:34:19 germeier Exp $
+ * $Id: mpio.c,v 1.13 2002/09/13 13:07:05 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -261,7 +261,6 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   struct utimbuf utbuf;
   long mtime;
   DWORD filesize, fsize;
-
   BYTE abort = 0;
   
   /* please fix me sometime */
@@ -301,6 +300,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	if (write(fd, block, towrite) != towrite) {
 	  debug("error writing file data\n");
 	  close(fd);
+	  free (f);
 	  return -1;
 	} 
 	filesize -= towrite;
@@ -308,9 +308,11 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	if (progress_callback)
 	  abort=(*progress_callback)((fsize-filesize), fsize);
 
-      } while ((mpio_fatentry_next_entry(m, mem, f) && (filesize>0)));
+      } while ((mpio_fatentry_next_entry(m, mem, f) && (filesize>0)) &&
+	       (!abort));
   
     close (fd);    
+    free (f);
 
     /* read and copied code from mtools-3.9.8/mcopy.c
      * to make this one right 
@@ -332,7 +334,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	      BYTE (*progress_callback)(int, int))
 {
   mpio_smartmedia_t *sm;
-  mpio_fatentry_t   *f, current; 
+  mpio_fatentry_t   *f, current, firstblock, backup; 
   WORD start;
   int data_offset;
   BYTE block[BLOCK_SIZE];
@@ -377,6 +379,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
       debug("could not free cluster for file!\n");
       return 0;	
     } else {
+      memcpy(&firstblock, f, sizeof(mpio_fatentry_t));
       start=f->entry;
     }  
 
@@ -405,7 +408,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
       return 0;
     }
 
-  while ((filesize>BLOCK_SIZE)) {
+  while ((filesize>BLOCK_SIZE) && (!abort)) {
 
     if (filesize>=BLOCK_SIZE) {      
       toread=BLOCK_SIZE;
@@ -458,17 +461,29 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 
   if (progress_callback)
     abort=(*progress_callback)((fsize-filesize), fsize);
+  
+  if (abort) 
+    {    /* delete the just written blocks, because the user
+	  * aborted the operation
+	  */
+      
+      memcpy(&current, &firstblock, sizeof(mpio_fatentry_t));
+      memcpy(&backup, &firstblock, sizeof(mpio_fatentry_t));
 
-/*   if (mem == MPIO_INTERNAL_MEM)     */
-/*     start.entry=start.i_index; */
-
-  /* FIXEME: add real values here!!! */
-  mpio_dentry_put(m, mem,
-		  filename, strlen(filename),
-		  file_stat.st_ctime, fsize, start);
-
-  /* this writes the FAT *and* the root directory */
-  mpio_fat_write(m, mem);
+      while (mpio_fatentry_next_entry(m, mem, &current))
+	{
+	  mpio_io_block_delete(m, mem, &backup);
+	  mpio_fatentry_set_free(m, mem, &backup);      
+	  memcpy(&backup, &current, sizeof(mpio_fatentry_t));
+	}
+      mpio_io_block_delete(m, mem, &backup);
+      mpio_fatentry_set_free(m, mem, &backup);      
+      
+    } else {
+      mpio_dentry_put(m, mem,
+		      filename, strlen(filename),
+		      file_stat.st_ctime, fsize, start);
+    }  
 
   return fsize-filesize;
 }
@@ -482,7 +497,8 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
   mpio_fatentry_t   *f;
   DWORD clusters;
   DWORD i;
-  
+  BYTE abort = 0;
+
   if (mem == MPIO_INTERNAL_MEM) 
     {    
       sm=&m->internal;
@@ -509,7 +525,17 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
 	mpio_fatentry_set_defect(m, mem, f);
 	
       if (progress_callback)
-	(*progress_callback)(f->entry, sm->max_cluster + 1);
+	{
+	  if (!abort) 
+	    {	      
+	      abort=(*progress_callback)(f->entry, sm->max_cluster + 1);
+	      if (abort)
+		debug("received abort signal, but ignoring it!\n");
+	    } else {
+	      (*progress_callback)(f->entry, sm->max_cluster + 1);
+	    }	      
+	}      
+	  
     } while (mpio_fatentry_plus_plus(f));
   free(f);
 
@@ -524,6 +550,7 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
   }
 
   mpio_rootdir_clear(m, mem);
+
   /* this writes the FAT *and* the root directory */
   mpio_fat_write(m, mem);
 
@@ -532,7 +559,6 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem,
 
   return 0;
 }
-
 
 int 
 mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename, 
@@ -573,27 +599,44 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 
 	memcpy(&backup, f, sizeof(mpio_fatentry_t));	
 
-	if (filesize > BLOCK_SIZE) {
-	  filesize -= BLOCK_SIZE;
-	} else {
-	  filesize -= filesize;
-	}	
+	if (filesize > BLOCK_SIZE) 
+	  {
+	    filesize -= BLOCK_SIZE;
+	  } else {
+	    filesize -= filesize;
+	  }	
 	
 	if (progress_callback)
-	  abort=(*progress_callback)((fsize-filesize), fsize);
-
+	  {	    
+	    if (!abort) 
+	      {		
+		abort=(*progress_callback)((fsize-filesize), fsize);
+		if (abort)
+		  debug("received abort signal, but ignoring it!\n");
+	      } else {
+		(*progress_callback)((fsize-filesize), fsize);
+	      }	    
+	  }
+	
       } while (mpio_fatentry_next_entry(m, mem, f));
+    mpio_io_block_delete(m, mem, &backup);
     mpio_fatentry_set_free(m, mem, &backup);
+    free(f);
   
   } else {
     debug("unable to locate the file: %s\n", filename);
   }
 
   mpio_dentry_delete(m, mem, filename);
-  /* this writes the FAT *and* the root directory */
-  mpio_fat_write(m, mem);
   
   return (fsize-filesize);
+}
+
+int	
+mpio_sync(mpio_t *m, mpio_mem_t mem)
+{
+  /* this writes the FAT *and* the root directory */
+  mpio_fat_write(m, mem);  
 }
 
 

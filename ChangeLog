@@ -1,3 +1,13 @@
+2002-09-13  Markus Germeier  <mager@informatik.uni-bremen.de>
+
+	* mpiosh/callback.c (mpiosh_cmd_put, mpiosh_cmd_del) 
+	(mpiosh_cmd_mdel, mpiosh_cmd_mput): use mpio_sync
+
+	* libmpio/mpio.c (mpio_file_get, mpio_file_put) 
+	(mpio_memory_format, mpio_file_del): add code to handle abort 
+	"signal" from user interface
+	(mpio_sync): added function
+
 2002-09-12  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/mpiosh.c (mpiosh_command_split): 
