@@ -4,7 +4,9 @@ KCFLAGS=-D__KERNEL__ -Wall -Wstrict-prototypes -O2 \
 
 EXTRA_DIST=mpio.c
 
-all: mpio.o
+all: @MPIO_KERNEL@
+
+kernel: mpio.o
 
 mpio.o: mpio.c
 	$(CC) -c $(KCFLAGS) $(INCLUDES) $<
@@ -16,5 +18,6 @@ distclean:
 	rm -f mpio.o
 
 install-data-local:
+	@test -n "@MODULE_PATH@" || exit 0
 	$(mkinstalldirs) $(DESTDIR)@MODULE_PATH@
 	$(INSTALL_SCRIPT) -m 644 mpio.o $(DESTDIR)@MODULE_PATH@

@@ -1,8 +1,7 @@
 # -*- rpm-spec -*-
 %define version @VERSION@
-%define release 1
+%define release @RELEASE@
 %define name    mpio
-%define spec_path @SPEC_PATH@
 %define	prefix		/usr
 %define sysconfdir	%prefix/etc
 
@@ -16,11 +15,16 @@ Source: http://download.sourceforge.net/mpio/mpio-@VERSION@.tar.gz
 Prefix: %prefix
 Buildroot: /var/tmp/mpio-@VERSION@-buildroot/
 Packager: Andreas Büsching <crunchy@tzi.de>
+Requires: libusb >= 0.1.7, readline >= 4.3, ncurses >= 5.0
+BuildRequires:	libusb-devel >= 0.1.7
+BuildRequires:	readline-devel >= 4.3
+BuildRequires:	ncurses-devel >= 5.0
 
-%description
+%description 
 This is a project for using Digitalway/Adtec digital audio player MPIO
-(DMG, DMK, DME) under Linux. It provides Linux kernel module driver,
-a userspace library and at the moment one tool to access the MPIO player.
+(DMG, DMK, DME, DMB, FD 100, FL100, FY100, FY200) under Linux. It uses
+libusb and provides a userspace library and at the moment one tool to
+access the MPIO player.
 
 %prep
 %setup
@@ -38,9 +42,6 @@ echo "%prefix/bin/mpiosh" >> /tmp/mpio-files.lst
 echo "%prefix/bin/mpiologo" >> /tmp/mpio-files.lst
 echo "%prefix/lib/libmpio*" >> /tmp/mpio-files.lst
 echo "%defattr(700,root,root)" >> /tmp/mpio-files.lst
-echo "%prefix/sbin/mkmpiodev" >> /tmp/mpio-files.lst
-echo "%defattr(644,root,root)" >> /tmp/mpio-files.lst
-echo "/lib/modules/$KVERSION/%{spec_path}/mpio.o" >> /tmp/mpio-files.lst
 echo "%defattr(644,root,root)" >> /tmp/mpio-files.lst
 echo "%sysconfdir/mpio/mpioshrc" >> /tmp/mpio-files.lst
 echo "%prefix/include/mpio/mpio.h" >> /tmp/mpio-files.lst
@@ -49,12 +50,7 @@ echo "%prefix/include/mpio/defs.h" >> /tmp/mpio-files.lst
 make DESTDIR=$RPM_BUILD_ROOT install
 
 %post
-mkmpiodev
 ldconfig
-depmod -a
-
-%preun
-mkmpiodev -r
 
 %files -f /tmp/mpio-files.lst
 
