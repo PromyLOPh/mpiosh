@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.22 2002/10/12 20:06:22 crunchy Exp $
+ * $Id: callback.c,v 1.23 2002/10/13 08:57:31 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -183,7 +183,7 @@ mpiosh_cmd_mem(char *args[])
       printf("reading   : works (untested)\n");
       printf("deleting  : broken\n");
       printf("writing   : broken\n");
-      printf("formatting: broken\n");
+      printf("formatting: complete (untested)\n");
       printf("external memory card is selected\n");
     } else {
       printf("no external memory card is available\n");

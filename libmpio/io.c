@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.18 2002/10/06 21:19:50 germeier Exp $
+ * $Id: io.c,v 1.19 2002/10/13 08:57:31 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -183,7 +183,7 @@ fatentry2hw(mpio_fatentry_t *f, BYTE *chip, DWORD *address)
     {
       sm        = &f->m->external;
       *chip     = MPIO_EXTERNAL_MEM;
-      *address  = mpio_zone_block_find(f->m, f->mem, f->entry);
+      *address  = mpio_zone_block_find_log(f->m, f->mem, f->entry);
       debugn(3, "mager: %06x (logical: %04x)\n", *address, f->entry);
     }
   return;
@@ -223,7 +223,28 @@ mpio_zone_init(mpio_t *m, mpio_cmd_t mem)
 }
 
 DWORD 
-mpio_zone_block_find(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
+mpio_zone_block_find_log(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
+{
+  mpio_smartmedia_t *sm;
+  int v;
+
+  if (mem != MPIO_EXTERNAL_MEM) 
+    {
+      debug("called function with wrong memory selection!\n");
+      return -1;
+    }
+  sm = &m->external;
+  
+  /* OK, I can't explain this right now, but it does work,
+   * see Software Driver v3.0, page 31
+   */
+  v = lblock + (sm->size/64);
+  
+  return (mpio_zone_block_find_seq(m, mem, v));
+}
+
+DWORD 
+mpio_zone_block_find_seq(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
 {
   mpio_smartmedia_t *sm;
   int i, f, v;
@@ -236,18 +257,13 @@ mpio_zone_block_find(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
     }
   sm = &m->external;
 
-  /* OK, I can't explain this right now, but it does work,
-   * see Software Driver v3.0, page 31
-   */
-  v = lblock + (sm->size/64);
-
   if ((lblock>=MPIO_BLOCK_CIS) && (lblock<(MPIO_BLOCK_CIS + BLOCK_SECTORS)))
     {
       zone  = 0;
       block = MPIO_BLOCK_CIS;
     } else {  
-      zone  = v / MPIO_ZONE_LBLOCKS;
-      block = v % MPIO_ZONE_LBLOCKS;
+      zone  = lblock / MPIO_ZONE_LBLOCKS;
+      block = lblock % MPIO_ZONE_LBLOCKS;
     }
   
   f=0;
@@ -266,11 +282,76 @@ mpio_zone_block_find(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
   
   if (!f) 
     {      
-      debug("block not found\n");
+      debugn(2, "block not found\n");
       return MPIO_BLOCK_NOT_FOUND;
     }
   
   return ((zone * BLOCK_SECTORS * MPIO_ZONE_PBLOCKS ) + v * BLOCK_SECTORS);
+}
+
+DWORD
+mpio_zone_block_set_free(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
+{
+  DWORD value;
+  int zone, block;
+  mpio_smartmedia_t *sm;
+
+  if (mem != MPIO_EXTERNAL_MEM)
+    {
+      debug("called function with wrong memory selection!\n");
+      return -1;
+    }
+  sm = &m->external;
+
+  value = mpio_zone_block_find_log(m, mem, lblock);
+
+  mpio_zone_block_set_free_phys(m, mem, value);
+  
+  return value;
+}
+
+void
+mpio_zone_block_set_free_phys(mpio_t *m, mpio_cmd_t mem, DWORD value)
+{
+  int zone, block;
+  mpio_smartmedia_t *sm;
+
+  if (mem != MPIO_EXTERNAL_MEM) 
+    {
+      debug("called function with wrong memory selection!\n");
+      return;
+    }
+  sm = &m->external;
+
+  zone  = value / BLOCK_SECTORS;
+  block = zone  % MPIO_ZONE_PBLOCKS;
+  zone  = zone  / MPIO_ZONE_PBLOCKS;
+
+  sm->zonetable[zone][block] = MPIO_BLOCK_FREE;
+
+  return;
+}
+
+void
+mpio_zone_block_set_defect_phys(mpio_t *m, mpio_cmd_t mem, DWORD value)
+{
+  int zone, block;
+  mpio_smartmedia_t *sm;
+
+  if (mem != MPIO_EXTERNAL_MEM) 
+    {
+      debug("called function with wrong memory selection!\n");
+      return;
+    }
+  sm = &m->external;
+
+  zone  = value / BLOCK_SECTORS;
+  block = zone  % MPIO_ZONE_PBLOCKS;
+  zone  = zone  / MPIO_ZONE_PBLOCKS;
+
+  sm->zonetable[zone][block] = MPIO_BLOCK_DEFECT;
+
+  return;
 }
 
 void
@@ -287,9 +368,85 @@ mpio_zone_block_set(mpio_t *m, mpio_cmd_t mem, DWORD pblock)
 }
 
 DWORD 
-mpio_zone_block_free(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
+mpio_zone_block_find_free_log(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
 {
+  mpio_smartmedia_t *sm;
+  int v;
+
+  if (mem != MPIO_EXTERNAL_MEM) 
+    {
+      debug("called function with wrong memory selection!\n");
+      return -1;
+    }
+  sm = &m->external;
+  
+  /* OK, I can't explain this right now, but it does work,
+   * see Software Driver v3.0, page 31
+   */
+  v = lblock + (sm->size/64);
+  
+  return (mpio_zone_block_find_free_seq(m, mem, v));
 }
+
+DWORD 
+mpio_zone_block_find_free_seq(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
+{
+  DWORD value;
+  int zone, block, i;
+  mpio_smartmedia_t *sm;
+
+  if (mem != MPIO_EXTERNAL_MEM) 
+    {
+      debug("called function with wrong memory selection!\n");
+      return -1;
+    }
+  sm = &m->external;
+  
+  value = mpio_zone_block_find_seq(m, mem, lblock);
+
+  if (value != MPIO_BLOCK_NOT_FOUND)
+    {
+      debug("logical block numbers is already assigned! (%4x)\n", lblock);
+      exit (-1);
+    }
+
+  if ((lblock>=MPIO_BLOCK_CIS) && (lblock<(MPIO_BLOCK_CIS + BLOCK_SECTORS)))
+    {
+      zone  = 0;
+      block = MPIO_BLOCK_CIS;
+    } else {  
+      zone  = lblock / MPIO_ZONE_LBLOCKS;
+      block = lblock % MPIO_ZONE_LBLOCKS;
+    }
+  
+  i=0;
+  while ((sm->zonetable[zone][i]!=MPIO_BLOCK_FREE) && (i<MPIO_ZONE_PBLOCKS))
+    i++;
+
+  if (i==MPIO_ZONE_PBLOCKS)
+    {
+      debug("could not find free pysical block\n");
+      return MPIO_BLOCK_NOT_FOUND;
+    }
+
+  debugn(2, "set new sector in zonetable, [%d][%d] = %4x\n", zone, i, block);
+  
+  sm->zonetable[zone][i] = block;
+
+  return ((zone * BLOCK_SECTORS * MPIO_ZONE_PBLOCKS ) + i * BLOCK_SECTORS);
+}
+
+
+WORD 
+mpio_zone_block_get_logical(mpio_t *m, mpio_cmd_t mem, DWORD pblock)
+{
+
+  return 0;
+}
+
+
+  
+
 
 /*
  * low-low level functions
@@ -504,11 +661,10 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
       /* find the correct physical block first! */
       if ((index>=MPIO_BLOCK_CIS) && (index<(MPIO_BLOCK_CIS + BLOCK_SECTORS)))
 	{
-	  sector = mpio_zone_block_find(m, mem, MPIO_BLOCK_CIS);
+	  sector = mpio_zone_block_find_seq(m, mem, MPIO_BLOCK_CIS);
 	  sector+= (index % MPIO_BLOCK_CIS);
 	} else {
-	  sector = mpio_zone_block_find(m, mem, /* yuck */
-					((index / 0x20) - (sm->size/64)));
+	  sector = mpio_zone_block_find_seq(m, mem, (index / 0x20));
 	  sector+= (index % 0x20);
 	}
     }
@@ -588,6 +744,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
 {
   int nwrite;
   mpio_smartmedia_t *sm;
+  DWORD pvalue;
   DWORD block_address, ba;
   BYTE cmdpacket[CMD_SIZE], sendbuff[SECTOR_TRANS];
 
@@ -603,20 +760,52 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
    * - find the physical block (or allocate a new one)
    * - calculate the logical block for zone management
    */
-  block_address = index / MPIO_ZONE_LBLOCKS; /* easy! :-) */
 
-  if ((index % BLOCK_SECTORS) == 0)
+  if (index==MPIO_BLOCK_DEFECT) 
     {
-      /* this is the first write to the block, so allocate a new one */
-
-      /* mark it with the block_address */
-      
+      block_address = 0;
+      pvalue = 0;
     } else {
-      /* find the block from the block list! */
+      if ((index>=MPIO_BLOCK_CIS) && (index<(MPIO_BLOCK_CIS + BLOCK_SECTORS)))
+	{
+	  block_address = 0;
+	  if (index==MPIO_BLOCK_CIS)
+	    {
+	      pvalue=mpio_zone_block_find_free_seq(m, mem, index);  
+	    } else {
+	      /* find the block from the block list! */
+	      pvalue=mpio_zone_block_find_seq(m, mem, MPIO_BLOCK_CIS);
+	    }
+	  if (pvalue != MPIO_BLOCK_NOT_FOUND)
+	    pvalue = pvalue + index - MPIO_BLOCK_CIS;
+	  
+	} else {      
+	  block_address = blockaddress_encode(index / BLOCK_SECTORS); 
+	  if ((index % BLOCK_SECTORS) == 0)
+	    {
+	      /* this is the first write to the block, so allocate a new one */
+	      /* ... and mark it with the block_address */
+	      pvalue=mpio_zone_block_find_free_seq(m, mem, 
+						   (index / BLOCK_SECTORS));      
+	    } else {
+	      /* find the block from the block list! */
+	      pvalue=mpio_zone_block_find_seq(m, mem, (index / BLOCK_SECTORS));
+	    }
+	  if (pvalue != MPIO_BLOCK_NOT_FOUND)
+	    pvalue = pvalue + (index % BLOCK_SECTORS);
+	  
+	}
       
+      if (pvalue == MPIO_BLOCK_NOT_FOUND)
+	{
+	  debug ("Oops, this should never happen! (%6x : %6x)\n", 
+		 index, block_address);
+	  exit (-1);
+	}      
     }
+  
 
-  mpio_io_set_cmdpacket(m, PUT_SECTOR, mem, index, sm->size, 0, cmdpacket);
+  mpio_io_set_cmdpacket(m, PUT_SECTOR, mem, pvalue, sm->size, 0, cmdpacket);
 
   debugn (5, "\n>>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
@@ -638,6 +827,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
     {    
       if (index == MPIO_BLOCK_DEFECT) {
 	memset(sendbuff + SECTOR_SIZE, 0, 0x10);
+	mpio_zone_block_set_defect_phys(m, mem, pvalue);
       } else {
 	
 	/* generate ECC information for spare area ! */
@@ -645,18 +835,21 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
 			 sendbuff + SECTOR_SIZE + 0x0d);
 	mpio_ecc_256_gen(sendbuff + (SECTOR_SIZE / 2), 
 			 sendbuff + SECTOR_SIZE + 0x08);
-	
-	if (index == MPIO_BLOCK_CIS) {
-	  memset(sendbuff + SECTOR_SIZE + 0x06, 0, 2);
-	  memset(sendbuff + SECTOR_SIZE + 0x0b, 0, 2);
+	if (index == MPIO_BLOCK_DEFECT) {
+	  memset(sendbuff + SECTOR_SIZE, 0, 0x10);
 	} else {	  
-	  ba = (block_address / 0x100) & 0xff;
-	  sendbuff[SECTOR_SIZE + 0x06] = ba;
-	  sendbuff[SECTOR_SIZE + 0x0b] = ba;
-	  
-	  ba = block_address & 0xff;
-	  sendbuff[SECTOR_SIZE + 0x07] = ba;
-	  sendbuff[SECTOR_SIZE + 0x0c] = ba;
+	  if (index == MPIO_BLOCK_CIS) {
+	    memset(sendbuff + SECTOR_SIZE + 0x06, 0, 2);
+	    memset(sendbuff + SECTOR_SIZE + 0x0b, 0, 2);
+	  } else {	  
+	    ba = (block_address / 0x100) & 0xff;
+	    sendbuff[SECTOR_SIZE + 0x06] = ba;
+	    sendbuff[SECTOR_SIZE + 0x0b] = ba;
+	    
+	    ba = block_address & 0xff;
+	    sendbuff[SECTOR_SIZE + 0x07] = ba;
+	    sendbuff[SECTOR_SIZE + 0x0c] = ba;
+	  }
 	}
 	
       }
@@ -834,7 +1027,6 @@ mpio_io_block_delete(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
   fatentry2hw(f, &chip, &address);
-  mpio_zone_block_free(m, mem, address);
 
   return (mpio_io_block_delete_phys(m, chip, address));
 }
@@ -851,7 +1043,11 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
   if (chip == MPIO_INTERNAL_MEM) sm = &m->internal;
   /* uhoh, this breaks if we have more than two internal chips! */
   if (chip == (MPIO_INTERNAL_MEM+1)) sm = &m->internal;
-  if (chip == MPIO_EXTERNAL_MEM) sm = &m->external;
+  if (chip == MPIO_EXTERNAL_MEM) 
+    {
+      sm = &m->external;
+      mpio_zone_block_set_free_phys(m, chip, address);
+    }
 
   mpio_io_set_cmdpacket(m, DEL_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
@@ -884,7 +1080,11 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
     {
       debug ("error formatting Block %02x:%06x\n", 
 	     chip, address);
-      return 0;
+      if (chip == MPIO_EXTERNAL_MEM) 
+	{
+	  sm = &m->external;
+	  mpio_zone_block_set_free_phys(m, chip, address);
+	}      
     }
   
   return CMD_SIZE;

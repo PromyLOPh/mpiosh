@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.16 2002/10/06 21:19:50 germeier Exp $
+ * $Id: fat.c,v 1.17 2002/10/13 08:57:31 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -175,9 +175,9 @@ mpio_mbr_eval(mpio_smartmedia_t *sm)
   head = (int)(*(pe+0x01) & 0xff);
   sector = (int)(*(pe+0x02) & 0x3f);
   cylinder = (int)((*(pe+0x02) >> 6) * 0x100 + *(pe + 0x03));
-  
+
   sm->pbr_offset=(cylinder * sm->geo.NumHead + head ) *
-    sm->geo.NumSector + sector - 1 /*+ OFFSET_MBR */; 
+    sm->geo.NumSector + sector - 1; 
 
   return 0;
   
@@ -524,6 +524,13 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
   
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
+  if (!sm->fat) 
+    {
+      debug ("error, no space for FAT allocated!\n");
+      return 0;
+    }
+    
+
   if (sm->size == 128) {
     /* 2 Byte per entry */
     e = f->entry * 2;
@@ -649,15 +656,22 @@ mpio_fat_free_clusters(mpio_t *m, mpio_mem_t mem)
   int e = 0;
   int fsize;
 
-  f = mpio_fatentry_new(m, mem, 0, FTYPE_MUSIC);
-  
-  do 
-    {
-      if (mpio_fatentry_free(m, mem, f)) 
-	e++;      
-    } while (mpio_fatentry_plus_plus(f));
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
-  free(f);
+  if (sm->fat) 
+    {    
+      f = mpio_fatentry_new(m, mem, 0, FTYPE_MUSIC);
+      do 
+	{
+	  if (mpio_fatentry_free(m, mem, f)) 
+	    e++;      
+	} while (mpio_fatentry_plus_plus(f));
+      free(f);
+    } else {
+      f = 0;
+    }  
+  
     
   return (e * 16);
 }
@@ -789,6 +803,7 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
   mpio_fatentry_t   *f;
   BYTE dummy[BLOCK_SIZE];
   WORD i;
+  DWORD block;
   
   if (mem == MPIO_INTERNAL_MEM) {    
     sm = &m->internal;
@@ -822,9 +837,18 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
       for (i = 0; i < (sm->dir_offset + DIR_NUM) ; i++) {
 	/* before writing to a new block delete it! */
 	if (((i / 0x20) * 0x20) == i) {
-	  f=mpio_fatentry_new(m, mem, i, FTYPE_MUSIC); 
-	  mpio_io_block_delete(m, mem, f);
-	  free(f);
+	  block = mpio_zone_block_find_seq(m, mem, i);
+	  if (block == MPIO_BLOCK_NOT_FOUND) 
+	    {
+	      block = mpio_zone_block_find_free_seq(m, mem, i);
+	    }
+	  if (block == MPIO_BLOCK_NOT_FOUND) 
+	    {
+	      debug("This should never happen!");
+	      exit(-1);
+	    }
+	  
+	  mpio_io_block_delete_phys(m, mem, block);
 	}
 
 	/* remeber: logical sector 0 is the MBR! */

@@ -1,3 +1,10 @@
+2002-10-13  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.c (mpio_init): fixed segv when external memory
+	  was selected
+	* formatting of external memory is now completly supported 
+	  (untested ATM)
+
 2002-10-12  Andreas Buesching  <crunchy@tzi.de>
 
 	* configure.in: changed version to 0.6.0 for the next release;

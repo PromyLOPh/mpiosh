@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.31 2002/10/12 18:31:45 crunchy Exp $
+ * $Id: mpio.c,v 1.32 2002/10/13 08:57:31 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -291,8 +291,8 @@ mpio_init(mpio_callback_init_t progress_callback)
 			 (sm->max_blocks * 0x10), progress_callback);
       mpio_zone_init(new_mpio, MPIO_EXTERNAL_MEM);
 
-      mpio_bootblocks_read(new_mpio, MPIO_EXTERNAL_MEM);
-      if (sm->fat) 		/* card might be defect */
+      /* card might be defect */
+      if (mpio_bootblocks_read(new_mpio, MPIO_EXTERNAL_MEM)==0) 
 	{
 	  sm->fat = malloc(SECTOR_SIZE*sm->fat_size);
 	  mpio_fat_read(new_mpio, MPIO_EXTERNAL_MEM, NULL);
@@ -662,6 +662,7 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem, mpio_callback_t progress_callback)
   DWORD clusters;
   BYTE abort = 0;
   BYTE *cis, *mbr, *pbr;
+  BYTE defect[SECTOR_SIZE];
   int i;
 
   if (mem == MPIO_INTERNAL_MEM) 
@@ -679,6 +680,7 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem, mpio_callback_t progress_callback)
   clusters = sm->size*128;
 
   
+  /* TODO: read and write "Config.dat" so the player does not become "dumb" */
   if (mem==MPIO_INTERNAL_MEM) 
     {
       /* clear the fat before anything else, so we can mark clusters defective
@@ -714,12 +716,29 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem, mpio_callback_t progress_callback)
   if (mem == MPIO_EXTERNAL_MEM) {    
     /* delete all blocks! */
 
-    i=1; /* leave the "defect" first block alone for now */
+    i=0; 
     while (i < sm->max_blocks)
       {
 	mpio_io_block_delete_phys(m, mem, (i * BLOCK_SECTORS));	
 	i++;
+
+	if (progress_callback)
+	  {
+	    if (!abort) 
+	      {	      
+		abort=(*progress_callback)(i, sm->max_blocks);
+		if (abort)
+		  debug("received abort signal, but ignoring it!\n");
+	      } else {
+		(*progress_callback)(i, sm->max_blocks);
+	      }	      
+	  }      
+
+
       }
+
+    /* generate "defect" first block */
+    mpio_io_sector_write(m, mem, MPIO_BLOCK_DEFECT, defect);
     
     /* format CIS area */
     f = mpio_fatentry_new(m, mem, MPIO_BLOCK_CIS, FTYPE_MUSIC);
@@ -736,13 +755,15 @@ mpio_memory_format(mpio_t *m, mpio_mem_t mem, mpio_callback_t progress_callback)
     /* ... copy the blocks to internal memory structurs ... */
     memcpy(sm->cis, cis, SECTOR_SIZE);
     memcpy(sm->mbr, mbr, SECTOR_SIZE);
-    memcpy(sm->mbr, mbr, SECTOR_SIZE);
+    memcpy(sm->pbr, pbr, SECTOR_SIZE);
     /* ... and set internal administration accordingly */
     mpio_mbr_eval(sm);
     mpio_pbr_eval(sm);
+
     if (!sm->fat) 		/* perhaps we have to build a new FAT */
       sm->fat=malloc(sm->fat_size*SECTOR_SIZE);
-    mpio_fat_clear(m, mem);    
+    mpio_fat_clear(m, mem);
+
     /* TODO: for external memory we have to work a little "magic"
      * to identify and mark "bad blocks" (because we have a set of
      * spare ones!
