@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.c,v 1.13 2003/06/26 19:53:59 germeier Exp $
+ * $Id: global.c,v 1.14 2003/06/27 12:21:21 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -36,6 +36,7 @@ int mpiosh_cancel_ack		= 0;
 /* configuration filenames */
 const char *CONFIG_GLOBAL	= SYSCONFDIR "/mpio/";
 const char *CONFIG_USER		= "~/.mpio/";
+const char *CONFIG_BACKUP	= "~/.mpio/backup/";
 const char *CONFIG_FILE		= "mpioshrc";
 const char *CONFIG_HISTORY	= "history";
 
@@ -136,6 +137,12 @@ struct mpiosh_cmd_t commands[] = {
     "  dump FAT, directory, spare area and the first 0x100 of the\n"
     "  selected memory card",
     mpiosh_cmd_dump_mem, NULL },
+  { "backup", NULL, NULL,
+    "  create a backup of all known configuration files.",
+    mpiosh_cmd_backup, NULL },
+  { "restore", NULL, NULL,
+    "  restore an existing backup of all known configuration files.",
+    mpiosh_cmd_restore, NULL },
 #if 0
   /* deactivated for the 0.6.0 release because the code is incomplete! -mager */
   { "config", (char *[]) { "conf", NULL }, "[read|write|show]",

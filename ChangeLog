@@ -1,3 +1,22 @@
+2003-06-27  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpiosh/global.c: add CONFIG_BACKUP defining a user backup
+	directory.
+	(commands): add backup and restore command
+
+	* libmpio/src/mpio.c (mpio_file_get_real): fix a bug. Unlink the
+	external file (not the internal) before writing it (is it really
+	necessary?).
+
+	* mpiosh/callback.c (mpiosh_cmd_config): deactivated.
+	(mpiosh_cmd_backup): new function, which creates a backup of all
+	existing config files.
+	(mpiosh_cmd_restore): new function, which restores a backup.
+
+	* mpiosh/config.c (mpiosh_config_check_backup_dir): new function
+	to check for the backup directory ~/.mpio/backup/. Optionally it
+	can be created.
+
 2003-06-26  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/mpio.c (mpio_file_exists): 
 	  added helper function

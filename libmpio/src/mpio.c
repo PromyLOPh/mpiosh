@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.c,v 1.5 2003/06/26 19:53:58 germeier Exp $
+ * $Id: mpio.c,v 1.6 2003/06/27 12:21:21 crunchy Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -555,13 +555,12 @@ mpio_file_get_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
   if (f && p) {    
     filesize=fsize=mpio_dentry_get_filesize(m, mem, p);
 
-    if (memory) 
-      {
-	*memory = malloc(filesize);
-      } else {
-	unlink(filename);    
-	fd = open(as, (O_RDWR | O_CREAT), (S_IRWXU | S_IRGRP | S_IROTH));
-      }
+    if (memory) {
+      *memory = malloc(filesize);
+    } else {
+      unlink( as );
+      fd = open(as, (O_RDWR | O_CREAT), (S_IRWXU | S_IRGRP | S_IROTH));
+    }
     
     do
       {

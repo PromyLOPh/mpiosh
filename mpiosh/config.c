@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: config.c,v 1.5 2003/04/19 11:41:26 germeier Exp $
+ * $Id: config.c,v 1.6 2003/06/27 12:21:21 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -167,7 +167,27 @@ mpiosh_config_read(struct mpiosh_config_t *config)
 }
 
 int
-mpiosh_config_write(struct mpiosh_config_t *config)
+mpiosh_config_check_backup_dir( struct mpiosh_config_t *config, int create )
+{
+  DIR *dir;
+  char *path = cfg_resolve_path( CONFIG_BACKUP );
+  int ret = 1;
+  
+  if ( ( dir = opendir( path ) ) == NULL )
+    if ( create )
+      ret = ( ! mkdir(path, 0777 ) );
+    else
+      ret = 0;
+  else
+    closedir(dir);
+  
+  free(path);
+
+  return ret;
+}
+
+int
+mpiosh_config_write( struct mpiosh_config_t *config )
 {
   DIR *dir;
   char *path = cfg_resolve_path(CONFIG_USER);

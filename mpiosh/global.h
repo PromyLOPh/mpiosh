@@ -2,9 +2,9 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.h,v 1.2 2002/10/29 20:03:35 crunchy Exp $
+ * $Id: global.h,v 1.3 2003/06/27 12:21:22 crunchy Exp $
  *
- * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
+ * Copyright (C) 2001-2003 Andreas Büsching <crunchy@tzi.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ extern int mpiosh_cancel_ack;
 
 extern const char *CONFIG_GLOBAL;
 extern const char *CONFIG_USER;
+extern const char *CONFIG_BACKUP;
 extern const char *CONFIG_FILE;
 extern const char *CONFIG_HISTORY;
 
