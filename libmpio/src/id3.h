@@ -1,7 +1,7 @@
 /*
- * $Id: id3.h,v 1.1 2003/04/23 08:34:15 crunchy Exp $
+ * $Id: id3.h,v 1.2 2003/04/27 12:08:21 germeier Exp $
  *
- *  Library for accessing Digit@lways MPIO players
+ *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2003 Markus Germeier
  *
  *  This library is free software; you can redistribute it and/or
