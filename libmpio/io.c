@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.16 2002/09/23 22:38:03 germeier Exp $
+ * $Id: io.c,v 1.17 2002/09/28 00:32:41 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -45,11 +45,11 @@
 #include "ecc.h"
 
 BYTE model2externalmem(mpio_model_t);
-WORD index2blockaddress(WORD);
-WORD cluster2blockaddress(DWORD, BYTE);
-int  cluster2block(int mem, int sector);
+WORD blockaddress_encode(WORD);
+WORD blockaddress_decode(BYTE *);
 void fatentry2hw(mpio_fatentry_t *, BYTE *, DWORD *);
 
+/* small hack to handle external addressing on different MPIO models */
 BYTE 
 model2externalmem(mpio_model_t model)
 {
@@ -68,91 +68,10 @@ model2externalmem(mpio_model_t model)
   return m;
 }      
 
-void 
-fatentry2hw(mpio_fatentry_t *f, BYTE *chip, DWORD *address)
-{
-  mpio_smartmedia_t *sm;
-  
-  if (f->mem == MPIO_INTERNAL_MEM) 
-    {
-      sm       = &f->m->internal;
-      /*       hexdump((char *)&f->entry, 4); */
-      /*       hexdump((char *)&f->hw_address, 4); */
-      *chip    = f->hw_address / 0x1000000;    
-      *address = f->hw_address & 0x0ffffff;
-    }
-  if (f->mem == MPIO_EXTERNAL_MEM) 
-    {
-      sm        = &f->m->external;
-      *chip     = MPIO_EXTERNAL_MEM;
-      *address  = cluster2block(sm->size, f->entry);
-      *address *= BLOCK_SECTORS;
-
-      /* add offset to start of "data" area! */
-      *address += (sm->dir_offset + DIR_NUM - (2 * BLOCK_SECTORS));	
-    }
-  return;
-}
-
-
-
-/*
- * HELP!
- *
- * somebody explain me these values!!!
- *
- */
-
-int 
-cluster2block(int mem, int sector)
-{
-  int a = sector;
-
-  /* No Zone-based block management for SmartMedia below 32MB !!*/
-
-  /* The jumps are defect sectors on a specific SM medium and have to
-     be handled with a proper logic block -> physical block which
-     include a bad block management */
-
-/*   if (mem == 32)  */
-/*     { */
-/*       if (sector >= 830) */
-/*       	a++; */
-/*       if (a >= 1001) */
-/* 	a += 21; */
-/*     }   */
-
-/*   if (mem == 64)  */
-/*     { */
-/*       /\* I'm so large in *not* knowing! *\/ */
-/*       if (sector >= 89) */
-/* 	a++; */
-/*       if (a >= 1000) */
-/* 	a += 21;     */
-/*       if (a >= 2021) */
-/* 	a += 24; */
-/*       if (a >= 3045) */
-/* 	a += 24;     */
-/*       /\* WHAT? *\/ */
-/*       if (a >= 3755) */
-/* 	a++;       */
-/*     } */
-
-  if (mem > 16)
-    {
-      /* two blocks are already spent elsewhere */
-      /* question is: where (CIS and ??) */
-      if (sector >= 998) 
-	a += 22;
-      /* ... and then add 24 empty blocks every 1000 sectors */
-      a += ((sector - 998) / 1000 * 24);
-    }
-  
-  return a;
-}
+/* encoding and decoding of blockaddresses */
 
 WORD 
-index2blockaddress(WORD ba)
+blockaddress_encode(WORD ba)
 {
   WORD addr;
   BYTE p = 0, c = 0;
@@ -182,48 +101,195 @@ index2blockaddress(WORD ba)
   return addr;
 }
 
-WORD 
-cluster2blockaddress(DWORD index, BYTE size)
-{
-  DWORD ba;
-  WORD  block_address;
 
-  /* The jumps are defect sectors on a specific SM medium and have to
-     be handled with a proper logic block -> physical block which
-     include a bad block management */
+WORD 
+blockaddress_decode(BYTE *entry)
+{
+  WORD ba;
+  WORD value;
+  BYTE p=0, high, low;
+  int i, t;
+
+  /* check for "easy" defect block */
+  t=1;
+  for(i=0; i<0x10; i++)
+    if (entry[i] != 0)
+      t=0;
+  if (t)
+    return MPIO_BLOCK_DEFECT;
+
+  /* check for "easy" defect block */
+  t=1;
+  for(i=0; i<0x10; i++)
+    if (entry[i] != 0xff)
+      t=0;
+  if (t)
+    return MPIO_BLOCK_FREE;
+
+  /* check for "strange" errors */
+  if ((entry[6] != entry[11]) ||
+      (entry[7] != entry[12]))
+    {	  
+      debug("error: different block addresses found:\n");
+      hexdumpn(1, entry, 0x10);
+      return MPIO_BLOCK_DEFECT;
+    } 
   
-  if (index<0x40) 
+  ba = entry[6] * 0x100 + entry[7];
+  
+  /* special values */
+  if (ba == 0xffff)
+    return MPIO_BLOCK_DEFECT;
+  if (ba == 0x0000)
+    return MPIO_BLOCK_CIS;
+
+  /* check parity */
+  value = ba;
+  while (value)
     {
-      block_address=0;
-    } else {  
-      if (index >= 0x8000) 
-	{	  
-	  ba = ((index % 0x8000) / 0x20);
-/* 	  if (size == 64) */
-/* 	    { */
-/* 	      if (index >= 0x1d5e0) */
-/* 		ba--;	       */
-/* 	    } */
-	} else {       
-	  ba = (index / 0x20) - 2;
-/* 	  if (size == 32)  */
-/* 	    { */
-/* 	      if (ba >= 0x33f) */
-/* 		ba--;	       */
-/* 	    }	   */
-/* 	  if (size == 64) */
-/* 	    { */
-/* 	      if (ba >= 0x05b) */
-/* 		ba--;	       */
-/* 	    }	   */
-	}
-      block_address= index2blockaddress(ba);
-      debugn(2, "block-foo: %06x %04x %04x\n", index, ba, block_address);
+      if (value & 0x01)
+	p ^= 0x01;
+      
+      value /= 2;
+    }
+  if (p) 
+    {
+      debug("parity error found in block address: %2x\n", ba);
+      return MPIO_BLOCK_DEFECT;      
     }
   
-  return block_address;
+  high = ((ba / 0x100) & 0x07);
+  low  = ((ba & 0x0ff) / 2);
+  
+  return (high * 0x80 + low);
 }
 
+/* foobar  */
+
+void 
+fatentry2hw(mpio_fatentry_t *f, BYTE *chip, DWORD *address)
+{
+  mpio_smartmedia_t *sm;
+  
+  if (f->mem == MPIO_INTERNAL_MEM) 
+    {
+      sm       = &f->m->internal;
+      /*       hexdump((char *)&f->entry, 4); */
+      /*       hexdump((char *)&f->hw_address, 4); */
+      *chip    = f->hw_address / 0x1000000;    
+      *address = f->hw_address & 0x0ffffff;
+    }
+  if (f->mem == MPIO_EXTERNAL_MEM) 
+    {
+      sm        = &f->m->external;
+      *chip     = MPIO_EXTERNAL_MEM;
+      *address  = mpio_zone_block_find(f->m, f->mem, f->entry);
+      debugn(3, "mager: %06x (logical: %04x)\n", *address, f->entry);
+    }
+  return;
+}
+
+/*
+ * zone management
+ */
+
+int   
+mpio_zone_init(mpio_t *m, mpio_cmd_t mem)
+{
+  mpio_smartmedia_t *sm;
+  int i;
+  int zone, block, e;
+  
+  if (mem != MPIO_EXTERNAL_MEM) 
+    {
+      debug("called function with wrong memory selection!\n");
+      return -1;
+    }
+  sm = &m->external;
+
+  for(i=0; i<sm->max_blocks; i++)
+    {
+      zone = i / MPIO_ZONE_PBLOCKS;
+      block= i % MPIO_ZONE_PBLOCKS;
+
+      e = i * 0x10;
+
+      sm->zonetable[zone][block]=blockaddress_decode(sm->spare+e);
+      
+      hexdumpn(4, sm->spare+e, 0x10);
+      debugn(2, "decoded: %03x\n", sm->zonetable[zone][block]);
+    }
+
+}
+
+DWORD 
+mpio_zone_block_find(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
+{
+  mpio_smartmedia_t *sm;
+  int i, f, v;
+  int zone, block;
+  
+  if (mem != MPIO_EXTERNAL_MEM) 
+    {
+      debug("called function with wrong memory selection!\n");
+      return -1;
+    }
+  sm = &m->external;
+
+  /* OK, I can't explain this right now, but it does work,
+   * see Software Driver v3.0, page 31
+   */
+  v = lblock + (sm->size/64);
+
+  if (lblock == MPIO_BLOCK_CIS) 
+    {
+      zone  = 0;
+      block = MPIO_BLOCK_CIS;
+    } else {  
+      zone  = v / MPIO_ZONE_LBLOCKS;
+      block = v % MPIO_ZONE_LBLOCKS;
+    }
+  
+  f=0;
+  for (i=(MPIO_ZONE_PBLOCKS-1); i >=0; i--)
+    {
+
+      if (sm->zonetable[zone][i]==block)
+	{
+	  f++;
+	  v=i;
+	}
+    }
+
+  if (f>1)
+    debug("found more than one block, using first one\n");
+  
+  if (!f) 
+    {      
+      debug("block not found\n");
+      return MPIO_BLOCK_NOT_FOUND;
+    }
+  
+  return ((zone * BLOCK_SECTORS * MPIO_ZONE_PBLOCKS ) + v * BLOCK_SECTORS);
+}
+
+void
+mpio_zone_block_set(mpio_t *m, mpio_cmd_t mem, DWORD pblock)
+{
+  int zone, block, pb;
+  
+  pb    = pblock / BLOCK_SECTORS;
+  zone  = pb / MPIO_ZONE_PBLOCKS;
+  block = pb % MPIO_ZONE_PBLOCKS;
+
+  m->external.zonetable[zone][block] = MPIO_BLOCK_FREE ;
+
+}
+
+DWORD 
+mpio_zone_block_free(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
+{
+}
 
 /*
  * low-low level functions
@@ -419,7 +485,7 @@ int
 mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
 {
   mpio_smartmedia_t *sm=0;
-  
+  DWORD sector;
   int nwrite, nread;
   BYTE cmdpacket[CMD_SIZE], recvbuff[SECTOR_TRANS];
 
@@ -431,7 +497,24 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
       exit (-1);
     }
 
-  mpio_io_set_cmdpacket (m, GET_SECTOR, mem, index, sm->size, 0, cmdpacket);
+  if (mem == MPIO_INTERNAL_MEM)
+    {
+      sector = index;
+    } else {      
+      /* find the correct physical block first! */
+      if (index == MPIO_BLOCK_CIS) 
+	{
+	  sector = mpio_zone_block_find(m, mem, index);
+	} else {
+	  sector = mpio_zone_block_find(m, mem, /* yuck */
+					((index / 0x20) - (sm->size/64)));
+	  sector+= (index % 0x20);
+	}
+    }
+
+  debugn (2, "sector: %8x (%06x)\n", index, sector);
+
+  mpio_io_set_cmdpacket (m, GET_SECTOR, mem, sector, sm->size, 0, cmdpacket);
 
   debugn (5, "\n>>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
@@ -533,8 +616,8 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
   memset(sendbuff + SECTOR_SIZE, 0xff, 0x10);
   memcpy(sendbuff, input, SECTOR_SIZE);
   
-  if (mem==MPIO_EXTERNAL_MEM) 
-    block_address = cluster2blockaddress(index, sm->size);
+/*   if (mem==MPIO_EXTERNAL_MEM)  */
+/*     block_address = cluster2blockaddress(index, sm->size); */
   
     {    
       /* generate ECC information for spare area ! */
@@ -584,7 +667,6 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
   BYTE  chip;
   DWORD address;
   BYTE cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
-  DWORD block_address, ba;
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -630,18 +712,6 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
 				((recvbuff +(i * SECTOR_TRANS) 
 				  + SECTOR_SIZE + 8))))
 	  debug ("ECC error @ (%02x : %06x)\n", chip, address);
-
-	if (i==0) 
-	  {	    
-	    block_address = cluster2blockaddress(address, sm->size);
-	    
-	    ba = recvbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] * 0x100 + 
-	         recvbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x07] ;
-	    if (block_address != ba)
-	      debugn(2,"different block_addresses during read: %04x vs. %04x\n",
-		     block_address, ba);
-	  }
-	
       }
       
       memcpy(output + (i * SECTOR_SIZE), 
@@ -739,6 +809,7 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
 
   fatentry2hw(f, &chip, &address);
+  mpio_zone_block_free(m, mem, address);
 
 /*  Send command packet to MPIO  */
 
@@ -818,7 +889,7 @@ mpio_io_block_write(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *data)
       /* fill in block information */
       if (mem == MPIO_EXTERNAL_MEM) 
 	{      
-	  block_address = cluster2blockaddress(address, sm->size);
+/* 	  block_address = cluster2blockaddress(address, sm->size); */
 
 	  ba = (block_address / 0x100) & 0xff;
 	  sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] = ba;

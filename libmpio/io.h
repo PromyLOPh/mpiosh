@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.h,v 1.8 2002/09/23 22:38:03 germeier Exp $
+ * $Id: io.h,v 1.9 2002/09/28 00:32:41 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -32,6 +32,19 @@
 #define _MPIO_IO_H_
 
 #include "defs.h"
+
+/* phys.<->log. block mapping */
+int   mpio_zone_init(mpio_t *, mpio_cmd_t);
+/* context, memory bank, logical block */
+/* returns address of physical block! */
+DWORD mpio_zone_block_find(mpio_t *, mpio_cmd_t, DWORD);
+/* context, memory bank, logical block, physical address */
+/* mark physical block free (internal maintenance) */
+void  mpio_zone_block_set(mpio_t *, mpio_cmd_t, DWORD);
+/* context, memory bank, logical block */
+/* find used physical block and mark it as unused! */
+/* returns address of physical block! (to delete the physical block!) */
+DWORD mpio_zone_block_free(mpio_t *, mpio_cmd_t, DWORD);
 
 /* real I/O */
 int	mpio_io_set_cmdpacket(mpio_t *, mpio_cmd_t, mpio_mem_t, 

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.27 2002/09/24 15:38:03 germeier Exp $
+ * $Id: mpio.c,v 1.28 2002/09/28 00:32:41 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -193,11 +193,6 @@ mpio_init_external(mpio_t *m)
 		"mpio-devel@lists.sourceforge.net\n");
 	}
       
-      mpio_bootblocks_read(m, MPIO_EXTERNAL_MEM);
-      sm->fat = malloc(SECTOR_SIZE*sm->fat_size);
-      mpio_fat_read(m, MPIO_EXTERNAL_MEM, NULL);
-      mpio_rootdir_read(m, MPIO_EXTERNAL_MEM);
-
       /* for reading the spare area later! */
       sm->max_blocks  = sm->size/16*1024;      /* 1 cluster == 16 KB */
       sm->spare       = malloc(sm->max_blocks * 0x10);
@@ -272,11 +267,20 @@ mpio_init(mpio_callback_init_t progress_callback)
     mpio_fat_read(new_mpio, MPIO_INTERNAL_MEM, progress_callback);
   
   /* read the spare area (for block mapping) */
-  sm = &new_mpio->external;  
-  mpio_io_spare_read(new_mpio, MPIO_EXTERNAL_MEM, 0,
-		     sm->size, 0, sm->spare,
-		     (sm->max_blocks * 0x10), progress_callback);
+  if (new_mpio->external.id)
+    {      
+      sm = &new_mpio->external;  
+      mpio_io_spare_read(new_mpio, MPIO_EXTERNAL_MEM, 0,
+			 sm->size, 0, sm->spare,
+			 (sm->max_blocks * 0x10), progress_callback);
+      mpio_zone_init(new_mpio, MPIO_EXTERNAL_MEM);
 
+      mpio_bootblocks_read(new_mpio, MPIO_EXTERNAL_MEM);
+      sm->fat = malloc(SECTOR_SIZE*sm->fat_size);
+      mpio_fat_read(new_mpio, MPIO_EXTERNAL_MEM, NULL);
+      mpio_rootdir_read(new_mpio, MPIO_EXTERNAL_MEM);
+    }
+  
   return new_mpio;  
 }
 
@@ -400,8 +404,6 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, mpio_filename_t filename,
     
     do
       {
-	debugn(2, "entry: %4x\n", f->entry);	    
-    
 	mpio_io_block_read(m, mem, f, block);
 
 	if (filesize > BLOCK_SIZE) {

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.19 2002/09/24 15:38:03 germeier Exp $
+ * $Id: callback.c,v 1.20 2002/09/28 00:32:41 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -169,9 +169,12 @@ mpiosh_cmd_mem(char *args[])
       mpiosh.card = MPIO_EXTERNAL_MEM;
       mpiosh.prompt = PROMPT_EXT;
       printf("WARNING\n");
-      printf("Support for external memory is not complete and will"
-	     " probably *not* work !!\n");
-      printf("WARNING\n");
+      printf("Support for external memory is work in progress!!\n");
+      printf("Assumed status:\n");
+      printf("reading   : works (untested)\n");
+      printf("deleting  : broken\n");
+      printf("writing   : broken\n");
+      printf("formatting: broken\n");
       printf("external memory card is selected\n");
     } else {
       printf("no external memory card is available\n");

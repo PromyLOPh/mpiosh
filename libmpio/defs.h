@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.10 2002/09/24 15:38:03 germeier Exp $
+ * $Id: defs.h,v 1.11 2002/09/28 00:32:41 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -71,6 +71,17 @@ typedef enum { FTYPE_MUSIC = 0x01,
 typedef BYTE (*mpio_callback_t)(int, int) ; 
 typedef BYTE (*mpio_callback_init_t)(mpio_mem_t, int, int) ;
 
+/* zone lookup table */
+#define MPIO_ZONE_MAX        8 /* 8* 16MB = 128MB */
+#define MPIO_ZONE_PBLOCKS 1024 /* physical blocks per zone */
+#define MPIO_ZONE_LBLOCKS 1000 /* logical blocks per zone */
+typedef WORD mpio_zonetable_t[MPIO_ZONE_MAX][MPIO_ZONE_PBLOCKS];
+
+#define MPIO_BLOCK_FREE      0xffff
+#define MPIO_BLOCK_DEFECT    0xffee
+#define MPIO_BLOCK_CIS       0xaaaa 
+#define MPIO_BLOCK_NOT_FOUND 0xcccccccc
+
 /* filenames */
 #define MPIO_FILENAME_LEN    129
 typedef BYTE mpio_filename_t[MPIO_FILENAME_LEN];
@@ -96,9 +107,6 @@ typedef BYTE mpio_filename_t[MPIO_FILENAME_LEN];
 #define SMALL_MEM        0x02
 
 #define CMD_SIZE         0x40
-
-#define OFFSET_CIS       0x20       /* always fixed? :salmoon */
-#define OFFSET_MBR       0x40       /* always fixed? :salmoon */
 
 #define INFO_LINE        81
 
@@ -182,6 +190,9 @@ typedef struct {
    */
   int max_blocks;
   BYTE * spare;
+
+  /* lookup table for phys.<->log. block mapping */
+  mpio_zonetable_t zonetable;
 
   /* seems to be a fixed size according to the 
      Samsung documentation */

@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.14 2002/09/24 15:38:03 germeier Exp $
+ * $Id: fat.c,v 1.15 2002/09/28 00:32:41 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -112,16 +112,15 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
   /* TODO: check a few things more, just to be sure */
 
   /* read CIS (just in case it might me usefull) */
-  /* fixed @ offset 0x20 */
-  if (mpio_io_sector_read(m, mem, 0x20, sm->cis)) 
+  if (mpio_io_sector_read(m, mem, MPIO_BLOCK_CIS, sm->cis)) 
     {
       debug("error reading CIS\n");    
       return 1;
     }
 
   /* read MBR */
-  /* fixed @ offset 0x40 */
-  if (mpio_io_sector_read(m, mem, 0x40, sm->mbr)) 
+  /* the MBR is always located @ logical block 0, sector 0! */
+  if (mpio_io_sector_read(m, mem, 0, sm->mbr)) 
     {
       debug("error reading MBR\n");    
       return 1;
@@ -142,7 +141,7 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
   cylinder = (int)((*(pe+0x02) >> 6) * 0x100 + *(pe + 0x03));
   
   sm->pbr_offset=(cylinder * sm->geo.NumHead + head ) *
-    sm->geo.NumSector + sector - 1 + OFFSET_MBR; 
+    sm->geo.NumSector + sector - 1 /*+ OFFSET_MBR */; 
 
   /* read PBR */
   if (mpio_io_sector_read(m, mem, sm->pbr_offset, sm->pbr))
