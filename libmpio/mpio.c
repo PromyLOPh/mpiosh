@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.45 2003/03/25 23:56:52 germeier Exp $
+ * $Id: mpio.c,v 1.46 2003/04/03 21:48:25 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -128,10 +128,8 @@ mpio_init_internal(mpio_t *m)
   sm->manufacturer = m->version[i_offset];
   sm->id           = m->version[i_offset + 1];
   sm->chips        = 1;
-  if (mpio_id_valid(m->version[i_offset])) 
-    {      
-      sm->size         = mpio_id2mem(sm->id);
-    } else {
+  if (!(mpio_id_valid(m->version[i_offset]))) 
+    {
       sm->manufacturer = 0;
       sm->id           = 0;
       sm->size         = 0;
@@ -163,20 +161,29 @@ mpio_init_internal(mpio_t *m)
     }
   
   sm->size  = sm->chips * mpio_id2mem(sm->id);
+  debugn(2, "found %d chip(s) with %d MB => %d MB internal mem\n",
+	 sm->chips, mpio_id2mem(sm->id), sm->size);
 
   /* used for size calculations (see mpio_memory_free) */
   mpio_id2geo(sm->id, &sm->geo);
 
   /* read FAT information from spare area */  
-  sm->max_cluster  = sm->size / 16 * 1024;      /* 1 cluster == 16 KB */
+  sm->max_cluster  = (sm->size * 1024) / 16;      /* 1 cluster == 16 KB */
   sm->max_blocks   = sm->max_cluster;
   debugn(2, "max_cluster: %d\n", sm->max_cluster);
                                             /* 16 bytes per cluster */
-  sm->fat_size     = sm->max_cluster * 16 / SECTOR_SIZE;   
+  sm->fat_size     = (sm->max_cluster * 16) / SECTOR_SIZE;   
   debugn(2, "fat_size: %04x\n", sm->fat_size * SECTOR_SIZE);
   sm->fat          = malloc(sm->fat_size * SECTOR_SIZE);
   /* fat will be read in mpio_init, so we can more easily handle
      a callback function */
+
+  if (!(sm->fat_size)) 
+    {
+      printf("Some values on the way to the FAT calculations did not compute. :-(\n");
+      mpio_bail_out();
+    }
+      
 
   /* Read directory from internal memory */
   sm->dir_offset=0;
