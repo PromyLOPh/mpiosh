@@ -1,29 +1,24 @@
-/* -*- linux-c -*- */
-
-/* 
+/*
+ * $Id: smartmedia.h,v 1.2 2003/04/30 07:17:02 germeier Exp $
  *
- * $Id: smartmedia.h,v 1.1 2003/04/23 08:34:15 crunchy Exp $
+ *  libmpio - a library for accessing Digit@lways MPIO players
+ *  Copyright (C) 2002, 2003 Markus Germeier
  *
- * Library for USB MPIO-*
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
  *
- * Markus Germeier (mager@tzi.de)
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
  *
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc.,g 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- * */
+ */
 
 #ifndef _MPIO_SMARTMEDIA_H_
 #define _MPIO_SMARTMEDIA_H_
