@@ -19,7 +19,12 @@ dnl Checks for header files.
 AC_CHECK_HEADER(getopt.h,HAVE_GETOPT_H=1,HAVE_GETOPT_H=0)
 AC_SUBST(HAVE_GETOPT_H)
 
-dnl check for kernel version
+dnl --- checking for readline
+
+AC_CHECK_HEADER(readline/readline.h,,
+    AC_ERROR(could not find readline header files))
+
+dnl --- check for kernel version
 kernel_version=`uname -r 2>&1`
 echo -n "checking for kernel version ... "
 case "$kernel_version" in

@@ -5,9 +5,7 @@
 # Andreas Buesching  <crunchy@tzi.de>
 # $ID$
 
-aclocal && autoconf && automake -a
-
-./configure $@
+aclocal && autoconf && automake -a && ./configure $@
 
 
 # end of autogen.sh 

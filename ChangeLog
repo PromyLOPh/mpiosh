@@ -1,3 +1,7 @@
+2002-11-18  Andreas Buesching  <crunchy@tzi.de>
+
+	* configure.in: add a check for readline header files
+
 2002-11-14  Andreas Buesching  <crunchy@tzi.de>
 
 	* tools/mpiologo.c: renamed logotool.c to mpiologo.c

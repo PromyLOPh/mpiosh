@@ -1,3 +1,3 @@
 bin_PROGRAMS=mpiologo
 
-logotool_SOURCES=mpiologo.c
+mpiologo_SOURCES=mpiologo.c
