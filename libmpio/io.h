@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.h,v 1.9 2002/09/28 00:32:41 germeier Exp $
+ * $Id: io.h,v 1.10 2002/10/06 21:19:50 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -61,9 +61,11 @@ int	mpio_io_sector_read (mpio_t *, BYTE, DWORD, BYTE *);
 int	mpio_io_sector_write(mpio_t *, BYTE, DWORD, BYTE *);
 
 /* */
-int	mpio_io_block_read  (mpio_t *, BYTE, mpio_fatentry_t *, BYTE *);
-int	mpio_io_block_write (mpio_t *, BYTE, mpio_fatentry_t *, BYTE *);
-int	mpio_io_block_delete(mpio_t *, BYTE, mpio_fatentry_t *);
+int	mpio_io_block_read  (mpio_t *, mpio_mem_t, mpio_fatentry_t *, BYTE *);
+int	mpio_io_block_write (mpio_t *, mpio_mem_t, mpio_fatentry_t *, BYTE *);
+int	mpio_io_block_delete(mpio_t *, mpio_mem_t, mpio_fatentry_t *);
+/* needed for formatting of external memory */
+int	mpio_io_block_delete_phys(mpio_t *, BYTE, DWORD);
 
 /* */
 int	mpio_io_spare_read  (mpio_t *, BYTE, DWORD, BYTE, BYTE, BYTE *, int,

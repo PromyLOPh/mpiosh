@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.15 2002/09/28 00:32:41 germeier Exp $
+ * $Id: fat.c,v 1.16 2002/10/06 21:19:50 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -29,6 +29,213 @@
 
 #include <string.h>
 #include <stdlib.h>
+
+/* I'm lazy so I hard code all the values */
+
+BYTE mpio_part_016[0x10] = {
+  0x80, 0x02, 0x0a, 0x00, 0x01, 0x03, 0x50, 0xf3,
+  0x29, 0x00, 0x00, 0x00, 0xd7, 0x7c, 0x00, 0x00
+};
+BYTE mpio_part_032[0x10] = {
+  0x80, 0x02, 0x04, 0x00, 0x01, 0x07, 0x50, 0xf3,
+  0x23, 0x00, 0x00, 0x00, 0xdd, 0xf9, 0x00, 0x00
+};
+BYTE mpio_part_064[0x10] = {
+  0x80, 0x01, 0x18, 0x00, 0x01, 0x07, 0x60, 0xf3,
+  0x37, 0x00, 0x00, 0x00, 0xc9, 0xf3, 0x01, 0x00
+};
+BYTE mpio_part_128[0x10] = {
+  0x80, 0x01, 0x10, 0x00, 0x06, 0x0f, 0x60, 0xf3, 
+  0x2f, 0x00, 0x00, 0x00, 0xd1, 0xe7, 0x03, 0x00
+};
+
+/* ------------------------- */
+
+BYTE mpio_pbr_head[0x10] = {
+  0xe9, 0x00, 0x00, 0x4d, 0x53, 0x44, 0x4f, 0x53, 
+  0x35, 0x2e, 0x30, 0x00, 0x02, 0x20, 0x01, 0x00
+};
+BYTE mpio_pbr_016[0x13] = {
+  0x02, 0x00, 0x01, 0xd7, 0x7c, 0xf8, 0x03, 0x00,
+  0x10, 0x00, 0x04, 0x00, 0x29, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00
+};
+BYTE mpio_pbr_032[0x13] = {
+  0x02, 0x00, 0x01, 0xdd, 0xf9, 0xf8, 0x06, 0x00,
+  0x10, 0x00, 0x08, 0x00, 0x23, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00
+};
+BYTE mpio_pbr_064[0x13] = {
+  0x02, 0x00, 0x01, 0x00, 0x00, 0xf8, 0x0c, 0x00,
+  0x20, 0x00, 0x08, 0x00, 0x37, 0x00, 0x00, 0x00,
+  0xc9, 0xf3, 0x01
+};
+BYTE mpio_pbr_128[0x13] = {
+  0x02, 0x00, 0x01, 0x00, 0x00, 0xf8, 0x20, 0x00,
+  0x20, 0x00, 0x10, 0x00, 0x2f, 0x00, 0x00, 0x00,
+  0xd1, 0xe7, 0x03
+};
+
+BYTE *
+mpio_mbr_gen(BYTE size)
+{
+  BYTE *p;
+
+  p = (BYTE *)malloc(SECTOR_SIZE);
+  memset(p, 0, SECTOR_SIZE);
+  
+  /* MBR signature */
+  p[0x1fe] = 0x55;
+  p[0x1ff] = 0xaa;
+
+  /* frist boot partition */
+    switch(size) 
+    {
+    case 16:
+      memcpy(p+0x1be, mpio_part_016, 0x10);
+      break;
+    case 32:
+      memcpy(p+0x1be, mpio_part_032, 0x10);
+      break;
+    case 64:
+      memcpy(p+0x1be, mpio_part_064, 0x10);
+      break;
+    case 128:
+      memcpy(p+0x1be, mpio_part_128, 0x10);
+      break;
+    default:
+      debug("This should never happen! (%d)\n", size);
+      exit(-1);      
+    }
+
+  /* all other partitions are set to zero */
+  
+  return p;
+}
+
+BYTE *
+mpio_pbr_gen(BYTE size)
+{
+  BYTE *p;
+
+  p = (BYTE *)malloc(SECTOR_SIZE);
+  memset(p, 0, SECTOR_SIZE);
+  
+  /* MBR signature */
+  p[0x1fe] = 0x55;
+  p[0x1ff] = 0xaa;
+
+  memcpy(p, mpio_pbr_head, 0x10);
+  /* BIOS parameter etc. */
+  switch(size) 
+    {
+    case 16:
+      memcpy(p+0x10, mpio_pbr_016, 0x13);
+      break;
+    case 32:
+      memcpy(p+0x10, mpio_pbr_032, 0x13);
+      break;
+    case 64:
+      memcpy(p+0x10, mpio_pbr_064, 0x13);
+      break;
+    case 128:
+      memcpy(p+0x10, mpio_pbr_128, 0x13);
+      break;
+    default:
+      debug("This should never happen! (%d)\n", size);
+      exit(-1);      
+    }
+
+  /* FAT id */
+  if (size >=128) {
+    strcpy(p+0x36, "FAT16");
+  } else {
+    strcpy(p+0x36, "FAT12");
+  }
+  
+  return p;
+}
+
+int     
+mpio_mbr_eval(mpio_smartmedia_t *sm)
+{
+  BYTE *pe;  /* partition entry */
+  int sector, head, cylinder;
+
+  if ((sm->mbr[0x1fe] != 0x55) || (sm->mbr[0x1ff] != 0xaa)) 
+    {
+      debug("This is not the MBR!\n");
+      return 1;
+    }
+  
+  /* always use the first partition */
+  /* we probably don't need to support others */
+  pe = sm->mbr + 0x1be;
+  
+  head = (int)(*(pe+0x01) & 0xff);
+  sector = (int)(*(pe+0x02) & 0x3f);
+  cylinder = (int)((*(pe+0x02) >> 6) * 0x100 + *(pe + 0x03));
+  
+  sm->pbr_offset=(cylinder * sm->geo.NumHead + head ) *
+    sm->geo.NumSector + sector - 1 /*+ OFFSET_MBR */; 
+
+  return 0;
+  
+}
+
+
+int     
+mpio_pbr_eval(mpio_smartmedia_t *sm)
+{
+  BYTE *bpb; /* BIOS Parameter Block */
+  int total_sector;
+  long temp;
+
+  if ((sm->pbr[0x1fe] != 0x55) || (sm->pbr[0x1ff] != 0xaa)) 
+    {
+      debug("This is not the PBR!\n");
+      return 1;
+    }
+  
+  if (strncmp((sm->pbr+0x36),"FAT", 3) != 0) 
+    {
+      debug("Did not find an FAT signature, *not* good!\n");
+      return 2;
+    }
+  
+  bpb = sm->pbr + 0x0b;
+  
+  total_sector = (*(sm->pbr+0x14) * 0x100 + *(sm->pbr + 0x13));
+  if (!total_sector)
+    total_sector = (*(sm->pbr+0x23) * 0x1000000 + 
+		    *(sm->pbr+0x22) * 0x10000   +
+		    *(sm->pbr+0x21) * 0x100     +
+		    *(sm->pbr+0x20));
+  
+  /* 128 MB need 2 Bytes instead of 1.5 */
+  if (sm->size != 128)
+    {
+      temp = ((total_sector / 0x20 * 0x03 / 0x02 / 0x200) + 0x01);   
+    } else {       
+      temp = ((total_sector / 0x20 * 0x02 / 0x200) + 0x01);   
+    }   
+  
+  sm->fat_offset = sm->pbr_offset + 0x01;
+  sm->fat_size = temp;
+  sm->fat_nums = *(sm->pbr + 0x10);
+  sm->dir_offset = sm->pbr_offset + 0x01 +  temp * 2;
+  sm->max_cluster = (total_sector / BLOCK_SECTORS);
+  /* fix max clusters */
+  temp*=2;
+  while (temp>=0x10)
+    {
+      sm->max_cluster--;
+      temp-=BLOCK_SECTORS;
+    }
+
+  return 0;
+}
+
 
 void 
 mpio_fatentry_hw2entry(mpio_t *m,  mpio_fatentry_t *f)
@@ -95,19 +302,20 @@ mpio_fatentry_entry2hw(mpio_t *m,  mpio_fatentry_t *f)
 int
 mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
 {
-  BYTE *pe;  /* partition entry */
-  BYTE *bpb; /* BIOS Parameter Block */
-
   mpio_smartmedia_t *sm=0;  
 
-  int sector, head, cylinder, total_sector;
-  long temp;
+  int error;
 
   /* this should not be needed for internal memory, but ... */
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
   if (!sm)
     return 1;
+
+  /* in case the external mem is defective we need this here! */
+  sm->fat=0;
+  sm->fat_size=0;
+  sm->fat_nums=0;
 
   /* TODO: check a few things more, just to be sure */
 
@@ -126,22 +334,12 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
       return 1;
     }
 
-  if ((sm->mbr[0x1fe] != 0x55) || (sm->mbr[0x1ff] != 0xaa)) 
+  if (error=mpio_mbr_eval(sm)) 
     {
-      debug("This is not the MBR!\n");
+      debug("problem with the MBR (#%d), so I won't try to access the card any"
+	    "further.\n", error);
       return 1;
     }
-  
-  /* always use the first partition */
-  /* we probably don't need to support others */
-  pe = sm->mbr + 0x1be;
-  
-  head = (int)(*(pe+0x01) & 0xff);
-  sector = (int)(*(pe+0x02) & 0x3f);
-  cylinder = (int)((*(pe+0x02) >> 6) * 0x100 + *(pe + 0x03));
-  
-  sm->pbr_offset=(cylinder * sm->geo.NumHead + head ) *
-    sm->geo.NumSector + sector - 1 /*+ OFFSET_MBR */; 
 
   /* read PBR */
   if (mpio_io_sector_read(m, mem, sm->pbr_offset, sm->pbr))
@@ -150,50 +348,12 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
       return 1;
     }
 
-  if ((sm->pbr[0x1fe] != 0x55) || (sm->pbr[0x1ff] != 0xaa)) 
+  if (error=mpio_pbr_eval(sm)) 
     {
-      debug("This is not the PBR!\n");
+      debug("problem with the PBR (#%d), so I won't try to access the card any"
+	    "further.\n", error);
       return 1;
     }
-
-  if (strncmp((sm->pbr+0x36),"FAT", 3) != 0) 
-    {
-      debug("Did not find an FAT signature, *not* good!, aborting!\n");
-      exit (1);
-    }
-
-  bpb = sm->pbr + 0x0b;
-  
-  total_sector = (*(sm->pbr+0x14) * 0x100 + *(sm->pbr + 0x13));
-  if (!total_sector)
-      total_sector = (*(sm->pbr+0x23) * 0x1000000 + 
-		      *(sm->pbr+0x22) * 0x10000   +
-		      *(sm->pbr+0x21) * 0x100     +
-		      *(sm->pbr+0x20));
-
-   /* 128 MB need 2 Bytes instead of 1.5 */
-   if (sm->size != 128)
-     {
-       temp = ((total_sector / 0x20 * 0x03 / 0x02 / 0x200) + 0x01);   
-     } else {       
-       temp = ((total_sector / 0x20 * 0x02 / 0x200) + 0x01);   
-     }   
-
-  sm->fat_offset = sm->pbr_offset + 0x01;
-  sm->fat_size = temp;
-  sm->fat_nums = *(sm->pbr + 0x10);
-  sm->dir_offset = sm->pbr_offset + 0x01 +  temp * 2;
-  sm->max_cluster = (total_sector / BLOCK_SECTORS);
-  /* fix max clusters */
-  temp*=2;
-  while (temp>=0x10)
-    {
-      sm->max_cluster--;
-      temp-=BLOCK_SECTORS;
-    }
-  
-/*   debug("max_cluster: %d\n", sm->max_cluster); */
-/*   debug("temp: %04x\n", temp); */
   
   return 0;  
 }
@@ -638,7 +798,8 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
     free(f);
 
     memset(dummy, 0x00, BLOCK_SIZE);
-
+    
+    /* only write the FAT */
     for (i= 0; i< 0x20; i++)
       {
 
@@ -646,6 +807,7 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
 	  {
 	    mpio_io_sector_write(m, mem, i, (sm->dir + SECTOR_SIZE * i));
 	  } else {
+	    /* fill the rest of the block with zeros */
 	    mpio_io_sector_write(m, mem, i, dummy);
 	  }	
       }    
@@ -656,27 +818,25 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
       sm=&m->external;
 
       memset(dummy, 0xff, BLOCK_SIZE);
-  
-      for (i = 0x40; i < (sm->dir_offset + DIR_NUM) ; i++) {
+      
+      for (i = 0; i < (sm->dir_offset + DIR_NUM) ; i++) {
+	/* before writing to a new block delete it! */
 	if (((i / 0x20) * 0x20) == i) {
-	  /* yuck */
-	  f=mpio_fatentry_new(m, mem, 
-			      ((i / 0x20) - 
-			       ((sm->dir_offset + DIR_NUM)/BLOCK_SECTORS - 2 )),
-			      FTYPE_MUSIC); 
+	  f=mpio_fatentry_new(m, mem, i, FTYPE_MUSIC); 
 	  mpio_io_block_delete(m, mem, f);
 	  free(f);
 	}
-	
-	if (i == 0x40)
-	  mpio_io_sector_write(m, mem, 0x40, sm->mbr);
-	if ((i > 0x40) && (i < sm->pbr_offset))
+
+	/* remeber: logical sector 0 is the MBR! */
+	if (i == 0)
+	  mpio_io_sector_write(m, mem, 0, sm->mbr);
+	if ((i > 0) && (i < sm->pbr_offset))
 	  mpio_io_sector_write(m, mem, i, dummy);
 	
 	if (i == sm->pbr_offset)
 	  mpio_io_sector_write(m, mem, sm->pbr_offset, sm->pbr);
 	
-	if ((i >= sm->fat_offset) && (i < (sm->fat_offset + (2 * sm->fat_size)))) 
+	if ((i >= sm->fat_offset) && (i < (sm->fat_offset + (2*sm->fat_size)))) 
 	  mpio_io_sector_write(m, mem, i, 
 			       (sm->fat + SECTOR_SIZE *
 				((i - sm->fat_offset) % sm->fat_size)));

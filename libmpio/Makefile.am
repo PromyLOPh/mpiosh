@@ -9,7 +9,8 @@ libmpio_la_SOURCES= \
 		smartmedia.c \
 		directory.c \
 		fat.c \
-		ecc.c
+		ecc.c \
+		cis.c
 
 pkginclude_HEADERS= \
 		mpio.h \
@@ -21,4 +22,5 @@ noinst_HEADERS= \
 		smartmedia.h \
 		directory.h \
 		fat.h \
-		ecc.h
+		ecc.h \
+		cis.h

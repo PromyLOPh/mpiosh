@@ -1,3 +1,13 @@
+2002-10-05  Markus Germeier  <mager@tzi.de>
+	* big changes to IO layer and updates to formating/writing
+	  for external memory
+	* BEWARE: writing to external mem still does not work
+	  and I might have damaged the internal support!
+	
+2002-10-05  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/cis.c: generate new CIS block for formatting
+
 2002-09-30  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.c (mpio_init): fixed identification of

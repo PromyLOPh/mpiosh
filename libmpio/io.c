@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.17 2002/09/28 00:32:41 germeier Exp $
+ * $Id: io.c,v 1.18 2002/10/06 21:19:50 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -241,7 +241,7 @@ mpio_zone_block_find(mpio_t *m, mpio_cmd_t mem, DWORD lblock)
    */
   v = lblock + (sm->size/64);
 
-  if (lblock == MPIO_BLOCK_CIS) 
+  if ((lblock>=MPIO_BLOCK_CIS) && (lblock<(MPIO_BLOCK_CIS + BLOCK_SECTORS)))
     {
       zone  = 0;
       block = MPIO_BLOCK_CIS;
@@ -502,9 +502,10 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
       sector = index;
     } else {      
       /* find the correct physical block first! */
-      if (index == MPIO_BLOCK_CIS) 
+      if ((index>=MPIO_BLOCK_CIS) && (index<(MPIO_BLOCK_CIS + BLOCK_SECTORS)))
 	{
-	  sector = mpio_zone_block_find(m, mem, index);
+	  sector = mpio_zone_block_find(m, mem, MPIO_BLOCK_CIS);
+	  sector+= (index % MPIO_BLOCK_CIS);
 	} else {
 	  sector = mpio_zone_block_find(m, mem, /* yuck */
 					((index / 0x20) - (sm->size/64)));
@@ -598,6 +599,23 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
       exit (-1);
     }
 
+  /* we have to:
+   * - find the physical block (or allocate a new one)
+   * - calculate the logical block for zone management
+   */
+  block_address = index / MPIO_ZONE_LBLOCKS; /* easy! :-) */
+
+  if ((index % BLOCK_SECTORS) == 0)
+    {
+      /* this is the first write to the block, so allocate a new one */
+
+      /* mark it with the block_address */
+      
+    } else {
+      /* find the block from the block list! */
+      
+    }
+
   mpio_io_set_cmdpacket(m, PUT_SECTOR, mem, index, sm->size, 0, cmdpacket);
 
   debugn (5, "\n>>> MPIO\n");
@@ -616,23 +634,32 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
   memset(sendbuff + SECTOR_SIZE, 0xff, 0x10);
   memcpy(sendbuff, input, SECTOR_SIZE);
   
-/*   if (mem==MPIO_EXTERNAL_MEM)  */
-/*     block_address = cluster2blockaddress(index, sm->size); */
-  
+  if (mem==MPIO_EXTERNAL_MEM)    
     {    
-      /* generate ECC information for spare area ! */
-      mpio_ecc_256_gen(sendbuff, 
-		       sendbuff + SECTOR_SIZE + 0x0d);
-      mpio_ecc_256_gen(sendbuff + (SECTOR_SIZE / 2), 
-		       sendbuff + SECTOR_SIZE + 0x08);
-      
-      ba = (block_address / 0x100) & 0xff;
-      sendbuff[SECTOR_SIZE + 0x06] = ba;
-      sendbuff[SECTOR_SIZE + 0x0b] = ba;
-      
-      ba = block_address & 0xff;
-      sendbuff[SECTOR_SIZE + 0x07] = ba;
-      sendbuff[SECTOR_SIZE + 0x0c] = ba;
+      if (index == MPIO_BLOCK_DEFECT) {
+	memset(sendbuff + SECTOR_SIZE, 0, 0x10);
+      } else {
+	
+	/* generate ECC information for spare area ! */
+	mpio_ecc_256_gen(sendbuff, 
+			 sendbuff + SECTOR_SIZE + 0x0d);
+	mpio_ecc_256_gen(sendbuff + (SECTOR_SIZE / 2), 
+			 sendbuff + SECTOR_SIZE + 0x08);
+	
+	if (index == MPIO_BLOCK_CIS) {
+	  memset(sendbuff + SECTOR_SIZE + 0x06, 0, 2);
+	  memset(sendbuff + SECTOR_SIZE + 0x0b, 0, 2);
+	} else {	  
+	  ba = (block_address / 0x100) & 0xff;
+	  sendbuff[SECTOR_SIZE + 0x06] = ba;
+	  sendbuff[SECTOR_SIZE + 0x0b] = ba;
+	  
+	  ba = block_address & 0xff;
+	  sendbuff[SECTOR_SIZE + 0x07] = ba;
+	  sendbuff[SECTOR_SIZE + 0x0c] = ba;
+	}
+	
+      }
     }
   
   /* easy but working, we write back the FAT info we read before */
@@ -659,7 +686,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
  * read/write of blocks
  */
 int
-mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
+mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
 {
   int i=0;
   int nwrite, nread;
@@ -797,13 +824,11 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, BYTE size,
 }
 
 int  
-mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
+mpio_io_block_delete(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
 {
-  mpio_smartmedia_t *sm;
-  int nwrite, nread;
-  BYTE cmdpacket[CMD_SIZE], status[CMD_SIZE];
   BYTE  chip=0;
   DWORD address;
+  mpio_smartmedia_t *sm;
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -811,7 +836,22 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
   fatentry2hw(f, &chip, &address);
   mpio_zone_block_free(m, mem, address);
 
-/*  Send command packet to MPIO  */
+  return (mpio_io_block_delete_phys(m, chip, address));
+}
+
+int
+mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
+{
+  mpio_smartmedia_t *sm;
+  int nwrite, nread;
+  BYTE cmdpacket[CMD_SIZE], status[CMD_SIZE];
+  
+  /*  Send command packet to MPIO  */
+  
+  if (chip == MPIO_INTERNAL_MEM) sm = &m->internal;
+  /* uhoh, this breaks if we have more than two internal chips! */
+  if (chip == (MPIO_INTERNAL_MEM+1)) sm = &m->internal;
+  if (chip == MPIO_EXTERNAL_MEM) sm = &m->external;
 
   mpio_io_set_cmdpacket(m, DEL_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
@@ -842,8 +882,8 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
 
   if (status[0] != 0xc0) 
     {
-      debug ("error formatting Block (%04x) %02x:%06x\n", 
-	     f->entry, chip, address);
+      debug ("error formatting Block %02x:%06x\n", 
+	     chip, address);
       return 0;
     }
   
@@ -851,7 +891,7 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
 }
 
 int  
-mpio_io_block_write(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *data)
+mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
 {
   mpio_smartmedia_t *sm;
   int nwrite;
