@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.4 2002/09/13 19:06:30 crunchy Exp $
+ * $Id: mpiosh.c,v 1.5 2002/09/14 07:23:59 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -340,6 +340,8 @@ mpiosh_signal_handler(int signal)
   mpiosh_cancel = 1;
 }
 
+void mpiosh_noredisplay(void) {}
+
 int
 main(int argc, char *argv[]) {
   char *		line;
@@ -363,7 +365,6 @@ main(int argc, char *argv[]) {
 /*   signal(SIGINT, SIG_IGN); */
   
   /* init readline and history */
-  rl_readline_name = "mpio";
   using_history();
   
   debug_init();
@@ -380,6 +381,7 @@ main(int argc, char *argv[]) {
   if (!isatty(fileno(stdin))) {
     interactive = 0;
     mpiosh.prompt = NULL;
+    rl_redisplay_function = mpiosh_noredisplay;
   }
   
   if (!mpiosh.dev && interactive) {
