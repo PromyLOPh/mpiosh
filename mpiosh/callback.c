@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.3 2002/09/13 15:20:25 crunchy Exp $
+ * $Id: callback.c,v 1.4 2002/09/13 19:06:30 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -222,12 +222,7 @@ mpiosh_callback_get(int read, int total)
   printf("\rretrieved %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
 
-  if (mpiosh_cancel) {
-    mpiosh_cancel = 0;
-    return 1;
-  }
-  
-  return 0; // continue
+  return mpiosh_cancel; // continue
 }
 
 void
@@ -274,6 +269,7 @@ mpiosh_cmd_mget(char *args[])
 	  printf("getting '%s' ... \n", fname);
 	  size = mpio_file_get(mpiosh.dev, mpiosh.card,
 			       fname, mpiosh_callback_put);
+	  if (mpiosh_cancel) break;
 	  printf("\n");
 	} else {
 	  regerror(error, &regex, errortext, 100);
@@ -285,6 +281,8 @@ mpiosh_cmd_mget(char *args[])
     }
     i++;
   }
+
+  regfree(&regex);
 }
 
 BYTE
@@ -293,12 +291,7 @@ mpiosh_callback_put(int read, int total)
   printf("\rwrote %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
 
-  if (mpiosh_cancel) {
-    mpiosh_cancel = 0;
-    return 1;
-  }
-  
-  return 0; // continue
+  return mpiosh_cancel; // continue
 }
 
 void
@@ -343,6 +336,7 @@ mpiosh_cmd_mput(char *args[])
 	    printf("putting '%s' ... \n", (*run)->d_name);
 	    fsize = mpio_file_put(mpiosh.dev, mpiosh.card,
 				 (*run)->d_name, mpiosh_callback_put);
+	    if (mpiosh_cancel) break;
 	    printf("\n");
 	    written=1; /* we did write something, so do mpio_sync afterwards */
 	  } else {
@@ -357,6 +351,7 @@ mpiosh_cmd_mput(char *args[])
     }
     i++;
   }
+  regfree(&regex);
   if (written)
     mpio_sync(mpiosh.dev, mpiosh.card);
 }
@@ -367,12 +362,7 @@ mpiosh_callback_del(int read, int total)
   printf("\rdeleted %.2f %%", ((double) read / total) * 100.0 );
   fflush(stdout);
 
-  if (mpiosh_cancel) {
-    mpiosh_cancel = 0;
-    return 1;
-  }
-  
-  return 0; // continue
+  return mpiosh_cancel; // continue
 }
 
 void
@@ -421,6 +411,7 @@ mpiosh_cmd_mdel(char *args[])
 	  printf("deleting '%s' ... \n", fname);
 	  size = mpio_file_del(mpiosh.dev, mpiosh.card,
 			       fname, mpiosh_callback_del);
+	  if (mpiosh_cancel) break;
 	  printf("\n");
 	  deleted=1;
 	  /* if we delete a file, start again from the beginning, 
@@ -436,6 +427,7 @@ mpiosh_cmd_mdel(char *args[])
     }
     i++;
   }
+  regfree(&regex);
   if (deleted)
     mpio_sync(mpiosh.dev, mpiosh.card);
 }

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.3 2002/09/13 15:20:25 crunchy Exp $
+ * $Id: mpiosh.c,v 1.4 2002/09/13 19:06:30 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -346,6 +346,7 @@ main(int argc, char *argv[]) {
   char **		cmds, **walk;
   mpiosh_cmd_t *	cmd;
   struct sigaction	sigc;
+  int			interactive = 1;
   
   UNUSED(argc);
   UNUSED(argv);
@@ -371,18 +372,23 @@ main(int argc, char *argv[]) {
   mpiosh_init();
   mpiosh.dev = mpio_init();
 
-  if (!mpiosh.dev) {
-    printf("could not find MPIO player.\n");
-  }
-
   if (mpiosh.card == MPIO_INTERNAL_MEM)
     mpiosh.prompt = PROMPT_INT;
   else
     mpiosh.prompt = PROMPT_EXT;
 
+  if (!isatty(fileno(stdin))) {
+    interactive = 0;
+    mpiosh.prompt = NULL;
+  }
+  
+  if (!mpiosh.dev && interactive) {
+    printf("could not find MPIO player.\n");
+  }
+
   while ((line = readline(mpiosh.prompt))) {
     if (*line == '\0') continue;
-    
+
     cmds = mpiosh_command_split(line);
 
     if (cmds[0][0] == '\0') {
@@ -411,6 +417,9 @@ main(int argc, char *argv[]) {
       walk++;
     }
     free(cmds);
+
+    /* reset abort state */
+    mpiosh_cancel = 0;    
   }
 
   mpiosh_cmd_quit(NULL);
