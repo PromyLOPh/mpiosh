@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.22 2003/03/15 13:24:58 germeier Exp $
+ * $Id: io.c,v 1.23 2003/03/15 14:34:44 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -982,7 +982,7 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, BYTE size,
   for (chip = 1; chip <= chips; chip++) 
     {
       if (mem == MPIO_INTERNAL_MEM) 
-	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, ((chip-1)^2), 
+	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, (1 << (chip-1)), 
 			      index, size, wsize, cmdpacket);
       if (mem == MPIO_EXTERNAL_MEM) 
 	mpio_io_set_cmdpacket(m, GET_SPARE_AREA, mem, index, size, 

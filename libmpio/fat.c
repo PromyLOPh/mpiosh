@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.21 2003/03/15 13:24:58 germeier Exp $
+ * $Id: fat.c,v 1.22 2003/03/15 14:34:44 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -288,7 +288,7 @@ mpio_fatentry_entry2hw(mpio_t *m,  mpio_fatentry_t *f)
       chip     = f->entry /  (sm->max_cluster / sm->chips);
       cluster  = f->entry - ((sm->max_cluster / sm->chips) * chip);
       cluster *= 0x20;
-      cluster += 0x01000000 * (chip^2);
+      cluster += 0x01000000 * (1 << chip);
       
       f->hw_address=cluster;
 
