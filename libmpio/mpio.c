@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.46 2003/04/03 21:48:25 germeier Exp $
+ * $Id: mpio.c,v 1.47 2003/04/05 12:19:49 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -310,8 +310,6 @@ mpio_init(mpio_callback_init_t progress_callback)
       }
   } else if (strncmp(new_mpio->version, "FD100", 5) == 0) {
     new_mpio->model = MPIO_MODEL_FD100;
-    debug("FD100 found: Beware, this model is not tested and we don't know"
-	  " if it does work!\n");    
   } else if (strncmp(new_mpio->version, "FL100", 5) == 0) {
     /* we assume this model is not supported */
     new_mpio->model = MPIO_MODEL_FL100;
