@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.h,v 1.2 2002/09/03 21:20:53 germeier Exp $
+ * $Id: fat.h,v 1.3 2002/09/08 23:22:48 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -49,5 +49,8 @@ int	         mpio_fatentry_write(mpio_t *, mpio_mem_t, mpio_fatentry_t *,
 				     WORD);
 
 int	mpio_fat_internal_find_startsector(mpio_t *, BYTE);
+
+void mpio_fatentry_hw2entry(mpio_t *,  mpio_fatentry_t *);
+void mpio_fatentry_entry2hw(mpio_t *,  mpio_fatentry_t *);
 
 #endif /* _MPIO_FAT_H_ */

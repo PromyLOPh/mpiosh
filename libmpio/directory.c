@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.3 2002/09/03 21:20:53 germeier Exp $
+ * $Id: directory.c,v 1.4 2002/09/08 23:22:48 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -331,11 +331,8 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
 
   if (mem == MPIO_INTERNAL_MEM) 
     { 
-      cluster *= 0x20;
-      cluster +=
-	0x01000000 * ((cluster / 0x20 / (m->internal.fat_size * SECTOR_SIZE /
-				  0x10 / m->internal.chips)) + 1);
-      new->hw_address=cluster;
+      new->entry=cluster;
+      mpio_fatentry_entry2hw(m, new);      
     }  
   
   return new; 

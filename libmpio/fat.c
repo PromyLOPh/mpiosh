@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.3 2002/09/03 21:20:53 germeier Exp $
+ * $Id: fat.c,v 1.4 2002/09/08 23:22:48 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -29,6 +29,68 @@
 
 #include <string.h>
 #include <stdlib.h>
+
+void 
+mpio_fatentry_hw2entry(mpio_t *m,  mpio_fatentry_t *f)
+{
+  mpio_smartmedia_t *sm;  
+  BYTE chip;
+  DWORD value;
+
+  if (f->mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm = &m->internal;
+
+      if (f->hw_address == 0xffffffff)
+	return ;
+
+      value  = f->hw_address;
+      chip   = value >> 24;
+
+      value &= 0xffffff;
+      value /= 0x20;
+      value += (chip-1) * (sm->max_cluster / sm->chips);
+      
+      f->entry = value;
+
+      return;
+    }
+
+  debug("This should never happen!\n");
+  exit(-1);  
+
+  return;
+}
+
+
+void 
+mpio_fatentry_entry2hw(mpio_t *m,  mpio_fatentry_t *f)
+{
+  mpio_smartmedia_t *sm;
+  DWORD cluster;
+  BYTE  chip;
+
+  if (f->mem == MPIO_INTERNAL_MEM) 
+    {    
+      sm       = &m->internal;
+
+      chip     = f->entry /  (sm->max_cluster / sm->chips);
+      cluster  = f->entry - ((sm->max_cluster / sm->chips) * chip);
+      cluster *= 0x20;
+      cluster += 0x01000000 * (chip+1);
+      
+      f->hw_address=cluster;
+
+      return;
+    }
+  
+  debug("This should never happen!\n");
+  exit(-1);
+  
+  return;
+}
+
+
 
 int
 mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
@@ -391,53 +453,35 @@ mpio_fatentry_next_entry(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
   mpio_smartmedia_t *sm;
   DWORD value;
   DWORD endvalue;
-  BYTE chip;
 
   value    = mpio_fatentry_read(m, mem, f);
-  f->entry = value;
   
   if (mem == MPIO_INTERNAL_MEM) 
     {
-      sm = &m->internal;      
+      sm            = &m->internal;
       f->hw_address = value;
 
-      if (value == 0xffffffff)
-	return 0;
+      mpio_fatentry_hw2entry(m, f);
 
-      chip = value >> 24;
-
-      value &= 0xffffff;
-      value /= 0x20;
-      value += (chip-1) 
-	* (m->internal.fat_size * SECTOR_SIZE / 0x10 / m->internal.chips);  
-
-
-/* this is the opposite code in  mpio_dentry_get_startcluster */
-/*       cluster += */
-/* 	0x01000000 * ((cluster / 0x20 / (m->internal.fat_size * SECTOR_SIZE / */
-/* 				  0x10 / m->internal.chips)) + 1); */
-
-      
-      f->entry = value;
-      
+      endvalue = 0xffffffff;
     }
   
 
   if (mem == MPIO_EXTERNAL_MEM) 
     {      
-      sm    = &m->external;
+      sm       = &m->external;
+      f->entry = value;
       
       if (sm->size==128) 
 	{
 	  endvalue = 0xfff8;
 	} else {
 	  endvalue = 0xff8;
-	} 
-      
-      if (value >= endvalue)
-	return 0;
-	  
+	}      
     }  
+
+  if (value >= endvalue)
+    return 0;
 
   return 1;
 }

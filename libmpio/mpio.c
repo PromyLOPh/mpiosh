@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.3 2002/09/03 21:20:53 germeier Exp $
+ * $Id: mpio.c,v 1.4 2002/09/08 23:22:48 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -54,7 +54,6 @@ mpio_init_internal(mpio_t *m)
   sm->manufacturer = m->version[i_offset];
   sm->id           = m->version[i_offset+1];
   sm->size         = mpio_id2mem(sm->id);
-  sm->max_cluster  = sm->size/16*1024;
   sm->chips        = 1;
   
   /* look for a second installed memory chip */
@@ -74,9 +73,12 @@ mpio_init_internal(mpio_t *m)
   /* used for size calculations (see mpio_memory_free) */
   mpio_id2geo(sm->id, &sm->geo);
 
-  /* read FAT information from spare area */
-  sm->fat_size=sm->size*2;          /* the *2 is need here! */
-  sm->fat=malloc(sm->fat_size*SECTOR_SIZE);
+  /* read FAT information from spare area */  
+  sm->max_cluster  = sm->size/16*1024;      /* 1 cluster == 16 KB */
+  debugn(2,"max_cluster: %d\n", sm->max_cluster);
+                                            /* 16 bytes per cluster */
+  sm->fat_size     = sm->max_cluster*16/SECTOR_SIZE;   
+  sm->fat          = malloc(sm->fat_size*SECTOR_SIZE);
   mpio_fat_read(m, MPIO_INTERNAL_MEM);
 
   /* Read directory from internal memory */
