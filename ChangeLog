@@ -1,3 +1,10 @@
+2003-03-26  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.c (mpio_file_put_real): 
+	  libmpio/fat.c (mpio_fatentry_new, mpio_fatentry_read): 
+	  Small fixes which try to support changes in internal FAT
+	  structure (Not Tested!)
+
 2003-03-22  Markus Germeier  <mager@tzi.de>
 
 	* kernel/mpio.c (probe_mpio, write_mpio, read_mpio): 

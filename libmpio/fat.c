@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.22 2003/03/15 14:34:44 germeier Exp $
+ * $Id: fat.c,v 1.23 2003/03/25 23:56:52 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -383,8 +383,13 @@ mpio_fatentry_new(mpio_t *m, mpio_mem_t mem, DWORD sector, BYTE ftype)
       new->i_fat[0x0b] = 0x00;  
       new->i_fat[0x0c] = 0x00;  
       new->i_fat[0x0d] = 0x00;  
-      new->i_fat[0x0e] = 'P';
-      new->i_fat[0x0f] = 'C';
+      if (m->model >= MPIO_MODEL_FD100) {      
+	/* 0x0e is a copy of the file index number */
+	new->i_fat[0x0f] = 0x00;
+      } else {
+	new->i_fat[0x0e] = 'P';
+	new->i_fat[0x0f] = 'C';
+      }
     }  
 
   if (mem == MPIO_INTERNAL_MEM) 
@@ -496,15 +501,25 @@ mpio_fatentry_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
     sm = &m->internal;
     e  = f->entry * 0x10;    
     /* check if this block became defective */
-    if ((sm->fat[e+0x0e] != 'P') ||
-        (sm->fat[e+0x0f] != 'C') ||
-	((sm->fat[e+0x00] != 0xaa) &&
-	 (sm->fat[e+0x00] != 0xee)))
-      {
-	debug("defective block encountered, abort reading!\n");
-/* 	return 0xaaaaaaaa; */
-	return 0xffffffff;
-      }
+    if (m->model >= MPIO_MODEL_FD100) {      
+      /* newer models */
+      if ((sm->fat[e+0x0c] != 0) ||
+	  (sm->fat[e+0x0f] != 0) ||
+	  (sm->fat[e+0x01] != sm->fat[e+0x0e]))
+	{
+	  debug("defective block encountered, abort reading! (newer models check)\n");
+	  return 0xffffffff;
+	}      
+    } else 
+      if ((sm->fat[e+0x0e] != 'P') ||
+	  (sm->fat[e+0x0f] != 'C') ||
+	  ((sm->fat[e+0x00] != 0xaa) &&
+	   (sm->fat[e+0x00] != 0xee)))
+	{
+	  debug("defective block encountered, abort reading! (older models check)\n");
+	  return 0xffffffff;
+	}
+
     /* this is a special system file! */
     if((sm->fat[e+6] != FTYPE_MUSIC) &&
        (sm->fat[e+7] == 0xff) &&

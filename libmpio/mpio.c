@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.44 2003/03/24 19:19:18 germeier Exp $
+ * $Id: mpio.c,v 1.45 2003/03/25 23:56:52 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -683,6 +683,8 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
       f->i_index=mpio_fat_internal_find_fileindex(m);
       debugn(2, "fileindex: %02x\n", f->i_index);
       f->i_fat[0x01]= f->i_index;
+      if (m->model >= MPIO_MODEL_FD100) 
+	f->i_fat[0x0e] = f->i_index;	
       start         = f->i_index;
 
       /* number of blocks needed for file */
