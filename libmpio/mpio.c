@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.40 2003/03/08 17:28:19 germeier Exp $
+ * $Id: mpio.c,v 1.41 2003/03/11 01:45:30 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -212,6 +212,7 @@ mpio_init(mpio_callback_init_t progress_callback)
   mpio_t *new_mpio;
   mpio_smartmedia_t *sm;  
   int id_offset;
+  BYTE i;
 
   new_mpio = malloc(sizeof(mpio_t));
   if (!new_mpio) {
@@ -236,6 +237,10 @@ mpio_init(mpio_callback_init_t progress_callback)
 
   /* fill in values */
   snprintf(new_mpio->firmware.id,   12, "%s", new_mpio->version);
+  /* fix for newer versions which have a 0x00 in their version */
+  for (i=0x0c ; i<0x10 ; i++)
+    if (new_mpio->version[i] == 0x00)
+      new_mpio->version[i]=' ';
   snprintf(new_mpio->firmware.major, 3, "%s", new_mpio->version + 0x0c);
   snprintf(new_mpio->firmware.minor, 3, "%s", new_mpio->version + 0x0e);
   snprintf(new_mpio->firmware.year,  5, "%s", new_mpio->version + 0x10);
@@ -243,19 +248,17 @@ mpio_init(mpio_callback_init_t progress_callback)
   snprintf(new_mpio->firmware.day,   3, "%s", new_mpio->version + 0x16);
 
   /* there are different identification strings! */
-  if (strncmp(new_mpio->version, "MPIO", 4) != 0)
-    debug("MPIO id string not found, proceeding anyway...");
+  if (strncmp(new_mpio->version, "MPIO", 4) == 0) {
+    /* strings: "MPIOxy    " */
+    id_offset = 4;
 
-  /* strings: "MPIOxy    " */
-  id_offset = 4;
+    /* string: "MPIO-xy   " */
+    if (new_mpio->version[id_offset] == '-')
+      id_offset++;
 
-  /* string: "MPIO-xy   " */
-  if (new_mpio->version[id_offset] == '-')
-    id_offset++;
-
-  /* identify different versions */
-  switch (new_mpio->version[id_offset])
-    {
+    /* identify different versions */
+    switch (new_mpio->version[id_offset])
+      {
       case 'E': 
 	new_mpio->model = MPIO_MODEL_DME;
         break ;
@@ -272,13 +275,34 @@ mpio_init(mpio_callback_init_t progress_callback)
 	if (new_mpio->version[id_offset+1] == 'P')
 	  new_mpio->model = MPIO_MODEL_DMB_PLUS;
 	break;	
-    default:
-      new_mpio->model = MPIO_MODEL_UNKNOWN;
-      debug("Unknown version string found!\n"
-	    "Please report this to: mpio-devel@lists.sourceforge.net\n");
-      hexdumpn(1, new_mpio->version, CMD_SIZE);
-    }
+      default:
+	new_mpio->model = MPIO_MODEL_UNKNOWN;
+      }
+  } else if (strncmp(new_mpio->version, "FD100", 5) == 0) {
+    new_mpio->model = MPIO_MODEL_FD100;
+    debug("FD100 found: Beware, this model is not tested and we don't know"
+	  " if it does work!\n");    
+  } else if (strncmp(new_mpio->version, "FL100", 5) == 0) {
+    /* we assume this model is not supported */
+    new_mpio->model = MPIO_MODEL_FL100;
+    debug("FL100 found: Beware, this model is assumed to be not supported"
+	  " at the moment because it uses MultiMediaCards instead of SmartMedia\n");
+  } else if (strncmp(new_mpio->version, "FY100", 5) == 0) {
+    new_mpio->model = MPIO_MODEL_FY100;
+    /* I assume this is like the FD100/FL100, I didn't had the chance to 
+       look at a FY100 firmware yet. -mager */
+    debug("FY100 found: Beware, this model is not tested and we don't know"
+	  " if it does work!\n");    
+  } else {
+    new_mpio->model = MPIO_MODEL_UNKNOWN;
+  }
 
+  if (new_mpio->model == MPIO_MODEL_UNKNOWN) {
+    debug("Unknown version string found!\n"
+	  "Please report this to: mpio-devel@lists.sourceforge.net\n");
+    hexdumpn(1, new_mpio->version, CMD_SIZE);
+  }  
+  
   /* internal init */
   mpio_init_internal(new_mpio);
 

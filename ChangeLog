@@ -1,3 +1,8 @@
+2003-03-11  Markus Germeier  <mager@tzi.de>
+
+	* libmpio/mpio.c (mpio_init): added code the recognize new MPIO
+	  models (FD100/FL100/FY100), no idea how to handle them, yet!
+
 2003-03-08  Markus Germeier  <mager@tzi.de>
 
 	* mpio.spec.in, etc/Makefile.am: fixed packaging problems
