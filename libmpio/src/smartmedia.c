@@ -1,5 +1,5 @@
 /*
- * $Id: smartmedia.c,v 1.6 2003/10/19 21:06:35 germeier Exp $
+ * $Id: smartmedia.c,v 1.7 2004/01/12 16:50:51 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -67,13 +67,15 @@ mpio_id2mem(BYTE id)
       i=32;
       break;
     case 0x76:
+    case 0x89: /* new chip (Unknown) */
       i=64;      
       break;
     case 0x79:
-    case 0xf1: /* new chip */
+    case 0xf1: /* new chip (Samsung) */
       i=128;
       break;
-    case 0xda: /* new chip */
+    case 0xda: /* new chip (Samsung) */
+    case 0x25: /* new chip (Unknown) */
       i=256;
       break;
     default:
@@ -90,10 +92,13 @@ mpio_id2manufacturer(BYTE id)
   switch(id) 
     {
     case 0xec:
-      m="Samsung";      
+      m="Samsung (Micronas)";      
       break;
     case 0x98:
       m="Toshiba";
+      break;
+    case 0x13:
+      m="Unknown";
       break;
     default:
       m="unknown";
@@ -108,6 +113,7 @@ mpio_id_valid(BYTE id)
     {
     case 0xec:   /* Samsung */
     case 0x98:   /* Toshiba */
+    case 0x13:   /* Unknown */
       return 1;      
     default:
       ;
@@ -138,13 +144,16 @@ mpio_id2geo(BYTE id, mpio_disk_phy_t *geo)
       *geo = MPIO_DISK_GEO_032;
       break;
     case 0x76:
+    case 0x89: /* new chip (Unknown) */
       *geo = MPIO_DISK_GEO_064;
       break;
     case 0x79:
-    case 0xf1: /* new chip */
+    case 0xf1: /* new chip (Samsung) */
+
       *geo = MPIO_DISK_GEO_128;
       break;
-    case 0xda: /* new chip */
+    case 0xda: /* new chip (Samsung) */
+    case 0x25: /* new chip (Unknown) */
       *geo = MPIO_DISK_GEO_256;
       break;
     default:
@@ -162,6 +171,8 @@ mpio_id2version(BYTE id)
     {
     case 0xf1:   /* 128MB new Samsung */
     case 0xda:   /* 256MB new Samsung */
+    case 0x89:   /*  64MB new Unknown */
+    case 0x25:   /* 256MB new Unknown */
       return 1;      
     default:
       ;

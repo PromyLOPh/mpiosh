@@ -1,3 +1,8 @@
+2004-01-12  Markus Germeier  <mager@tzi.de>
+	* libmpio/src/smartmedia.c (mpio_id2mem): 
+	  updated chip IDs which were reported quite some time ago
+	  (sorry for the delay!) still very unsure what they are
+
 2003-10-19  Markus Germeier  <mager@tzi.de>
 	* added some missing #ifdef HAVE_USB
 	  to libmpio/src/io.c
