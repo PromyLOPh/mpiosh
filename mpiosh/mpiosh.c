@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.25 2003/04/19 09:32:48 germeier Exp $
+ * $Id: mpiosh.c,v 1.26 2003/04/19 11:41:26 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -66,8 +66,10 @@ mpiosh_init(void)
   
   if ((mpiosh.dev) && (mpiosh.config->charset))
     mpio_charset_set(mpiosh.dev, mpiosh.config->charset);
-  if (mpiosh.dev)
+  if (mpiosh.dev) {
     mpio_id3_set(mpiosh.dev, mpiosh.config->id3_rewriting);
+    mpio_id3_format_set(mpiosh.dev, mpiosh.config->id3_format);
+  } 
 }
 
 void

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: config.c,v 1.4 2003/04/19 09:32:48 germeier Exp $
+ * $Id: config.c,v 1.5 2003/04/19 11:41:26 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -192,6 +192,11 @@ mpiosh_config_write(struct mpiosh_config_t *config)
     else
       cfg_key_set_value(config->handle_user,
 			"mpiosh", "default_mem", "internal");
+    cfg_key_set_value(config->handle_user,
+		      "mpiosh", "id3_rewriting", 
+		      (config->id3_rewriting?"on":"off"));
+    cfg_key_set_value(config->handle_user,
+		      "mpiosh", "id3_format", config->id3_format);
 
     cfg_save(config->handle_user, 0);
 

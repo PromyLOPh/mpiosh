@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.39 2003/04/19 09:32:48 germeier Exp $
+ * $Id: callback.c,v 1.40 2003/04/19 11:41:26 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -252,8 +252,10 @@ mpiosh_cmd_open(char *args[])
 
   if ((mpiosh.dev) && (mpiosh.config->charset))
     mpio_charset_set(mpiosh.dev, mpiosh.config->charset);
-  if (mpiosh.dev)
+  if (mpiosh.dev) {
     mpio_id3_set(mpiosh.dev, mpiosh.config->id3_rewriting);
+    mpio_id3_format_set(mpiosh.dev, mpiosh.config->id3_format);
+  } 
 }
 
 void
