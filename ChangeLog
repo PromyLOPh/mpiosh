@@ -1,3 +1,14 @@
+2002-09-10  Markus Germeier  <mager@informatik.uni-bremen.de>
+
+	* libmpio/fat.c (mpio_fatentry_set_free) 
+	(mpio_fatentry_set_defect): added functions
+	* libmpio/io.c (mpio_io_block_delete): 
+	  return negative status value in case of error
+	* libmpio/mpio.c (mpio_memory_format): 
+	  mark block/cluster defect in FAT if an error occurs during format
+	* libmpio/mpio.c (mpio_file_del): 
+	  changed function to support new mpio_fatentry_t
+
 2002-09-09  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/io.c (fatentry2hw): added function

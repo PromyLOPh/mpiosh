@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.6 2002/09/09 17:31:25 germeier Exp $
+ * $Id: io.c,v 1.7 2002/09/10 12:31:09 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -346,7 +346,7 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
 int
 mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
 {
-  mpio_smartmedia_t *sm;
+  mpio_smartmedia_t *sm=0;
   
   int nwrite, nread;
   BYTE cmdpacket[CMD_SIZE], recvbuff[SECTOR_TRANS];
@@ -393,11 +393,15 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
       	debug ("ECC error @ (%02x : %06x)\n", mem, index);
     }
 
-  if (mem==MPIO_INTERNAL_MEM) 
-    {
-      debugn(2, "WARNING, code for internal FAT entry (in ECC area)"
-	    " not yet in place!!\n");
-    }
+  /* This should not be needed:
+     * we don't have ECC information for the internal memory
+     * we only read the directory through this function
+   */
+  /*   if (mem==MPIO_INTERNAL_MEM)  */
+  /*     { */
+  /*       debugn(2, "WARNING, code for internal FAT entry (in ECC area)" */
+  /* 	    " not yet in place!!\n"); */
+  /*     } */
   
   debugn (5, "\n<<< MPIO\n");
   hexdump (recvbuff, SECTOR_TRANS);
@@ -679,33 +683,33 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
       return 0;
     }
 
-  if (status[0] != 0xc0) debug ("error formatting Block %04x\n", index);
   debugn(5, "<<< MPIO\n");
   hexdump(status, CMD_SIZE);
+
+  if (status[0] != 0xc0) 
+    {
+      debug ("error formatting Block %04x\n", index);
+      return 0;
+    }
   
   return CMD_SIZE;
 }
 
 int  
-mpio_io_block_write(mpio_t *m, BYTE area, DWORD index, BYTE size, BYTE *data)
+mpio_io_block_write(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *data)
 {
-  int i = 0;
+  mpio_smartmedia_t *sm;
   int nwrite;
+  int i;
   DWORD block_address, ba;
-  DWORD rarea = 0;
   BYTE cmdpacket[CMD_SIZE], sendbuff[BLOCK_TRANS];
+  BYTE  chip=0;
+  DWORD address;
 
-  if (area == MPIO_INTERNAL_MEM) 
-    {
-      rarea = index / 0x1000000;    
-      index &= 0xffffff;
-    }
-  if (area == MPIO_EXTERNAL_MEM) 
-    {
-      rarea = area;
-    }
-
-  index *= BLOCK_SECTORS;  
+  if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
+  if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
+  
+  fatentry2hw(f, &chip, &address);
 
   /* build block for transfer to MPIO */
   for (i = 0; i < BLOCK_SECTORS; i++) 
@@ -715,28 +719,29 @@ mpio_io_block_write(mpio_t *m, BYTE area, DWORD index, BYTE size, BYTE *data)
 	     SECTOR_SIZE);
       memset(sendbuff + (i * SECTOR_TRANS) + SECTOR_SIZE,
 	     0xff, CMD_SIZE);
+
       /* fill in block information */
-      if (index < 0x40) 
-	{
-	  block_address = 0;
-	} else {  
-	  ba = (index / 0x20) - 2;
-	  /*       debugn(2, "foobar: %4x\n", ba); */
-	  block_address = index2blockaddress(ba);
-	  /*       debugn(2, "foobar: %4x\n", block_address); */
-	}
-      
-      ba = (block_address / 0x100) & 0xff;
-      sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] = ba;
-      sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0b] = ba;
-      
-      ba = block_address & 0xff;
-      sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x07] = ba;
-      sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0c] = ba;
-      
-      /* generate ECC Area information */
-      if (area == MPIO_EXTERNAL_MEM) 
+      if (mem == MPIO_EXTERNAL_MEM) 
 	{      
+	  if (address < 0x40) 
+	    {
+	      block_address = 0;
+	    } else {  
+	      ba = (address / 0x20) - 2;
+	      /*       debugn(2, "foobar: %4x\n", ba); */
+	      block_address = index2blockaddress(ba);
+	      /*       debugn(2, "foobar: %4x\n", block_address); */
+	    }
+	  
+	  ba = (block_address / 0x100) & 0xff;
+	  sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x06] = ba;
+	  sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0b] = ba;
+	  
+	  ba = block_address & 0xff;
+	  sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x07] = ba;
+	  sendbuff[(i * SECTOR_TRANS) + SECTOR_SIZE + 0x0c] = ba;
+	  
+	  /* generate ECC Area information */
 	  mpio_ecc_256_gen ((sendbuff + (i * SECTOR_TRANS)),                   
 			    ((sendbuff + (i * SECTOR_TRANS) 
 			      + SECTOR_SIZE + 13)));
@@ -747,7 +752,7 @@ mpio_io_block_write(mpio_t *m, BYTE area, DWORD index, BYTE size, BYTE *data)
 	}
   }
 
-  mpio_io_set_cmdpacket(PUT_BLOCK, rarea, index, size, 0x48 , cmdpacket);
+  mpio_io_set_cmdpacket(PUT_BLOCK, chip, address, sm->size, 0x48 , cmdpacket);
 
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));

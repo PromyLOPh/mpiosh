@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.h,v 1.4 2002/09/09 15:49:04 germeier Exp $
+ * $Id: io.h,v 1.5 2002/09/10 12:31:09 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -37,19 +37,19 @@
 int	mpio_io_set_cmdpacket(mpio_cmd_t, mpio_mem_t, 
 			      DWORD, BYTE, BYTE, BYTE *);
 
-int	mpio_io_bulk_read(int, BYTE *, int);
+int	mpio_io_bulk_read (int, BYTE *, int);
 int	mpio_io_bulk_write(int, BYTE *, int);
 
 /* read version block into memory */
 int	mpio_io_version_read(mpio_t *, BYTE *);
 
 /* */
-int	mpio_io_sector_read(mpio_t *, BYTE, DWORD, BYTE *);
+int	mpio_io_sector_read (mpio_t *, BYTE, DWORD, BYTE *);
 int	mpio_io_sector_write(mpio_t *, BYTE, DWORD, BYTE *);
 
 /* */
-int	mpio_io_block_read(mpio_t *, BYTE, mpio_fatentry_t *, BYTE *);
-int	mpio_io_block_write(mpio_t *, BYTE, DWORD, BYTE, BYTE *);
+int	mpio_io_block_read  (mpio_t *, BYTE, mpio_fatentry_t *, BYTE *);
+int	mpio_io_block_write (mpio_t *, BYTE, mpio_fatentry_t *, BYTE *);
 int	mpio_io_block_delete(mpio_t *, BYTE, mpio_fatentry_t *);
 
 /* */

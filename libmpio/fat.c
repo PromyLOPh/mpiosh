@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.6 2002/09/09 15:51:37 germeier Exp $
+ * $Id: fat.c,v 1.7 2002/09/10 12:31:09 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -578,3 +578,46 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
     
   return 0;
 }
+
+int
+mpio_fatentry_set_free  (mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
+{
+  int e;
+  mpio_smartmedia_t *sm;  
+  
+  if (mem == MPIO_INTERNAL_MEM) {    
+    sm = &m->internal;
+    e  = f->entry * 0x10;
+    memset((sm->fat+e), 0xff, 0x10);
+  }
+
+  if (mem == MPIO_EXTERNAL_MEM) {    
+    sm = &m->internal;
+    mpio_fatentry_write(m, mem, f, 0);    
+  }
+
+  return 0;
+}
+
+int
+mpio_fatentry_set_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
+{
+  int e;
+  mpio_smartmedia_t *sm;  
+  
+  if (mem == MPIO_INTERNAL_MEM) {    
+    sm = &m->internal;
+    e  = f->entry * 0x10;
+    debug("Sorry, I don't now how to mark an internal block as"
+	  " defective yet.\n");
+/*     memset((sm->fat+e), 0xff, 0x10); */
+  }
+
+  if (mem == MPIO_EXTERNAL_MEM) {    
+    sm = &m->internal;
+    mpio_fatentry_write(m, mem, f, 0xfff7);    
+  }
+
+  return 0;
+}
+
