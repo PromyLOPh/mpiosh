@@ -1,3 +1,8 @@
+2003-03-13  Markus Germeier  <mager@tzi.de>
+
+	* trying to fix iconv UNICODE conversions on BIG_ENDIAN
+	  machines (not sure about that one!)
+
 2003-03-11  Markus Germeier  <mager@tzi.de>
 
 	* libmpio/mpio.c (mpio_init): added code the recognize new MPIO

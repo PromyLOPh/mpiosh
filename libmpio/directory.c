@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.12 2003/02/21 18:28:54 crunchy Exp $
+ * $Id: directory.c,v 1.13 2003/03/12 23:21:31 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -31,6 +31,8 @@
 #include "mpio.h"
 #include "directory.h"
 #include <sys/time.h>
+
+#define UNICODE "UNICODELITTLE"
 
 /* the following function is copied from the linux kernel v2.4.18
  * file:/usr/src/linux/fs/fat/misc.c
@@ -80,12 +82,12 @@ mpio_charset_set(mpio_t *m, BYTE *charset)
   iconv_t ic;
   int     r = 1;
   
-  ic = iconv_open("UNICODE", charset);
+  ic = iconv_open(UNICODE, charset);
   if (ic < 0)
     r=0;
   iconv_close(ic);
   
-  ic = iconv_open(charset, "UNICODE");
+  ic = iconv_open(charset, UNICODE);
   if (ic < 0)
     r=0;
   iconv_close(ic);
@@ -294,7 +296,7 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
   
   if (vfat) 
     {
-      ic = iconv_open(m->charset, "UNICODE");
+      ic = iconv_open(m->charset, UNICODE);
       memset(fname, 0, filename_size);
       hexdumpn(4, unicode, in+2);
       debugn(4, "before iconv: in: %2d - out: %2d\n", in, out);
@@ -509,7 +511,7 @@ mpio_dentry_put(mpio_t *m, mpio_mem_t mem,
   }
 
   /* generate vfat filename in UNICODE */
-  ic = iconv_open("UNICODE", m->charset);
+  ic = iconv_open(UNICODE, m->charset);
   fin = in = filename_size + 1;
   fout = out = filename_size * 2 + 2 + 26;
   fname = malloc(in);
