@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.c,v 1.11 2002/09/11 13:44:30 germeier Exp $
+ * $Id: io.c,v 1.12 2002/09/15 12:03:23 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -44,10 +44,27 @@
 #include "debug.h"
 #include "ecc.h"
 
+BYTE model2externalmem(mpio_model_t);
 WORD index2blockaddress(WORD);
 WORD cluster2blockaddress(DWORD, BYTE);
 int  cluster2block(int mem, int sector);
 void fatentry2hw(mpio_fatentry_t *, BYTE *, DWORD *);
+
+BYTE 
+model2externalmem(mpio_model_t model)
+{
+  BYTE m;
+  
+  switch(model) 
+    {
+    case MPIO_MODEL_DMG:
+      m = 0x80;
+    default:
+      m = 0x10;
+    }
+  
+  return m;
+}      
 
 void 
 fatentry2hw(mpio_fatentry_t *f, BYTE *chip, DWORD *address)
@@ -222,15 +239,20 @@ cluster2blockaddress(DWORD index, BYTE size)
  */
 
 int
-mpio_io_set_cmdpacket(mpio_cmd_t cmd, mpio_mem_t mem, DWORD index,
+mpio_io_set_cmdpacket(mpio_t *m, mpio_cmd_t cmd, mpio_mem_t mem, DWORD index,
 		      BYTE size, BYTE wsize, BYTE *buffer) 
 {
+  BYTE memory;
 
   /* clear cmdpacket*/
   memset(buffer, 0, 0x40);  
 
   *buffer = cmd;
-  *(buffer + 0x01) =   mem;
+  memory = mem;
+  if (mem == MPIO_EXTERNAL_MEM)
+    memory = model2externalmem(m->model);
+  
+  *(buffer + 0x01) =   memory;
   *(buffer + 0x03) =   (BYTE) (index & 0x00ff);
   *(buffer + 0x04) =   (BYTE)((index & 0xff00) >> 8);
   /*  SM cards with less or equal 32 MB only need 2 Bytes
@@ -340,7 +362,7 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
   BYTE cmdpacket[CMD_SIZE], status[CMD_SIZE];
 
   /*  Send command packet to MPIO  */
-  mpio_io_set_cmdpacket (GET_VERSION, 0, 0, 0xff, 0, cmdpacket);
+  mpio_io_set_cmdpacket (m, GET_VERSION, 0, 0, 0xff, 0, cmdpacket);
 
   debugn  (5, ">>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
@@ -404,7 +426,7 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
       exit (-1);
     }
 
-  mpio_io_set_cmdpacket (GET_SECTOR, mem, index, sm->size, 0, cmdpacket);
+  mpio_io_set_cmdpacket (m, GET_SECTOR, mem, index, sm->size, 0, cmdpacket);
 
   debugn (5, "\n>>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
@@ -488,7 +510,7 @@ mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
       exit (-1);
     }
 
-  mpio_io_set_cmdpacket(PUT_SECTOR, mem, index, sm->size, 0, cmdpacket);
+  mpio_io_set_cmdpacket(m, PUT_SECTOR, mem, index, sm->size, 0, cmdpacket);
 
   debugn (5, "\n>>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
@@ -564,7 +586,7 @@ mpio_io_block_read(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *output)
 
   fatentry2hw(f, &chip, &address);
 
-  mpio_io_set_cmdpacket(GET_BLOCK, chip, address, sm->size, 0, cmdpacket);
+  mpio_io_set_cmdpacket(m, GET_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));
@@ -654,7 +676,7 @@ mpio_io_spare_read(mpio_t *m, BYTE area, DWORD index, BYTE size,
   
   for (chip = 1; chip <= chips; chip++) 
     {    
-      mpio_io_set_cmdpacket(GET_SPARE_AREA, chip, index, size, 
+      mpio_io_set_cmdpacket(m, GET_SPARE_AREA, chip, index, size, 
 			    wsize, cmdpacket);
       debugn(5, "\n>>> MPIO\n");
       hexdump(cmdpacket, sizeof(cmdpacket));
@@ -706,7 +728,7 @@ mpio_io_block_delete(mpio_t *m, BYTE mem, mpio_fatentry_t *f)
 
 /*  Send command packet to MPIO  */
 
-  mpio_io_set_cmdpacket(DEL_BLOCK, chip, address, sm->size, 0, cmdpacket);
+  mpio_io_set_cmdpacket(m, DEL_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
   debugn  (5, ">>> MPIO\n");
   hexdump (cmdpacket, sizeof(cmdpacket));
@@ -803,7 +825,7 @@ mpio_io_block_write(mpio_t *m, BYTE mem, mpio_fatentry_t *f, BYTE *data)
 	}
   }
 
-  mpio_io_set_cmdpacket(PUT_BLOCK, chip, address, sm->size, 0x48 , cmdpacket);
+  mpio_io_set_cmdpacket(m, PUT_BLOCK, chip, address, sm->size, 0x48 , cmdpacket);
 
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));

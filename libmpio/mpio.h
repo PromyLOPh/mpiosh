@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.3 2002/09/14 22:54:41 germeier Exp $
+ * $Id: mpio.h,v 1.4 2002/09/15 12:03:23 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -90,6 +90,9 @@ int	mpio_memory_format(mpio_t *, mpio_mem_t, BYTE (*)(int, int));
  */
 /* context, memory bank */
 int	mpio_sync(mpio_t *, mpio_mem_t); 
+
+/* context, memory bank */
+int	mpio_memory_debug(mpio_t *, mpio_mem_t); 
 
 /* 
  * timeline:

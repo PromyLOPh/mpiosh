@@ -1,3 +1,13 @@
+2002-09-15  Markus Germeier  <mager@tzi.de>
+
+	* mpiosh/callback.c (mpiosh_cmd_debug_mem): added function 
+	  call "debug_memory" in mpiosh
+	* libmpio/io.c (model2externalmem): added function
+	(mpio_io_set_cmdpacket): use model2externalmem
+	* libmpio/mpio.c (mpio_init): added code to identify different
+	  models	
+	  (mpio_memory_debug): added function for debugging purposes
+
 2002-09-15  Andreas Buesching  <crunchy@tzi.de>
 
 	* mpiosh/mpiosh.c: add a debug message, displaying the executed

@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.10 2002/09/14 23:34:49 crunchy Exp $
+ * $Id: mpiosh.c,v 1.11 2002/09/15 12:03:23 germeier Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -124,6 +124,9 @@ mpiosh_cmd_t commands[] = {
   { "lmkdir", NULL,
     "create a local directory",
     mpiosh_cmd_lmkdir },
+  { "debug_memory", NULL,
+    "dump the first 0x100 of the selected memory card",
+    mpiosh_cmd_debug_mem },
   { NULL, NULL, NULL, NULL }
 };
 

@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.6 2002/09/14 22:54:41 germeier Exp $
+ * $Id: callback.c,v 1.7 2002/09/15 12:03:23 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -151,9 +151,10 @@ mpiosh_cmd_info(char *args[])
   printf("firmware %s\n", info.firmware_id);
   printf(" version : %s\n", info.firmware_version);
   printf(" date    : %s\n", info.firmware_date);
+  printf("model    : %s\n", info.model);
   printf("memory\n");
-  printf(" internal: %s\n", info.firmware_mem_internal);
-  printf(" external: %s\n", info.firmware_mem_external);
+  printf(" internal: %s\n", info.mem_internal);
+  printf(" external: %s\n", info.mem_external);
 }
 
 void
@@ -523,6 +524,19 @@ mpiosh_cmd_switch(char *args[])
 
   UNUSED(args);
 }
+
+void
+mpiosh_cmd_debug_mem(char *args[])
+{
+  
+  MPIOSH_CHECK_CONNECTION_CLOSED;
+
+  UNUSED(args);
+  
+  mpio_memory_debug(mpiosh.dev, mpiosh.card);
+
+}
+
 
 void
 mpiosh_cmd_ldir(char *args[])

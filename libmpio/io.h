@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: io.h,v 1.5 2002/09/10 12:31:09 germeier Exp $
+ * $Id: io.h,v 1.6 2002/09/15 12:03:23 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -34,7 +34,7 @@
 #include "defs.h"
 
 /* real I/O */
-int	mpio_io_set_cmdpacket(mpio_cmd_t, mpio_mem_t, 
+int	mpio_io_set_cmdpacket(mpio_t *, mpio_cmd_t, mpio_mem_t, 
 			      DWORD, BYTE, BYTE, BYTE *);
 
 int	mpio_io_bulk_read (int, BYTE *, int);

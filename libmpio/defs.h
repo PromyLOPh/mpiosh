@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.3 2002/09/11 00:18:34 germeier Exp $
+ * $Id: defs.h,v 1.4 2002/09/15 12:03:23 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -37,6 +37,22 @@ typedef unsigned int   DWORD;
 /* Memory selection */
 typedef enum { MPIO_INTERNAL_MEM = 0x01,
 	       MPIO_EXTERNAL_MEM = 0x10 } mpio_mem_t;
+
+/* model type */
+typedef enum { MPIO_MODEL_DME      = 0x00,
+	       MPIO_MODEL_DMG      = 0x01,
+	       MPIO_MODEL_DMB      = 0x02,
+	       MPIO_MODEL_DMB_PLUS = 0x03,
+	       MPIO_MODEL_DMK      = 0x04,
+               MPIO_MODEL_UNKNOWN  = 0x05 } mpio_model_t;
+
+static BYTE *mpio_model_name[] = {
+  "MPIO-DME",
+  "MPIO-DMG",
+  "MPIO-DMB",
+  "MPIO-DMB+",
+  "MPIO-DMK",
+  "unknown" };
 
 /* USB commands */
 typedef enum { GET_VERSION      = 0x01,
@@ -84,12 +100,14 @@ typedef enum { FTYPE_CONF  = 'C',
 /* get formatted information, about the MPIO player */
 
 typedef struct {
-  BYTE firmware_id[INFO_LINE];
+  BYTE firmware_id[INFO_LINE];  
   BYTE firmware_version[INFO_LINE];
   BYTE firmware_date[INFO_LINE];
 
-  BYTE firmware_mem_internal[INFO_LINE];
-  BYTE firmware_mem_external[INFO_LINE];
+  BYTE model[INFO_LINE];
+
+  BYTE mem_internal[INFO_LINE];
+  BYTE mem_external[INFO_LINE];
   
 } mpio_info_t;
 
@@ -151,6 +169,8 @@ typedef struct {
   int fd;
 
   mpio_firmware_t firmware;  
+
+  mpio_model_t model;
 
   mpio_smartmedia_t internal;
   mpio_smartmedia_t external;

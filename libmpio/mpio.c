@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.16 2002/09/14 22:54:41 germeier Exp $
+ * $Id: mpio.c,v 1.17 2002/09/15 12:03:23 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -158,13 +158,33 @@ mpio_init(void)
   mpio_io_version_read(new_mpio, new_mpio->version);  
 
   /* fill in values */
-  /* TODO: check for different versions !! */
   snprintf(new_mpio->firmware.id, 12, "%s", new_mpio->version);
   snprintf(new_mpio->firmware.major, 3, "%s", new_mpio->version + 0x0c);
   snprintf(new_mpio->firmware.minor, 3, "%s", new_mpio->version + 0x0e);
   snprintf(new_mpio->firmware.year, 5, "%s", new_mpio->version + 0x10);
   snprintf(new_mpio->firmware.month, 3, "%s", new_mpio->version + 0x14);
   snprintf(new_mpio->firmware.day, 3, "%s", new_mpio->version + 0x16);
+
+  /* identify different versions */
+  switch (new_mpio->version[5])
+    {
+      case 'E': 
+	new_mpio->model = MPIO_MODEL_DME;
+        break ;
+      case 'K':
+	new_mpio->model = MPIO_MODEL_DMK;
+        break ;
+      case 'G':
+	new_mpio->model = MPIO_MODEL_DMG;
+        break ;
+      case 'B':
+	new_mpio->model = MPIO_MODEL_DMB;
+	if (new_mpio->version[6] == 'P')
+	  new_mpio->model = MPIO_MODEL_DMB_PLUS;
+	break;	
+    default:
+      new_mpio->model = MPIO_MODEL_UNKNOWN;
+    }
 
   /* internal init */
   mpio_init_internal(new_mpio);
@@ -225,14 +245,15 @@ mpio_get_info(mpio_t *m, mpio_info_t *info)
 	   m->firmware.major, m->firmware.minor);
   snprintf(info->firmware_date, max,    "%s.%s.%s", 
 	   m->firmware.day, m->firmware.month, m->firmware.year);
+  snprintf(info->model, max, "%s", mpio_model_name[m->model]);
   
   if (m->internal.chips == 1) 
     {    
-      snprintf(info->firmware_mem_internal, max, "%3dMB (%s)", 
+      snprintf(info->mem_internal, max, "%3dMB (%s)", 
 	       mpio_id2mem(m->internal.id), 
 	       mpio_id2manufacturer(m->internal.manufacturer));
     } else {
-      snprintf(info->firmware_mem_internal, max, "%3dMB (%s) - %d chips", 
+      snprintf(info->mem_internal, max, "%3dMB (%s) - %d chips", 
 	       mpio_id2mem(m->internal.id)*m->internal.chips, 
 	       mpio_id2manufacturer(m->internal.manufacturer),
 	       m->internal.chips);
@@ -240,11 +261,11 @@ mpio_get_info(mpio_t *m, mpio_info_t *info)
   
   if (m->external.id)
     {      
-      snprintf(info->firmware_mem_external, max, "%3dMB (%s)", 
+      snprintf(info->mem_external, max, "%3dMB (%s)", 
 	       mpio_id2mem(m->external.id), 
 	       mpio_id2manufacturer(m->external.manufacturer));
     } else {
-      snprintf(info->firmware_mem_external, max, "not available");
+      snprintf(info->mem_external, max, "not available");
     }
       
 }
@@ -665,6 +686,21 @@ mpio_sync(mpio_t *m, mpio_mem_t mem)
   /* this writes the FAT *and* the root directory */
   mpio_fat_write(m, mem);  
 }
+
+int
+mpio_memory_debug(mpio_t *m, mpio_mem_t mem)
+{
+  BYTE block[BLOCK_SIZE];
+  int i;
+  
+  for (i = 0 ; i<=0x100 ; i++) 
+    mpio_io_sector_read(m, mem, i, block);
+  
+  return 0;  
+}
+
+
+      
 
 
   
