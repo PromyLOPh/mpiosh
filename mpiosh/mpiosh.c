@@ -2,7 +2,7 @@
 
 /* 
  *
- * $Id: mpiosh.c,v 1.9 2002/09/14 23:22:26 crunchy Exp $
+ * $Id: mpiosh.c,v 1.10 2002/09/14 23:34:49 crunchy Exp $
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
@@ -243,49 +243,37 @@ mpiosh_command_find(char *line)
 void
 mpiosh_command_regex_fix(char *argv[])
 {
-  char **walk;
-  char *new, *new_pos, *help;
-  char find[] = { '.', '*' };
-  char *replace[] = { "\\.", ".*" };
-  int count, i;
+  char **walk = argv;
+  char *new_pos, *help;
+  char buffer[512];
   
-  for (i = 0; i < sizeof find; i++) {    
-    walk = argv;
-    while (*walk) {
-      help = *walk, count = 0;
-      while (*help != '\0')
-	if (*help++ == find[i]) count++;
-      new_pos = new = malloc(strlen(*walk) + 1 + count);
-      help = *walk;
-      while (*help != '\0') {
-	if (*help == find[i]) {
-	  *new_pos++ = replace[i][0];
-	  *new_pos++ = replace[i][1];
-	  help++;
-	} else
-	  *new_pos++ = *help++;
-      }
-      *new_pos = '\0';
-      free(*walk);
-      *walk = new;
-      walk++;
-    }
-  }
-
-  walk = argv;
   while (*walk) {
+    memset(buffer, '\0', 512);
     help = *walk;
-    new = malloc(strlen(help) + 3);
-    *walk = new;
+    new_pos = buffer;
+    *new_pos++ = '^';
+    while (*help != '\0') {
+      if (*help == '*') {
+	*new_pos++ = '.';
+	*new_pos = *help;
+      } else if (*help == '.') {
+	*new_pos++ = '\\';
+	*new_pos = *help;
+      } else if (*help == '?') {
+	*new_pos = '.';
+      } else {
+	*new_pos = *help;
+      }
+      
+      help++, new_pos++;
+    }
+    *new_pos = '$';
+    free(*walk);
+    *walk = strdup(buffer);
+    printf("new regex: '%s'\n", *walk);
     
-    *new++ = '^';
-    strcpy(new, help);
-    *(new + strlen(help)) = '$';
-    *(new + strlen(help) + 1) = '\0';
-
-    free(help);
     walk++;
-  }  
+  }
 }
 
 char **
