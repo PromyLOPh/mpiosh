@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.27 2003/06/26 19:53:58 germeier Exp $
+ * $Id: defs.h,v 1.28 2003/07/15 07:34:53 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -72,6 +72,8 @@ typedef enum { FTYPE_CHAN  = 0x00,
                FTYPE_WAV   = 'V',
                FTYPE_ENTRY = 'R',
                FTYPE_DIR   = 'D', 
+	       FTYPE_BROKEN = 'X', /* internal "dummy" type, used when
+				      internal FAT is broken */
                FTYPE_PLAIN = '-'} mpio_filetype_t;
 
 /* fixed filenames */

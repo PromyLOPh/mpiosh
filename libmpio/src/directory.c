@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.9 2003/07/14 21:29:09 germeier Exp $
+ * $Id: directory.c,v 1.10 2003/07/15 07:34:53 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -804,7 +804,13 @@ mpio_dentry_get_real(mpio_t *m, mpio_mem_t mem, BYTE *buffer,
     *type = FTYPE_PLAIN;
     if (mem == MPIO_INTERNAL_MEM) {
       f = mpio_dentry_get_startcluster(m, mem, buffer);
-      *type = m->internal.fat[f->entry * 0x10 + 0x06];
+      if (f) {	
+	*type = m->internal.fat[f->entry * 0x10 + 0x06];
+      } else {
+	/* we did not find the startcluster, thus the internal 
+	   FAT is broken for this file */
+	*type = FTYPE_BROKEN;
+      }
     }    
   }
 
