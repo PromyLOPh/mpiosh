@@ -1,0 +1,39 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/mplib.c)
+AM_INIT_AUTOMAKE(mplib, 1.0.1)
+AM_CONFIG_HEADER(config.h)
+	
+dnl Checks for programs.
+AC_ISC_POSIX
+AC_PROG_CC
+AC_PROG_AWK
+
+dnl libraries
+AM_DISABLE_SHARED
+AM_PROG_LIBTOOL
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(unistd.h strings.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+
+dnl Checks for library functions.
+AC_CHECK_FUNCS(strtol,,AC_MSG_WARN([Your system lacks 'strtol' function - falling back to atoi which will result in a binary that is not able to check invalid user input on numbers]))
+
+dnl compile time options
+AC_ARG_ENABLE(profiling, [  --enable-profiling        enable collecting of gprof profiling data for debuging purposes])
+
+if test "$enable_profiling"; then
+   CFLAGS="-pg -a $CFLAGS"
+   LDADD="-pg -a $LDADD"
+fi
+
+dnl config testsuite if exists
+if test -d "testsuite"; then
+  AC_CONFIG_SUBDIRS(testsuite)
+fi
+
+AC_OUTPUT(Makefile src/Makefile mplib-config)

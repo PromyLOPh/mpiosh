@@ -1,0 +1,53 @@
+
+  mplib
+===============================================================================
+
+  A library for handling ID3 tags
+
+  Written by Stefan Podkowinski, lugburg@netscape.net
+
+  Home: http://sourceforge.net/projects/mplib
+
+
+
+ When I was starting to write this library MP3 and music was the
+lattest killerapp on the internet everybody was talking about. Napster
+was the most dominating file sharing tool and the first portable mp3
+players came out ready to be bought by the new tech-friendly .COM
+people.
+
+ It's been a few years since that and mplib got stable and the MP3
+format is still arround, allthough beeing declared death by many. You
+can't stop the revolution. While I was enjoying and discoverying new
+bands and sounds I decided to give something in return, not to the big
+mayor labels, but the MP3 community. And yes, I'm still buying CDs
+though, more than ever.
+
+ Mplib is written to be very easy to use,  fast, cross-platform 
+capable and small size when shipped with other applications. It's currently
+only able to handle common tag fields like artist, comment, etc. out of the
+box. I'll include support for more special Id3 fields in v2 tags from
+contributors if anyone sends me the nessecarry code. I'm just to lazy
+to implement all the 70 frame types (type of informations you can include in a
+v2 tag) just on chance somebody could use some of them. If you
+think you need to store urgently a 'Musician credit list' or 'Event
+timing codes' write me and I will hack you the code if I have the time
+for it.
+
+ And yeah, theres a allready a library written by the people who are
+responsible for the ID3 standard, consider to use id3lib if you don't
+like mplib :-P
+
+ You should start with a short introduction on the API and usage of
+mplib  you'll find in the download section of the sourceforge project
+page. As I wrote above, it was important for me that this libarary is
+easy to use, because I think the reading a artist name from a mp3 file
+should really not be a big deal.
+
+Enjoy mplib and send me some feedback,
+Stefan Podkowinski (spod), lugburg@netscape.net
+
+
+URL's:
+Specifications, id3lib and introductions
+http://www.id3.org/

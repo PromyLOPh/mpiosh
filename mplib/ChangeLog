@@ -1,0 +1,50 @@
+v 1.0
+	* fixed alot of memory leaks and some memory handling bugs causing segfaults
+	
+	* testsuite: Rewritten completly in C, now in sepperate package for 
+	development only
+
+	* mplib_s.c: id3_lseek_syncword did not reset the offset of the
+	file descriptor for reading to the beginning of the file each time
+	invoked. Fixed.
+	
+	* mplib-config: Added
+
+	* *.sh: Updated autoconf/libtool scripts
+
+v 0.6
+	* testsuite: Added a testsuite.
+	
+	* mp_is_valid_v1_value: Added function that checks for valid v1 values
+
+	* mplib_s.h: Fixed typo in genre list
+
+	* all: Further minor changes
+
+v 0.5
+	* mplib_s.c mplib_c: More robust behavior on reading of malformed tags
+
+	* doc: Improved documentation in texinfo format
+
+	* *.c: Some memory leaks fixed by a patch from Thoralf Baum
+
+v 0.4
+	* mplib_s.c: Overwriting existing v2 tags is now working right
+	
+	* mplib_s.c: Prepending new v2 tags does now not result in a lost of some
+	data at the end of the file
+
+v 0.3
+	* mplib_s.c: a serious bug has been fixed that was responsible for 
+	causing a lost of 128 bytes at the end of a file while writing a v1 tag
+	
+	* mplib_s.c: the file descriptor is now keept open after editing v2 tags
+	
+	* *.c: adding a v1 tag now works properly with comments greater than 28 chars
+
+v 0.2
+	* *.c: fd's are now closed gracefully
+
+	* mplib.c: mp_convert_to_v2 now works properly
+
+	* all: minor fixes
