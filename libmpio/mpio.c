@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.11 2002/09/11 13:44:30 germeier Exp $
+ * $Id: mpio.c,v 1.12 2002/09/11 21:34:19 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -30,6 +30,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <utime.h>
 
 #include "defs.h"
 #include "debug.h"
@@ -256,7 +258,8 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   int fd, towrite;
   BYTE   *p;
   mpio_fatentry_t *f=0;
-  
+  struct utimbuf utbuf;
+  long mtime;
   DWORD filesize, fsize;
 
   BYTE abort = 0;
@@ -272,10 +275,10 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   /* find file */
   p = mpio_dentry_find_name(m, mem, filename);
   if (!p)
-      p = mpio_dentry_find_name_8_3(m, mem, filename);
+    p = mpio_dentry_find_name_8_3(m, mem, filename);
 
-  if (p)
-    f = mpio_dentry_get_startcluster(m, mem, p);      
+  if (p) 
+    f = mpio_dentry_get_startcluster(m, mem, p);
   
   if (f && p) {    
     filesize=fsize=mpio_dentry_get_filesize(m, mem, p);
@@ -308,10 +311,19 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
       } while ((mpio_fatentry_next_entry(m, mem, f) && (filesize>0)));
   
     close (fd);    
+
+    /* read and copied code from mtools-3.9.8/mcopy.c
+     * to make this one right 
+     */
+    mtime=mpio_dentry_get_time(m, mem, p);
+    utbuf.actime  = mtime;
+    utbuf.modtime = mtime;
+    utime(filename, &utbuf);
+
   } else {
     debug("unable to locate the file: %s\n", filename);
   }
-  
+
   return (fsize-filesize);
 }
 
@@ -453,8 +465,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   /* FIXEME: add real values here!!! */
   mpio_dentry_put(m, mem,
 		  filename, strlen(filename),
-		  2002, 8, 13,
-		  2, 12, fsize, start);
+		  file_stat.st_ctime, fsize, start);
 
   /* this writes the FAT *and* the root directory */
   mpio_fat_write(m, mem);

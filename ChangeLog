@@ -1,5 +1,18 @@
 2002-09-11  Markus Germeier  <mager@tzi.de>
 
+	* libmpio/mpio.c (mpio_file_put,mpio_file_get): 
+	  set timestamps on files correct
+	* libmpio/directory.c (mpio_dentry_put): 
+	  write correct 8.3 filenames into directory
+	  (mpio_dentry_put): 
+	  fixed handling of time stamps with a "little" help
+	  from the current mtools distribution
+	  (date_dos2unix): added function, copied from the linux
+	  kernel
+	  (mpio_dentry_get_time): added function, uses (date_dos2unix)
+
+2002-09-11  Markus Germeier  <mager@tzi.de>
+
 	* mpio_tool/mpiosh.c (mpiosh_cmd_mdel): added command mdel
 
 2002-09-11  Markus Germeier  <mager@tzi.de>

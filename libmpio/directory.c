@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: directory.c,v 1.4 2002/09/08 23:22:48 germeier Exp $
+ * $Id: directory.c,v 1.5 2002/09/11 21:34:19 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -30,6 +30,41 @@
 #include "io.h"
 #include "mpio.h"
 #include "directory.h"
+#include <sys/time.h>
+
+/* the following function is copied from the linux kernel v2.4.18
+ * file:/usr/src/linux/fs/fat/misc.c
+ * it was written by Werner Almesberger and Igor Zhbanov
+ * and is believed to be GPL
+ */
+
+/* Linear day numbers of the respective 1sts in non-leap years. */
+
+static int day_n[] = { 0,31,59,90,120,151,181,212,243,273,304,334,0,0,0,0 };
+		  /* JanFebMarApr May Jun Jul Aug Sep Oct Nov Dec */
+
+/* Convert a MS-DOS time/date pair to a UNIX date (seconds since 1 1 70). */
+
+int date_dos2unix(unsigned short time,unsigned short date)
+{
+	int month,year,secs;
+	struct timezone sys_tz;
+	struct timeval  tv;
+	
+	gettimeofday(&tv, &sys_tz);
+
+	/* first subtract and mask after that... Otherwise, if
+	   date == 0, bad things happen */
+	month = ((date >> 5) - 1) & 15;
+	year = date >> 9;
+	secs = (time & 31)*2+60*((time >> 5) & 63)+(time >> 11)*3600+86400*
+	    ((date & 31)-1+day_n[month]+(year/4)+year*365-((year & 3) == 0 &&
+	    month < 2 ? 1 : 0)+3653);
+			/* days since 1.1.70 plus 80's leap day */
+	secs += sys_tz.tz_minuteswest*60;
+	return secs;
+}
+
 
 /* directory operations */
 BYTE *
@@ -174,50 +209,58 @@ mpio_dentry_get_real(mpio_t *m, BYTE *buffer,
   if ((dentry->name[0] & 0x40)    && 
       (dentry->attr == 0x0f)      &&
       (dentry->start[0] == 0x00)  &&
-      (dentry->start[1] == 0x00)) {
-    num_slots = (mpio_dentry_get_size(m, buffer) / 0x20) - 1;
-    slots = num_slots - 1;
-    dentry++;
-    vfat++;    
-    unicode = malloc(256);
-    uc = unicode;
-    fname = filename;
-    slot = (mpio_dir_slot_t *)buffer;
-    mpio_dentry_copy_from_slot(unicode + (26 * slots), slot);
-    slots--;
-
-    while ((dentry->attr == 0x0f)      &&
-	   (dentry->start[0] == 0x00)  &&
-	   (dentry->start[1] == 0x00)) {
-      /* this/these are vfat slots */
-      slot = (mpio_dir_slot_t *)dentry;
-      mpio_dentry_copy_from_slot((unicode + (26 * slots)), slot);
+      (dentry->start[1] == 0x00)) 
+    {
+      num_slots = (mpio_dentry_get_size(m, buffer) / 0x20) - 1;
+      slots = num_slots - 1;
       dentry++;
+      vfat++;    
+      unicode = malloc(256);
+      uc = unicode;
+      fname = filename;
+      slot = (mpio_dir_slot_t *)buffer;
+      mpio_dentry_copy_from_slot(unicode + (26 * slots), slot);
       slots--;
+      
+      while ((dentry->attr == 0x0f)      &&
+	     (dentry->start[0] == 0x00)  &&
+	     (dentry->start[1] == 0x00)) 
+	{
+	  /* this/these are vfat slots */
+	  slot = (mpio_dir_slot_t *)dentry;
+	  mpio_dentry_copy_from_slot((unicode + (26 * slots)), slot);
+	  dentry++;
+	  slots--;
+	}
+    }  
+  
+  if (vfat) 
+    {
+      ic = iconv_open("ASCII", "UNICODE");
+      in = num_slots * 26;
+      out = num_slots * 13;
+      memset(fname, 0, filename_size);
+      iconv(ic, (char **)&uc, &in, (char **)&fname, &out);
+      iconv_close(ic);
+      free(unicode);
+    } 
+
+  memcpy(filename_8_3, dentry->name, 8);
+  filename_8_3[0x08] = '.';	
+  memcpy(filename_8_3 + 0x09, dentry->ext, 3);
+  filename_8_3[0x0c] = 0;
+
+  if (!vfat) 
+    {    
+      if (filename_size >= 12) 
+	{
+	  snprintf(filename, 13, "%s", filename_8_3);	    
+	} else {
+	  snprintf(filename, 12, "%s", "ERROR");
+	}
     }
-  }  
 
-  if (vfat) {
-    ic = iconv_open("ASCII", "UNICODE");
-    in = num_slots * 26;
-    out = num_slots * 13;
-    memset(fname, 0, filename_size);
-    iconv(ic, (char **)&uc, &in, (char **)&fname, &out);
-    iconv_close(ic);
-    free(unicode);
-  } else {
-    memcpy(filename_8_3, dentry->name, 8);
-    filename_8_3[0x08] = '.';	
-    memcpy(filename_8_3 + 0x09, dentry->ext, 3);
-    filename_8_3[0x0c] = 0;
-
-    if (filename_size >= 12) {
-      snprintf(filename, 13, "%s", filename_8_3);	    
-    } else {
-      snprintf(filename, 12, "%s", "ERROR");
-    }
-
-  }
+/*   hexdumpn(0, filename_8_3, 13); */
 
   date  = (dentry->date[1] * 0x100) + dentry->date[0];
   *year  = date / 512 + 1980;
@@ -235,7 +278,7 @@ mpio_dentry_get_real(mpio_t *m, BYTE *buffer,
   *fsize += dentry->size[1];
   *fsize *= 0x100;
   *fsize += dentry->size[0];
-  
+
   return(((BYTE *)dentry) - buffer);
 }
 
@@ -301,6 +344,28 @@ mpio_dentry_get_filesize(mpio_t *m, mpio_mem_t mem, BYTE *p)
   return fsize; 
 }
 
+long
+mpio_dentry_get_time(mpio_t *m, mpio_mem_t mem, BYTE *p)
+{
+  int s;
+  mpio_dir_entry_t *dentry;
+
+  s  = mpio_dentry_get_size(m, p);
+  s -= DIR_ENTRY_SIZE ;
+
+  dentry = (mpio_dir_entry_t *)p;
+
+  while (s != 0) {
+    dentry++;
+    s -= DIR_ENTRY_SIZE ;
+  }
+
+
+  return date_dos2unix((dentry->time[0]+dentry->time[1]*0x100),
+		       (dentry->date[0]+dentry->date[1]*0x100));
+}
+
+
 
 mpio_fatentry_t *
 mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
@@ -341,8 +406,7 @@ mpio_dentry_get_startcluster(mpio_t *m, mpio_mem_t mem, BYTE *p)
 int
 mpio_dentry_put(mpio_t *m, BYTE mem,
 		BYTE *filename, int filename_size,
-		WORD year, BYTE month, BYTE day,
-		BYTE hour, BYTE minute, DWORD fsize, WORD ssector)
+		time_t date, DWORD fsize, WORD ssector)
 {
   BYTE *unicode = 0;
   BYTE *back, *fback;
@@ -352,11 +416,21 @@ mpio_dentry_put(mpio_t *m, BYTE mem,
   int fin = 0, fout = 0;
   int count = 0;
   BYTE index;
-  
+  BYTE f_8_3[13];
+  int i, j;
   BYTE *p;
   mpio_dir_entry_t *dentry;
   mpio_dir_slot_t  *slot;
   
+  /* read and copied code from mtools-3.9.8/directory.c 
+   * to make this one right 
+   */
+  struct tm *now;
+  time_t date2 = date;
+  unsigned char hour, min_hi, min_low, sec;
+  unsigned char year, month_hi, month_low, day;
+
+
   p = mpio_directory_open(m, mem);
   if (p) {
     while (*p != 0x00)
@@ -416,23 +490,69 @@ mpio_dentry_put(mpio_t *m, BYTE mem,
 
 /*   p+=0x20; */
   dentry = (mpio_dir_entry_t *)slot;
-  memcpy(dentry->name,"AAAAAAAA",8);
-  memcpy(dentry->ext,"MP3",3);
+
+  /* find uniq 8.3 filename */
+  memset(f_8_3, 0x20, 12);
+  f_8_3[6]='~';
+  f_8_3[7]='1';
+  f_8_3[8]='.';
+  f_8_3[12]=0x00;
+
+  i=0;
+  while ((i<6) && (filename[i] != '.') && (i<(strlen(filename))))
+    {
+      f_8_3[i] = toupper(filename[i]);
+      i++;
+    }
+
+  j=i;
+  while((filename[j] != '.') && (j<(strlen(filename))))
+    j++;
+  
+  j++;
+  i=9;
+  while ((i<12) && (j<(strlen(filename))))
+    {
+      f_8_3[i] = toupper(filename[j]);
+      i++;
+      j++;
+    }
+
+  while(mpio_dentry_find_name_8_3(m, mem, f_8_3))
+    f_8_3[7]++;
+
+  
+/*   memcpy(dentry->name,"AAAAAAAA",8); */
+/*   memcpy(dentry->ext,"MP3",3); */
+
+/*   hexdumpn(0, f_8_3, 13); */
+
+  memcpy(dentry->name, f_8_3, 8);
+  memcpy(dentry->ext, f_8_3+9, 3);
+
   dentry->attr = 0x20;
   dentry->lcase = 0x00;
-  dentry->ctime_ms = 0x00;
-  dentry->ctime[0] = 0x37;
-  dentry->ctime[1] = 0x7b;
-  dentry->cdate[0] = 0xfb;
-  dentry->cdate[1] = 0x2c;
-  dentry->adate[0] = 0xfd;
-  dentry->adate[1] = 0x2c;
-  dentry->reserved[0] = 0x00;
-  dentry->reserved[1] = 0x00;  
-  dentry->time[0] = 0x38;
-  dentry->time[1] = 0x7b;
-  dentry->date[0] = 0xfb;
-  dentry->date[1] = 0x2c;
+
+
+
+  /* read and copied code from mtools-3.9.8/directory.c 
+   * to make this one right 
+   */
+  now = localtime(&date2);
+  dentry->ctime_ms = 0;
+  hour = now->tm_hour << 3;
+  min_hi = now->tm_min >> 3;
+  min_low = now->tm_min << 5;
+  sec = now->tm_sec / 2;
+  dentry->ctime[1] = dentry->time[1] = hour + min_hi;
+  dentry->ctime[0] = dentry->time[0] = min_low + sec;
+  year = (now->tm_year - 80) << 1;
+  month_hi = (now->tm_mon + 1) >> 3;
+  month_low = (now->tm_mon + 1) << 5;
+  day = now->tm_mday;
+  dentry -> adate[1] = dentry->cdate[1] = dentry->date[1] = year + month_hi;
+  dentry -> adate[0] = dentry->cdate[0] = dentry->date[0] = month_low + day;
+  
   dentry->size[0] = fsize & 0xff;
   dentry->size[1] = (fsize / 0x100) & 0xff;
   dentry->size[2] = (fsize / 0x10000) & 0xff;
@@ -465,6 +585,7 @@ mpio_dentry_find_name_8_3(mpio_t *m, BYTE mem, BYTE *filename)
 			  fname_8_3,
 			  &wdummy, &bdummy, &bdummy,
 			  &bdummy, &bdummy, &ddummy);
+/*     debug ("s: %s\n", fname_8_3); */
     if ((strcmp(fname_8_3, filename) == 0) &&
 	(strcmp(filename,fname_8_3) == 0)) {
       found = p;
@@ -523,7 +644,7 @@ mpio_dentry_delete(mpio_t *m, BYTE mem, BYTE *filename)
     start = mpio_dentry_find_name_8_3(m, mem, filename);
 
   if (!start) {
-    debug("could not find file: %s\n", filename);
+    debugn(2, "could not find file: %s\n", filename);
     return 0;    
   } 
 
