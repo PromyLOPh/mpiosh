@@ -1,5 +1,9 @@
 dnl -*- shell-script -*-
 dnl Process this file with autoconf to produce a configure script.
+
+dnl we need autoconf >= 2.50
+AC_PREREQ(2.50)
+
 AC_INIT(kernel/mpio.c)
 dnl AM_CONFIG_HEADER(src/config.h)
 
