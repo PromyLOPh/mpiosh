@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.45 2003/07/01 09:06:11 germeier Exp $
+ * $Id: callback.c,v 1.46 2003/07/27 20:50:01 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -207,7 +207,10 @@ mpiosh_cmd_cd(char *args[])
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
-  mpio_directory_cd(mpiosh.dev, mpiosh.card, args[0]);
+  if ( args[ 0 ] != NULL )
+    mpio_directory_cd(mpiosh.dev, mpiosh.card, args[0]);
+  else
+    mpio_directory_cd(mpiosh.dev, mpiosh.card, ".");
 
   mpio_directory_pwd(mpiosh.dev, mpiosh.card, pwd);
   printf ("directory is now: %s\n", pwd);

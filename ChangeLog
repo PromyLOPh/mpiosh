@@ -1,3 +1,8 @@
+2003-07-27  Andreas Buesching  <crunchy@tzi.de>
+
+	* mpiosh/callback.c (mpiosh_cmd_cd): checking argument.
+		NULL is replaced with "."
+
 2003-07-24  Markus Germeier  <mager@tzi.de>
         * detect new SmartMedia chips and report them
 	* added version to mpio_smartmedia_t
