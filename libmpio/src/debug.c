@@ -4,7 +4,7 @@
  * Authors: Dirk Meyer  <dmeyer@tzi.de>
  *          Andreas Büsching <crunchy@tzi.de>
  *
- * $Id: debug.c,v 1.5 2003/04/23 09:03:37 crunchy Exp $
+ * $Id: debug.c,v 1.3 2003/04/23 09:06:33 crunchy Exp $
  */
 
 #include "debug.h"

@@ -23,8 +23,8 @@ pkginclude_HEADERS= \
 		defs.h
 
 noinst_HEADERS= \
+		debug.h \
 		src/io.h \
-		src/debug.h \
 		src/smartmedia.h \
 		src/directory.h \
 		src/fat.h \
