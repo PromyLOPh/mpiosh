@@ -12,6 +12,9 @@ mpio.o: mpio.c
 clean:
 	rm -f mpio.o
 
+distclean:
+	rm -f mpio.o
+
 install-data-local:
 	$(mkinstalldirs) $(DESTDIR)@MODULE_PATH@
 	$(INSTALL_SCRIPT) -m 644 mpio.o $(DESTDIR)@MODULE_PATH@
