@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: mpio.c,v 1.20 2002/09/18 23:17:03 germeier Exp $
+ * $Id: mpio.c,v 1.21 2002/09/19 20:46:02 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -49,7 +49,31 @@ static BYTE *mpio_model_name[] = {
   "MPIO-DMB",
   "MPIO-DMB+",
   "MPIO-DMK",
-  "unknown" };
+  "unknown"
+};
+
+static mpio_error_t mpio_errors[] = {
+  { MPIO_ERR_FILE_NOT_FOUND,
+    "The selected file can not be found." },
+  { MPIO_ERR_NOT_ENOUGH_SPACE,
+    "There is not enough space left on the selected memory card." },
+  { MPIO_ERR_FILE_EXISTS,
+    "The selected file already exists and can not be overwritten. Remove it first." },
+  { MPIO_ERR_FAT_ERROR,
+    "Internal error while reading the FAT." },
+  { MPIO_ERR_READING_FILE,
+    "The selected file can not be read." },
+  { MPIO_ERR_PERMISSION_DENIED,
+    "There are not enough rights to access the file/directory." },
+  { MPIO_ERR_WRITING_FILE,
+    "There are no permisson to write to the selected file." }
+};
+
+static const int mpio_error_num = sizeof mpio_errors / sizeof(mpio_error_t);
+
+static int _mpio_errno = 0;
+
+#define MPIO_ERR_RETURN(err) _mpio_errno = err; return -1
 
 void mpio_init_internal(mpio_t *);
 void mpio_init_external(mpio_t *);
@@ -318,8 +342,8 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   
   /* please fix me sometime */
   /* the system entries are kind of special ! */
-  if (strncmp("sysdum", filename, 6) == 0)
-    return MPIO_ERR_PERMISSION_DENIED;  
+  if (strncmp("sysdum", filename, 6) == 0) 
+    MPIO_ERR_RETURN(MPIO_ERR_PERMISSION_DENIED);
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -354,7 +378,7 @@ mpio_file_get(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 	  debug("error writing file data\n");
 	  close(fd);
 	  free (f);
-	  return MPIO_ERR_WRITING_FILE;
+	  MPIO_ERR_RETURN(MPIO_ERR_WRITING_FILE);
 	} 
 	filesize -= towrite;
 	
@@ -404,7 +428,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
 
   if (stat((const char *)filename, &file_stat)!=0) {
     debug("could not find file: %s\n", filename);
-    return MPIO_ERR_FILE_NOT_FOUND;
+    MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
   }
   fsize=filesize=file_stat.st_size;
   debugn(2, "filesize: %d\n", fsize);
@@ -413,7 +437,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   mpio_memory_free(m, mem, &free);
   if (free*1024<fsize) {
     debug("not enough space left (only %d KB)\n", free);
-    return MPIO_ERR_NOT_ENOUGH_SPACE;
+    MPIO_ERR_RETURN(MPIO_ERR_NOT_ENOUGH_SPACE);
   }
 
   /* check if filename already exists */
@@ -423,7 +447,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (p) 
     {
       debug("filename already exists\n");
-      return MPIO_ERR_FILE_EXISTS;
+      MPIO_ERR_RETURN(MPIO_ERR_FILE_EXISTS);
     }
 
   /* find first free sector */
@@ -431,7 +455,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (!f) 
     {
       debug("could not free cluster for file!\n");
-      return MPIO_ERR_FAT_ERROR;
+      MPIO_ERR_RETURN(MPIO_ERR_FAT_ERROR);
     } else {
       memcpy(&firstblock, f, sizeof(mpio_fatentry_t));
       start=f->entry;
@@ -459,7 +483,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (fd==-1) 
     {
       debug("could not open file: %s\n", filename);
-      return MPIO_ERR_FILE_NOT_FOUND;
+      MPIO_ERR_RETURN(MPIO_ERR_FILE_NOT_FOUND);
     }
 
   while ((filesize>BLOCK_SIZE) && (!abort)) {
@@ -473,7 +497,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
     if (read(fd, block, toread)!=toread) {
       debug("error reading file data\n");
       close(fd);
-      return MPIO_ERR_READING_FILE;
+      MPIO_ERR_RETURN(MPIO_ERR_READING_FILE);
     }
     filesize -= toread;
 
@@ -503,7 +527,7 @@ mpio_file_put(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   if (read(fd, block, toread)!=toread) {
     debug("error reading file data\n");
     close(fd);
-    return MPIO_ERR_READING_FILE;
+    MPIO_ERR_RETURN(MPIO_ERR_READING_FILE);
   }
   filesize -= toread;
   
@@ -650,7 +674,7 @@ mpio_file_del(mpio_t *m, mpio_mem_t mem, BYTE *filename,
   /* please fix me sometime */
   /* the system entry are kind of special ! */
   if (strncmp("sysdum", filename, 6)==0)
-    return MPIO_ERR_PERMISSION_DENIED;  
+    MPIO_ERR_RETURN(MPIO_ERR_PERMISSION_DENIED);
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -736,8 +760,41 @@ mpio_memory_debug(mpio_t *m, mpio_mem_t mem)
   return 0;  
 }
 
-
-      
-
-
+int
+mpio_errno(void)
+{
+  int no = _mpio_errno;
+  _mpio_errno = 0;
   
+  return no;
+}
+
+char *
+mpio_strerror(int errno)
+{
+  int i;
+
+  printf("mpio_strerror %d\n", errno);
+  
+  if (errno >= 0) return NULL;
+  
+  for (i = 0; i < mpio_error_num; i++) {
+    if (mpio_errors[i].id == errno)
+      return mpio_errors[i].msg;
+  }
+
+  return NULL;
+}
+
+void
+mpio_perror(char *prefix)
+{
+  char *msg = mpio_strerror(_mpio_errno);
+  
+  if (msg == NULL) return;
+  
+  if (prefix)
+    fprintf(stderr, "%s: %s\n", prefix, msg);
+  else
+    fprintf(stderr, "%s\n", msg);
+}

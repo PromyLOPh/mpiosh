@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: mpio.h,v 1.5 2002/09/18 22:18:29 germeier Exp $
+ * $Id: mpio.h,v 1.6 2002/09/19 20:46:02 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -93,6 +93,19 @@ int	mpio_sync(mpio_t *, mpio_mem_t);
 
 /* context, memory bank */
 int	mpio_memory_debug(mpio_t *, mpio_mem_t); 
+
+/* 
+ * error handling
+ */
+
+/* returns error code of last error */
+int 	mpio_errno(void);
+
+/* returns the description of the error <errno> */
+char *	mpio_strerror(int errno);
+
+/* prints the error message of the last error*/
+void	mpio_perror(char *prefix);
 
 /* 
  * timeline:

@@ -1,7 +1,7 @@
 /* -*- linux-c -*- */
 
 /* 
- * $Id: defs.h,v 1.6 2002/09/18 20:32:21 crunchy Exp $
+ * $Id: defs.h,v 1.7 2002/09/19 20:46:02 crunchy Exp $
  *
  * Library for USB MPIO-*
  *
@@ -93,6 +93,11 @@ typedef enum { FTYPE_CONF  = 'C',
 #define INFO_LINE        81
 
 /* error codes */
+typedef struct {
+  int	id;
+  char *msg;
+} mpio_error_t;
+
 #define MPIO_ERR_FILE_NOT_FOUND		-1
 #define MPIO_ERR_NOT_ENOUGH_SPACE	-2
 #define MPIO_ERR_FILE_EXISTS		-3

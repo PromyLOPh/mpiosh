@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.11 2002/09/18 23:17:03 germeier Exp $
+ * $Id: callback.c,v 1.12 2002/09/19 20:46:02 crunchy Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -355,10 +355,9 @@ mpiosh_cmd_mput(char *args[])
 	for (j = 0; j < size; j++, run++) {
 	  if (!(error = regexec(&regex, (*run)->d_name, 0, NULL, 0))) {
 	    printf("putting '%s' ... \n", (*run)->d_name);
-	    fsize = mpio_file_put(mpiosh.dev, mpiosh.card,
-				 (*run)->d_name, mpiosh_callback_put);
-	    if ((fsize < 0) && (fsize == MPIO_ERR_NOT_ENOUGH_SPACE)) {
-	      fprintf(stderr, "error: not enough space left on memory card\n");
+	    if (mpio_file_put(mpiosh.dev, mpiosh.card,
+			      (*run)->d_name, mpiosh_callback_put) == -1) {
+	      mpio_perror("error");
 	      break;
 	    }
 	    
