@@ -1,6 +1,6 @@
 /* 
  *
- * $Id: fat.c,v 1.12 2002/09/23 22:38:03 germeier Exp $
+ * $Id: fat.c,v 1.13 2002/09/23 22:41:14 germeier Exp $
  *
  * Library for USB MPIO-*
  *
@@ -306,7 +306,7 @@ mpio_fatentry_free(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f )
     i=0;
     while (i<0x10) 
       {
-	if (sm->fat[e+i] == 0xff)
+	if (sm->fat[e+i] != 0xff)
 	  return 0;
 	i++;
       }
