@@ -5,8 +5,9 @@
  *
  * Yuji Touya (salmoon@users.sourceforge.net)
  *
- * small adaptions for Kernel 2.4.x support by
- * Markus Germeier (mager@tzi.de)
+ * additions by Markus Germeier (mager@tzi.de):
+ * - small adaptions for Kernel 2.4.x support 
+ * - find endpoints automagically (needed for newer players)
  * 
  * based on rio500.c by Cesar Miquel (miquel@df.uba.ar)
  * 
@@ -57,7 +58,7 @@
 /*
  * Version Information
  */
-#define DRIVER_VERSION "0.0.2"
+#define DRIVER_VERSION "0.0.3"
 #define DRIVER_AUTHOR "Yuji Touya <salmoon@users.sourceforge.net>"
 #define DRIVER_DESC "USB MPIO driver"
 
@@ -165,7 +166,8 @@ write_mpio(struct file *file, const char *buffer, size_t count, loff_t * ppos)
 
 			result =
 			  usb_bulk_msg(mpio->mpio_dev,
-				       usb_sndbulkpipe(mpio->mpio_dev, 1),
+				       usb_sndbulkpipe(mpio->mpio_dev, 
+						       mpio->bulk_out_ep),
 				       obuf, thistime, &partial, 5 * HZ);
 
 			dbg("write stats: result:%d thistime:%lu partial:%u",
@@ -236,7 +238,8 @@ read_mpio(struct file *file, char *buffer, size_t count, loff_t * ppos)
 		this_read = (count >= IBUF_SIZE) ? IBUF_SIZE : count;
 
 		result = usb_bulk_msg(mpio->mpio_dev,
-				      usb_rcvbulkpipe(mpio->mpio_dev, 2),
+				      usb_rcvbulkpipe(mpio->mpio_dev, 
+						      mpio->bulk_in_ep),
 				      ibuf, this_read, &partial,
 				      (int) (HZ * 8));
 
@@ -296,6 +299,9 @@ static void *probe_mpio(struct usb_device *dev, unsigned int ifnum)
 #endif
 {
 	struct mpio_usb_data *mpio = &mpio_instance;
+	struct usb_interface_descriptor *as;
+	struct usb_endpoint_descriptor *ep;
+	int i;
 
 	if (dev->descriptor.idVendor != 0x2735 /* Digit@lway */ ) {
 		return NULL;
@@ -307,6 +313,30 @@ static void *probe_mpio(struct usb_device *dev, unsigned int ifnum)
 	}
 
 	info("USB MPIO found at address %d", dev->devnum);
+
+	as = dev->config->interface->altsetting;
+	mpio->bulk_in_ep = mpio->bulk_out_ep = 0;
+	
+	for (i = 0 ; i < as->bNumEndpoints; i++) {
+	  ep = &as->endpoint[i];
+	  info("USB endpoint #%d (Addr:%02x, Attr:%02x)", i, 
+	       ep->bEndpointAddress, ep->bmAttributes);
+	  if (ep->bmAttributes == 2) {
+	    if (ep->bEndpointAddress & USB_DIR_IN) {
+	      info("FOUND incoming USB endpoint (%02x)", ep->bEndpointAddress);
+	      mpio->bulk_in_ep = ep->bEndpointAddress & ~(USB_DIR_IN);
+	    } else {
+	      info("FOUND outgoing USB endpoint (%02x)", ep->bEndpointAddress);
+	      mpio->bulk_out_ep = ep->bEndpointAddress;
+	    }
+	  }
+	}
+
+	if (!(mpio->bulk_out_ep && mpio->bulk_in_ep)) {
+	  info("Did not find USB bulk endpoints");
+	  return NULL;
+	}
+
 #ifdef DEBUG
 	usb_show_device(dev); /* Show device info */
 #endif
