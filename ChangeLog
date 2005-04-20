@@ -1,3 +1,7 @@
+2005-04-20  Markus Germeier  <mager@tzi.de>
+	* configure.in: 
+	  fix version check for libusb, use black list instead	
+
 2004-05-31  Markus Germeier  <mager@tzi.de>
 	* libmpio/src/mpio.c (mpio_init_external): 
 	  fixed stupid bugs

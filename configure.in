@@ -78,16 +78,17 @@ if test -n "${LIBUSB_CONFIG}"; then
     CPPFLAGS="$CPPFLAGS_save"
 fi
 
-        # This 'test' call uses non-standard syntax and will fail on most
-        # systems, but it's just informational so any warning can be ignored.
-if test "$LIBUSB_VER" \< "0.1.7"; then
+dnl --- blacklist the too old versions
+case "$LIBUSB_VER" in
+    0.1.[[0123456]]|0.1.[[36]][[ab]])
     AC_MSG_WARN([
 *** You need at least version 0.1.7 of the libusb library for USB support
 *** http://sourceforge.net/projects/libusb/
 *** If you cannot find the appropriate version, try CVS
 	    ])
-    exit 1
-fi
+    exit 1 ;;
+    *);;
+esac
 
 case "$usb_msg" in
     yes*) AC_DEFINE(HAVE_USB,1,[Whether you have USB support enabled]);;
