@@ -9,7 +9,7 @@ Version: %version
 Summary: MPIO - providing access to MPIO mp3 players
 Name: %name
 Release: %release
-Copyright: see COPYING
+License: GPL
 Group: Applications/MultiMedia
 Source: http://download.sourceforge.net/mpio/mpio-@VERSION@.tar.gz
 Prefix: %prefix
