@@ -1,5 +1,5 @@
 /*
- * $Id: directory.h,v 1.4 2003/10/19 21:06:35 germeier Exp $
+ * $Id: directory.h,v 1.5 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -45,11 +45,11 @@ BYTE    mpio_directory_is_empty(mpio_t *, mpio_mem_t, mpio_directory_t *);
 /* operations on a single directory entry */
 int	mpio_dentry_get_size(mpio_t *, mpio_mem_t, BYTE *);
 int	mpio_dentry_get_raw(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int);
-int	mpio_dentry_put(mpio_t *, mpio_mem_t, BYTE *, int,
+int	mpio_dentry_put(mpio_t *, mpio_mem_t, CHAR *, int,
 			time_t, DWORD, WORD, BYTE);
-BYTE *	mpio_dentry_find_name_8_3(mpio_t *, BYTE, BYTE *);
-BYTE *	mpio_dentry_find_name(mpio_t *, BYTE, BYTE *);
-int	mpio_dentry_delete(mpio_t *, BYTE, BYTE *);
+BYTE *	mpio_dentry_find_name_8_3(mpio_t *, BYTE, CHAR *);
+BYTE *	mpio_dentry_find_name(mpio_t *, BYTE, CHAR *);
+int	mpio_dentry_delete(mpio_t *, BYTE, CHAR *);
 int     mpio_dentry_get_filesize(mpio_t *, mpio_mem_t, BYTE *);
 BYTE    mpio_dentry_get_attrib(mpio_t *, mpio_mem_t, BYTE *);
 long    mpio_dentry_get_time(mpio_t *, mpio_mem_t, BYTE *);
@@ -60,7 +60,7 @@ BYTE    mpio_dentry_is_dir(mpio_t *, mpio_mem_t, BYTE *);
 void    mpio_dentry_switch(mpio_t *, mpio_mem_t, BYTE *, BYTE *);
 
 /* rename a dentry */
-void    mpio_dentry_rename(mpio_t *, mpio_mem_t, BYTE *, BYTE *);
+void    mpio_dentry_rename(mpio_t *, mpio_mem_t, BYTE *, CHAR *);
 
 /* Move a given file to a new position in the file
    list	relative to another file.	
@@ -68,14 +68,14 @@ void    mpio_dentry_rename(mpio_t *, mpio_mem_t, BYTE *, BYTE *);
 void	mpio_dentry_move(mpio_t *,mpio_mem_t, BYTE *, BYTE *);
 
 /* helper functions */
-void    mpio_dentry_copy_from_slot(BYTE *, mpio_dir_slot_t *);
-void    mpio_dentry_copy_to_slot(BYTE *, mpio_dir_slot_t *);
-int	mpio_dentry_get_real(mpio_t *, mpio_mem_t, BYTE *, BYTE *, 
-			     int, BYTE[12],
+void    mpio_dentry_copy_from_slot(CHAR *, mpio_dir_slot_t *);
+void    mpio_dentry_copy_to_slot(CHAR *, mpio_dir_slot_t *);
+int	mpio_dentry_get_real(mpio_t *, mpio_mem_t, BYTE *, CHAR *, 
+			     int, CHAR[12],
 			     WORD *, BYTE *, BYTE *, BYTE *, BYTE *, DWORD *,
 			     BYTE *);
 mpio_dir_entry_t *
-  mpio_dentry_filename_write(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int);
+  mpio_dentry_filename_write(mpio_t *, mpio_mem_t, BYTE *, CHAR *, int);
 
 #ifdef __cplusplus
 }

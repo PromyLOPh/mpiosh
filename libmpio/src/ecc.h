@@ -1,5 +1,5 @@
 /*
- * $Id: ecc.h,v 1.2 2003/04/27 12:08:21 germeier Exp $
+ * $Id: ecc.h,v 1.3 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -30,9 +30,9 @@ extern "C" {
 #endif
 
 /* 256 Bytes Data, 3 Byte ECC to generate */
-int	mpio_ecc_256_gen(BYTE *, BYTE *);
+int	mpio_ecc_256_gen(CHAR *, CHAR *);
 /* 256 Bytes Data, 3 Bytes ECC to check and possibly correct */
-int	mpio_ecc_256_check(BYTE *, BYTE*);
+int	mpio_ecc_256_check(CHAR *, CHAR*);
 
 #ifdef __cplusplus
 }

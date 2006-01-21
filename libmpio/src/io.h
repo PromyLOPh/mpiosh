@@ -1,5 +1,5 @@
 /*
- * $Id: io.h,v 1.4 2003/10/19 21:06:35 germeier Exp $
+ * $Id: io.h,v 1.5 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -67,17 +67,17 @@ void mpio_zone_block_set(mpio_t *, mpio_cmd_t, DWORD);
 
 /* real I/O */
 int	mpio_io_set_cmdpacket(mpio_t *, mpio_cmd_t, mpio_mem_t, 
-			      DWORD, WORD, BYTE, BYTE *);
+			      DWORD, WORD, BYTE, CHAR *);
 
-int	mpio_io_bulk_read (int, BYTE *, int);
-int	mpio_io_bulk_write(int, BYTE *, int);
+int	mpio_io_bulk_read (int, CHAR *, int);
+int	mpio_io_bulk_write(int, CHAR *, int);
 
 /* read version block into memory */
-int	mpio_io_version_read(mpio_t *, BYTE *);
+int	mpio_io_version_read(mpio_t *, CHAR *);
 
 /* */
-int	mpio_io_sector_read (mpio_t *, BYTE, DWORD, BYTE *);
-int	mpio_io_sector_write(mpio_t *, BYTE, DWORD, BYTE *);
+int	mpio_io_sector_read (mpio_t *, BYTE, DWORD, CHAR *);
+int	mpio_io_sector_write(mpio_t *, BYTE, DWORD, CHAR *);
 
 /* */
 int	mpio_io_block_read  (mpio_t *, mpio_mem_t, mpio_fatentry_t *, BYTE *);
@@ -92,7 +92,7 @@ int	mpio_io_megablock_read  (mpio_t *, mpio_mem_t, mpio_fatentry_t *, BYTE *);
 int	mpio_io_megablock_write (mpio_t *, mpio_mem_t, mpio_fatentry_t *, BYTE *);
 
 /* */
-int	mpio_io_spare_read  (mpio_t *, BYTE, DWORD, WORD, BYTE, BYTE *, int,
+int	mpio_io_spare_read  (mpio_t *, BYTE, DWORD, WORD, BYTE, CHAR *, int,
 			     mpio_callback_init_t);
 
 #ifdef __cplusplus

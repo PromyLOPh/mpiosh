@@ -1,5 +1,5 @@
 /*
- * $Id: io.c,v 1.12 2004/04/24 16:09:58 germeier Exp $
+ * $Id: io.c,v 1.13 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
@@ -134,7 +134,7 @@ blockaddress_decode(BYTE *entry)
       (entry[7] != entry[12]))
     {	  
       debug("error: different block addresses found:\n");
-      hexdumpn(1, entry, 0x10);
+      hexdumpn(1, (CHAR *)entry, 0x10);
       return MPIO_BLOCK_DEFECT;
     } 
   
@@ -177,8 +177,8 @@ fatentry2hw(mpio_fatentry_t *f, BYTE *chip, DWORD *address)
   if (f->mem == MPIO_INTERNAL_MEM) 
     {
       sm       = &f->m->internal;
-      /*       hexdump((char *)&f->entry, 4); */
-      /*       hexdump((char *)&f->hw_address, 4); */
+      /*       hexdump((CHAR *)&f->entry, 4); */
+      /*       hexdump((CHAR *)&f->hw_address, 4); */
       *chip    = f->hw_address / 0x1000000;    
       *address = f->hw_address & 0x0ffffff;
     }
@@ -219,7 +219,7 @@ mpio_zone_init(mpio_t *m, mpio_cmd_t mem)
 
       sm->zonetable[zone][block]=blockaddress_decode(sm->spare+e);
       
-      hexdumpn(4, sm->spare+e, 0x10);
+      hexdumpn(4, (CHAR *)sm->spare+e, 0x10);
       debugn(2, "decoded: %04x\n", sm->zonetable[zone][block]);
     }
   return MPIO_OK;
@@ -636,7 +636,7 @@ mpio_device_close(mpio_t *m) {
 
 int
 mpio_io_set_cmdpacket(mpio_t *m, mpio_cmd_t cmd, mpio_mem_t mem, DWORD index,
-		      WORD size, BYTE wsize, BYTE *buffer) 
+		      WORD size, BYTE wsize, CHAR *buffer) 
 {
   BYTE memory;
 
@@ -680,9 +680,9 @@ mpio_io_set_cmdpacket(mpio_t *m, mpio_cmd_t cmd, mpio_mem_t mem, DWORD index,
  *
  */
 int
-mpio_io_bulk_write(int fd, BYTE *block, int num_bytes)
+mpio_io_bulk_write(int fd, CHAR *block, int num_bytes)
 {
-  BYTE *p;
+  CHAR *p;
   int count, bytes_left, bytes_written;
 
   bytes_left = num_bytes;
@@ -704,7 +704,7 @@ mpio_io_bulk_write(int fd, BYTE *block, int num_bytes)
 }
 
 int
-mpio_io_write(mpio_t *m, BYTE *block, int num_bytes)
+mpio_io_write(mpio_t *m, CHAR *block, int num_bytes)
 {
   if (m->use_libusb) {
     int r;  
@@ -732,10 +732,10 @@ mpio_io_write(mpio_t *m, BYTE *block, int num_bytes)
  *
  */
 int
-mpio_io_bulk_read (int fd, BYTE *block, int num_bytes)
+mpio_io_bulk_read (int fd, CHAR *block, int num_bytes)
 {
   int total_read, count, bytes_left;
-  BYTE *p;
+  CHAR *p;
 
   total_read = 0;
   bytes_left = num_bytes;
@@ -757,7 +757,7 @@ mpio_io_bulk_read (int fd, BYTE *block, int num_bytes)
 }
 
 int
-mpio_io_read (mpio_t *m, BYTE *block, int num_bytes)
+mpio_io_read (mpio_t *m, CHAR *block, int num_bytes)
 {
   if (m->use_libusb) {
     int r;
@@ -788,10 +788,10 @@ mpio_io_read (mpio_t *m, BYTE *block, int num_bytes)
  *
  */
 int
-mpio_io_version_read(mpio_t *m, BYTE *buffer)
+mpio_io_version_read(mpio_t *m, CHAR *buffer)
 {
   int nwrite, nread;
-  BYTE cmdpacket[CMD_SIZE], status[CMD_SIZE];
+  CHAR cmdpacket[CMD_SIZE], status[CMD_SIZE];
 
   /*  Send command packet to MPIO  */
   mpio_io_set_cmdpacket (m, GET_VERSION, 0, 0, 0xff, 0, cmdpacket);
@@ -843,12 +843,12 @@ mpio_io_version_read(mpio_t *m, BYTE *buffer)
  */
 
 int
-mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
+mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, CHAR *output)
 {
   mpio_smartmedia_t *sm=0;
   DWORD sector;
   int nwrite, nread;
-  BYTE cmdpacket[CMD_SIZE], recvbuff[SECTOR_TRANS];
+  CHAR cmdpacket[CMD_SIZE], recvbuff[SECTOR_TRANS];
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -944,13 +944,13 @@ mpio_io_sector_read(mpio_t *m, BYTE mem, DWORD index, BYTE *output)
  */
 
 int  
-mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, BYTE *input)
+mpio_io_sector_write(mpio_t *m, BYTE mem, DWORD index, CHAR *input)
 {
   int nwrite;
   mpio_smartmedia_t *sm;
   DWORD pvalue;
   DWORD block_address, ba;
-  BYTE cmdpacket[CMD_SIZE], sendbuff[SECTOR_TRANS];
+  CHAR cmdpacket[CMD_SIZE], sendbuff[SECTOR_TRANS];
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -1096,7 +1096,7 @@ mpio_io_megablock_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *outp
   mpio_smartmedia_t *sm;
   BYTE  chip;
   DWORD address;
-  BYTE cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
+  CHAR cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -1155,7 +1155,7 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
   mpio_smartmedia_t *sm;
   BYTE  chip;
   DWORD address;
-  BYTE cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
+  CHAR cmdpacket[CMD_SIZE], recvbuff[BLOCK_TRANS];
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -1226,7 +1226,7 @@ mpio_io_block_read(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *output)
 
 int
 mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, WORD size,
-		   BYTE wsize, BYTE *output, int toread,
+		   BYTE wsize, CHAR *output, int toread,
 		   mpio_callback_init_t progress_callback)
 {
   mpio_smartmedia_t *sm;
@@ -1234,7 +1234,7 @@ mpio_io_spare_read(mpio_t *m, BYTE mem, DWORD index, WORD size,
   int nwrite, nread;
   int chip = 0;
   int chips = 0;
-  BYTE cmdpacket[CMD_SIZE];
+  CHAR cmdpacket[CMD_SIZE];
 
   if (mem == MPIO_INTERNAL_MEM) sm = &m->internal;  
   if (mem == MPIO_EXTERNAL_MEM) sm = &m->external;
@@ -1317,7 +1317,8 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
 {
   mpio_smartmedia_t *sm;
   int nwrite, nread;
-  BYTE cmdpacket[CMD_SIZE], status[CMD_SIZE];
+  CHAR cmdpacket[CMD_SIZE];
+  BYTE status[CMD_SIZE];
   BYTE CMD_OK, CMD_ERROR;
   
   /*  Send command packet to MPIO  */
@@ -1346,7 +1347,7 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
   mpio_io_set_cmdpacket(m, DEL_BLOCK, chip, address, sm->size, 0, cmdpacket);
 
   debugn  (5, ">>> MPIO\n");
-  hexdump (cmdpacket, sizeof(cmdpacket));
+  hexdump ((CHAR *)cmdpacket, sizeof(cmdpacket));
 
   nwrite = mpio_io_write(m, cmdpacket, 0x40);
 
@@ -1368,7 +1369,7 @@ mpio_io_block_delete_phys(mpio_t *m, BYTE chip, DWORD address)
     }
 
   debugn(5, "<<< MPIO\n");
-  hexdump(status, CMD_SIZE);
+  hexdump((CHAR *)status, CMD_SIZE);
 
   if (status[0] != CMD_OK) 
     {
@@ -1398,7 +1399,7 @@ mpio_io_megablock_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *dat
   int nwrite;
   int i, j, k;
   DWORD block_address, ba;
-  BYTE cmdpacket[CMD_SIZE], sendbuff[MEGABLOCK_TRANS_WRITE];
+  CHAR cmdpacket[CMD_SIZE], sendbuff[MEGABLOCK_TRANS_WRITE];
   BYTE  chip=0;
   DWORD address;
 
@@ -1420,7 +1421,7 @@ mpio_io_megablock_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *dat
 
   debugn(5, "\n>>> MPIO\n");
   hexdump(cmdpacket, sizeof(cmdpacket));
-  hexdump(f->i_fat, 0x10);
+  hexdump((CHAR *)f->i_fat, 0x10);
 
   nwrite = mpio_io_write(m, cmdpacket, CMD_SIZE);
 
@@ -1471,7 +1472,7 @@ mpio_io_block_write(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f, BYTE *data)
   int nwrite;
   int i;
   DWORD block_address, ba;
-  BYTE cmdpacket[CMD_SIZE], sendbuff[BLOCK_TRANS];
+  CHAR cmdpacket[CMD_SIZE], sendbuff[BLOCK_TRANS];
   BYTE  chip=0;
   DWORD address;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: fat.c,v 1.6 2004/05/30 16:28:52 germeier Exp $
+ * $Id: fat.c,v 1.7 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -146,9 +146,9 @@ mpio_pbr_gen(BYTE size)
 
   /* FAT id */
   if (size >=128) {
-    strcpy(p+0x36, "FAT16");
+    strcpy((CHAR *)(p+0x36), "FAT16");
   } else {
-    strcpy(p+0x36, "FAT12");
+    strcpy((CHAR *)(p+0x36), "FAT12");
   }
   
   return p;
@@ -195,7 +195,7 @@ mpio_pbr_eval(mpio_smartmedia_t *sm)
       return 1;
     }
   
-  if (strncmp((sm->pbr+0x36),"FAT", 3) != 0) 
+  if (strncmp((CHAR *)(sm->pbr+0x36),"FAT", 3) != 0) 
     {
       debug("Did not find an FAT signature, *not* good!\n");
       return 2;
@@ -322,7 +322,7 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
   /* TODO: check a few things more, just to be sure */
 
   /* read CIS (just in case it might me usefull) */
-  if (mpio_io_sector_read(m, mem, MPIO_BLOCK_CIS, sm->cis)) 
+  if (mpio_io_sector_read(m, mem, MPIO_BLOCK_CIS, (CHAR *)sm->cis)) 
     {
       debug("error reading CIS\n");    
       return 1;
@@ -330,7 +330,7 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
 
   /* read MBR */
   /* the MBR is always located @ logical block 0, sector 0! */
-  if (mpio_io_sector_read(m, mem, 0, sm->mbr)) 
+  if (mpio_io_sector_read(m, mem, 0, (CHAR *)sm->mbr)) 
     {
       debug("error reading MBR\n");    
       return 1;
@@ -344,7 +344,7 @@ mpio_bootblocks_read (mpio_t *m, mpio_mem_t mem)
     }
 
   /* read PBR */
-  if (mpio_io_sector_read(m, mem, sm->pbr_offset, sm->pbr))
+  if (mpio_io_sector_read(m, mem, sm->pbr_offset, (CHAR *)sm->pbr))
     {
       debug("error reading PBR\n");    
       return 1;
@@ -428,13 +428,13 @@ mpio_fat_read (mpio_t *m, mpio_mem_t mem,
 	       mpio_callback_init_t progress_callback)
 {
   mpio_smartmedia_t *sm;
-  BYTE recvbuff[SECTOR_SIZE];
+  CHAR recvbuff[SECTOR_SIZE];
   DWORD i;
 
   if (mem == MPIO_INTERNAL_MEM) 
     {    
       sm = &m->internal;
-      if (mpio_io_spare_read(m, mem, 0, sm->size, 0, sm->fat,
+      if (mpio_io_spare_read(m, mem, 0, sm->size, 0, (CHAR *)sm->fat,
 			     (sm->fat_size * SECTOR_SIZE), progress_callback))
 	return 1;
       return 0;
@@ -843,10 +843,10 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
 	      if (i<DIR_NUM) 
 		{
 		  mpio_io_sector_write(m, mem, i, 
-				       (sm->root->dir + SECTOR_SIZE * i));
+				       (CHAR *)(sm->root->dir + SECTOR_SIZE * i));
 		} else {
 		  /* fill the rest of the block with zeros */
-		  mpio_io_sector_write(m, mem, i, dummy);
+		mpio_io_sector_write(m, mem, i, (CHAR *)dummy);
 		}	
 	    }    
 	}
@@ -882,21 +882,21 @@ mpio_fat_write(mpio_t *m, mpio_mem_t mem)
 
 	/* remeber: logical sector 0 is the MBR! */
 	if (i == 0)
-	  mpio_io_sector_write(m, mem, 0, sm->mbr);
+	  mpio_io_sector_write(m, mem, 0, (CHAR *)sm->mbr);
 	if ((i > 0) && (i < sm->pbr_offset))
-	  mpio_io_sector_write(m, mem, i, dummy);
+	  mpio_io_sector_write(m, mem, i, (CHAR *)dummy);
 	
 	if (i == sm->pbr_offset)
-	  mpio_io_sector_write(m, mem, sm->pbr_offset, sm->pbr);
+	  mpio_io_sector_write(m, mem, sm->pbr_offset, (CHAR *)sm->pbr);
 	
 	if ((i >= sm->fat_offset) && (i < (sm->fat_offset + (2*sm->fat_size)))) 
 	  mpio_io_sector_write(m, mem, i, 
-			       (sm->fat + SECTOR_SIZE *
+			       (CHAR *)(sm->fat + SECTOR_SIZE *
 				((i - sm->fat_offset) % sm->fat_size)));
 	
 	if (i>=sm->dir_offset)
 	  mpio_io_sector_write(m, mem, i, 
-			       (sm->root->dir + 
+			       (CHAR *)(sm->root->dir + 
 				(i - sm->dir_offset) * SECTOR_SIZE));
       }
       
@@ -982,7 +982,7 @@ mpio_fatentry_is_defect(mpio_t *m, mpio_mem_t mem, mpio_fatentry_t *f)
 	     (sm->fat[e+0x00] != 0xee))
 	{
 	  debug("defective block encountered, abort reading! (wrong file state marker)\n");
-	  hexdumpn(0, (sm->fat+e), 0x10);
+	  hexdumpn(0, (CHAR *)(sm->fat+e), 0x10);
 	  return 1;
 	}      
       if (m->model >= MPIO_MODEL_FD100) {      

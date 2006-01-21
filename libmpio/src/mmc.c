@@ -1,5 +1,5 @@
 /*
- * $Id: mmc.c,v 1.1 2004/05/30 16:28:52 germeier Exp $
+ * $Id: mmc.c,v 1.2 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2004 Robert Kellington, Markus Germeier
@@ -50,13 +50,22 @@ BYTE mpio_mmc_detect_memory(mpio_t *m, mpio_mem_t mem)
   
   /*looking for likely markers*/
   /*
-    if((m->version[0x28] == 0x32) && (m->version[0x3a] == 0x01) && (m->version[0x3b] == 0x01) && 
-    (m->version[0x30] == 0xff) && (m->version[0x31] == 0xcf))
+    if(((BYTE)(m->version[0x28]) == 0x32) && 
+    ((BYTE)(m->version[0x3a]) == 0x01) && 
+    ((BYTE)(m->version[0x3b]) == 0x01) && 
+    ((BYTE)(m->version[0x30]) == 0xff) && 
+    ((BYTE)(m->version[0x31]) == 0xcf))
   */   
-  if((m->version[0x39] == 0x01) && (m->version[0x3b] == 0x01) && (m->version[0x20] == 0xff) && (m->version[0x21] == 0xff) &&
-     (m->version[0x22] == 0xff) && (m->version[0x23] == 0xff) && (m->version[0x24] == 0xff) && (m->version[0x25] == 0xff))
+  if(((BYTE)(m->version[0x39]) == 0x01) && 
+     ((BYTE)(m->version[0x3b]) == 0x01) && 
+     ((BYTE)(m->version[0x20]) == 0xff) && 
+     ((BYTE)(m->version[0x21]) == 0xff) &&
+     ((BYTE)(m->version[0x22]) == 0xff) && 
+     ((BYTE)(m->version[0x23]) == 0xff) && 
+     ((BYTE)(m->version[0x24]) == 0xff) && 
+     ((BYTE)(m->version[0x25]) == 0xff))
     {
-      switch(m->version[0x26])
+      switch((BYTE)m->version[0x26])
 	{
 	case 0x0e:    /* 16 Mb */
 	  /*NOTE: This size needs formating to be added and testing*/

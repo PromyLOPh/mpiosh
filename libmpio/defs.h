@@ -1,5 +1,5 @@
 /*
- * $Id: defs.h,v 1.35 2004/05/30 16:28:51 germeier Exp $
+ * $Id: defs.h,v 1.36 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -35,6 +35,7 @@ extern "C" {
 #include "usb.h"
 
 typedef unsigned char  BYTE;
+typedef char CHAR;
 typedef unsigned short WORD;
 typedef unsigned int   DWORD;
 
@@ -110,7 +111,7 @@ typedef DWORD mpio_zonetable_t[MPIO_ZONE_MAX][MPIO_ZONE_PBLOCKS];
 
 /* filenames */
 #define MPIO_FILENAME_LEN    129
-typedef BYTE mpio_filename_t[MPIO_FILENAME_LEN];
+typedef CHAR mpio_filename_t[MPIO_FILENAME_LEN];
 
 #ifndef NULL
 #define NULL             0
@@ -179,26 +180,26 @@ typedef struct {
 /* get formatted information, about the MPIO player */
 
 typedef struct {
-  BYTE firmware_id[INFO_LINE];  
-  BYTE firmware_version[INFO_LINE];
-  BYTE firmware_date[INFO_LINE];
+  CHAR firmware_id[INFO_LINE];  
+  CHAR firmware_version[INFO_LINE];
+  CHAR firmware_date[INFO_LINE];
 
-  BYTE model[INFO_LINE];
+  CHAR model[INFO_LINE];
 
-  BYTE mem_internal[INFO_LINE];
-  BYTE mem_external[INFO_LINE];
+  CHAR mem_internal[INFO_LINE];
+  CHAR mem_external[INFO_LINE];
   
 } mpio_info_t;
 
 /* view of the MPIO firmware */
 typedef struct {
   /* everything we get from GET_VERSION */
-  BYTE id[12];
-  BYTE major[3];
-  BYTE minor[3];
-  BYTE year[5];
-  BYTE month[3];
-  BYTE day[3];  
+  CHAR id[12];
+  CHAR major[3];
+  CHAR minor[3];
+  CHAR year[5];
+  CHAR month[3];
+  CHAR day[3];  
 } mpio_firmware_t;
 
 /* */
@@ -212,7 +213,7 @@ typedef struct {
 /* */
 
 struct mpio_directory_tx {
-  BYTE name[INFO_LINE];
+  CHAR name[INFO_LINE];
   BYTE dir[MEGABLOCK_SIZE];
   
   BYTE *dentry;
@@ -294,7 +295,7 @@ typedef struct {
 
 /* view of the MPIO-* */
 typedef struct {
-  BYTE version[CMD_SIZE];
+  CHAR version[CMD_SIZE];
   
   int fd;
   int use_libusb;
@@ -303,11 +304,11 @@ typedef struct {
   struct usb_dev_handle *usb_handle;
   int usb_out_ep;
   int usb_in_ep;
-  BYTE *charset;                   /* charset used for filename conversion */
+  CHAR *charset;                   /* charset used for filename conversion */
 
   BYTE id3;                        /* enable/disable ID3 rewriting support */
-  BYTE id3_format[INFO_LINE];
-  BYTE id3_temp[INFO_LINE];
+  CHAR id3_format[INFO_LINE];
+  CHAR id3_temp[INFO_LINE];
   
   mpio_firmware_t firmware;  
 
@@ -342,8 +343,8 @@ typedef struct {
  */
 
 typedef struct  { // Short 8.3 names 
-  unsigned char name[8];          // file name 
-  unsigned char ext[3];           // file extension 
+  char name[8];          // file name 
+  char ext[3];           // file extension 
   unsigned char attr;             // attribute byte 
   unsigned char lcase;		  // Case for base and extension
   unsigned char ctime_ms;         // Creation time, milliseconds
@@ -359,13 +360,13 @@ typedef struct  { // Short 8.3 names
 
 typedef struct  { // Up to 13 characters of a long name 
   unsigned char id;               // sequence number for slot 
-  unsigned char name0_4[10];      // first 5 characters in name 
+  char name0_4[10];      // first 5 characters in name 
   unsigned char attr;             // attribute byte
   unsigned char reserved;         // always 0 
   unsigned char alias_checksum;   // checksum for 8.3 alias 
-  unsigned char name5_10[12];     // 6 more characters in name
+  char name5_10[12];     // 6 more characters in name
   unsigned char start[2];         // starting cluster number
-  unsigned char name11_12[4];     // last 2 characters in name
+  char name11_12[4];     // last 2 characters in name
 } mpio_dir_slot_t;
 
 #ifdef __cplusplus

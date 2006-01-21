@@ -1,5 +1,5 @@
 /*
- * $Id: cis.h,v 1.3 2003/04/27 12:08:21 germeier Exp $
+ * $Id: cis.h,v 1.4 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -22,6 +22,8 @@
 
 #ifndef _MPIO_CIS_H_
 #define _MPIO_CIS_H_
+
+#include "string.h"
 
 #include "defs.h"
 

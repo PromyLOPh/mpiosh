@@ -1,5 +1,5 @@
 /*
- * $Id: ecc.c,v 1.6 2003/06/12 08:32:33 germeier Exp $
+ * $Id: ecc.c,v 1.7 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -31,21 +31,21 @@
 #define ADD_BITS(c, d1, d2, v) if ((c)) d1 ^= (v); else d2 ^= (v)
 
 int 
-mpio_ecc_256_gen(BYTE *data, BYTE *ecc)
+mpio_ecc_256_gen(CHAR *data, CHAR *ecc)
 {
-  BYTE p1, p1_;
-  BYTE p2, p2_;
-  BYTE p4, p4_;
+  CHAR p1, p1_;
+  CHAR p2, p2_;
+  CHAR p4, p4_;
 
-  BYTE p08, p08_;
-  BYTE p16, p16_;
-  BYTE p32, p32_;
-  BYTE p64, p64_;
+  CHAR p08, p08_;
+  CHAR p16, p16_;
+  CHAR p32, p32_;
+  CHAR p64, p64_;
 
-  BYTE p0128, p0128_;
-  BYTE p0256, p0256_;
-  BYTE p0512, p0512_;
-  BYTE p1024, p1024_;
+  CHAR p0128, p0128_;
+  CHAR p0256, p0256_;
+  CHAR p0512, p0512_;
+  CHAR p1024, p1024_;
 
   int i, j;
 
@@ -128,11 +128,11 @@ mpio_ecc_256_gen(BYTE *data, BYTE *ecc)
 
 
 int
-mpio_ecc_256_check(BYTE *data, BYTE *ecc)
+mpio_ecc_256_check(CHAR *data, CHAR *ecc)
 {
-  BYTE own_ecc[3];
-  BYTE check[3];
-  BYTE line, col;
+  CHAR own_ecc[3];
+  CHAR check[3];
+  CHAR line, col;
   
   int v, i;
   

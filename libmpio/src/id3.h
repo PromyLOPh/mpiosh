@@ -1,5 +1,5 @@
 /*
- * $Id: id3.h,v 1.2 2003/04/27 12:08:21 germeier Exp $
+ * $Id: id3.h,v 1.3 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2003 Markus Germeier
@@ -31,7 +31,7 @@ extern "C" {
 
 /* ID3 rewriting: do the work */
 /* context, src filename, uniq filename template */
-int    mpio_id3_do(mpio_t *, BYTE *, BYTE *);  
+int    mpio_id3_do(mpio_t *, CHAR *, CHAR *);  
 
 /* ID3: clean up temp file */
 int    mpio_id3_end(mpio_t *);

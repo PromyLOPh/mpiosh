@@ -1,5 +1,5 @@
 /*
- * $Id: mpio.h,v 1.23 2003/10/19 21:06:34 germeier Exp $
+ * $Id: mpio.h,v 1.24 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
@@ -59,7 +59,7 @@ void	mpio_get_info(mpio_t *, mpio_info_t *);
 /* get model */
 mpio_model_t	mpio_get_model(mpio_t *);
 /* retrieves free memory in bytes */
-int	mpio_memory_free(mpio_t *, mpio_mem_t, int *free);
+int	mpio_memory_free(mpio_t *, mpio_mem_t, DWORD *free);
 
 /* report sectors in block for this memory */
 int     mpio_block_get_sectors(mpio_t *, mpio_mem_t);
@@ -69,8 +69,8 @@ int     mpio_block_get_blocksize(mpio_t *, mpio_mem_t);
 /*
  * charset for filename encoding/converting
  */
-BYTE  *mpio_charset_get(mpio_t *);
-BYTE   mpio_charset_set(mpio_t *, BYTE *);
+CHAR  *mpio_charset_get(mpio_t *);
+BYTE   mpio_charset_set(mpio_t *, CHAR *);
 
 /* 
  * directory operations 
@@ -79,15 +79,15 @@ BYTE   mpio_charset_set(mpio_t *, BYTE *);
 /* context, memory bank */
 BYTE*	mpio_directory_open(mpio_t *, mpio_mem_t);
 /* context, memory bank, directory name */
-int     mpio_directory_make(mpio_t *, mpio_mem_t, BYTE *);
+int     mpio_directory_make(mpio_t *, mpio_mem_t, CHAR *);
 /* context, memory bank, directory name */
-int     mpio_directory_cd(mpio_t *, mpio_mem_t, BYTE *);
+int     mpio_directory_cd(mpio_t *, mpio_mem_t, CHAR *);
 /* context, memory bank, directory name buffer space */
-void    mpio_directory_pwd(mpio_t *, mpio_mem_t, BYTE pwd[INFO_LINE]);  
+void    mpio_directory_pwd(mpio_t *, mpio_mem_t, CHAR pwd[INFO_LINE]);  
 /* context, dir context */
 BYTE*	mpio_dentry_next(mpio_t *, mpio_mem_t, BYTE *);
 /* context, dir context */
-int	mpio_dentry_get(mpio_t *, mpio_mem_t, BYTE *, BYTE *, int,WORD *,
+int	mpio_dentry_get(mpio_t *, mpio_mem_t, BYTE *, CHAR *, int,WORD *,
 			BYTE *, BYTE *, BYTE *, BYTE *, DWORD *, BYTE *);
 
 /* 
@@ -121,13 +121,13 @@ int	mpio_file_del(mpio_t *, mpio_mem_t, mpio_filename_t, mpio_callback_t);
 /* via the "BYTE **"                                               */
   
 int	mpio_file_get_to_memory(mpio_t *, mpio_mem_t, mpio_filename_t, 
-				mpio_callback_t, BYTE **); 
+				mpio_callback_t, CHAR **); 
 
 /* context, memory bank, filename, filetype, callback ... */
 /* ... memory pointer, size of file                       */
 int	mpio_file_put_from_memory(mpio_t *, mpio_mem_t, mpio_filename_t, 
 				  mpio_filetype_t, mpio_callback_t,
-				  BYTE *, int);
+				  CHAR *, int);
 
 /* check if file exists on selected memory */
 /* return pointer to file dentry if file exists */
@@ -179,9 +179,9 @@ BYTE   mpio_id3_set(mpio_t *, BYTE);
 BYTE   mpio_id3_get(mpio_t *);
 
 /* set format string for rewriting*/
-void   mpio_id3_format_set(mpio_t *, BYTE *);
+void   mpio_id3_format_set(mpio_t *, CHAR *);
 /* get format string for rewriting*/
-void   mpio_id3_format_get(mpio_t *, BYTE *);
+void   mpio_id3_format_get(mpio_t *, CHAR *);
 
 /*
  * "special" functions

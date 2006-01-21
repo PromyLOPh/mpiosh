@@ -1,5 +1,5 @@
 /*
- * $Id: id3.c,v 1.4 2003/06/12 08:32:33 germeier Exp $
+ * $Id: id3.c,v 1.5 2006/01/21 18:33:20 germeier Exp $
  *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2003 Markus Germeier
@@ -33,14 +33,14 @@
 
 #ifdef MPLIB
 /* local declarations */
-void mpio_id3_get_content(id3_tag *, id3_tag *, int, BYTE[INFO_LINE]);
-void mpio_id3_copy_tag(BYTE *, BYTE *, int *);
+void mpio_id3_get_content(id3_tag *, id3_tag *, int, CHAR[INFO_LINE]);
+void mpio_id3_copy_tag(CHAR *, CHAR *, int *);
 BYTE mpio_id3_get(mpio_t *);
 BYTE mpio_id3_set(mpio_t *, BYTE);
 
 void
 mpio_id3_get_content(id3_tag *tag, id3_tag *tag2, int field, 
-		       BYTE out[INFO_LINE])
+		       CHAR out[INFO_LINE])
 {
   id3_content  *content;
   id3_text_content  *text_content;
@@ -60,7 +60,7 @@ mpio_id3_get_content(id3_tag *tag, id3_tag *tag2, int field,
 }
 
 void
-mpio_id3_copy_tag(BYTE *src, BYTE *dest, int *offset)
+mpio_id3_copy_tag(CHAR *src, CHAR *dest, int *offset)
 {
   int i=0;
   int last=0;
@@ -103,7 +103,7 @@ mpio_id3_get(mpio_t *m)
 /* ID3 rewriting: do the work */
 /* context, src filename, uniq filename template */
 int    
-mpio_id3_do(mpio_t *m, BYTE *src, BYTE *tmp)
+mpio_id3_do(mpio_t *m, CHAR *src, CHAR *tmp)
 {
 #ifdef MPLIB
   int fd, in;
@@ -115,19 +115,19 @@ mpio_id3_do(mpio_t *m, BYTE *src, BYTE *tmp)
   id3_tag_list  new_tag_list;
   id3_content    new_content;
   id3v2_tag *v2_tag;  
-  BYTE data_artist[INFO_LINE];
-  BYTE data_title[INFO_LINE];
-  BYTE data_album[INFO_LINE];
-  BYTE data_year[INFO_LINE];
-  BYTE data_genre[INFO_LINE];
-  BYTE data_comment[INFO_LINE];
-  BYTE data_track[INFO_LINE];
+  CHAR data_artist[INFO_LINE];
+  CHAR data_title[INFO_LINE];
+  CHAR data_album[INFO_LINE];
+  CHAR data_year[INFO_LINE];
+  CHAR data_genre[INFO_LINE];
+  CHAR data_comment[INFO_LINE];
+  CHAR data_track[INFO_LINE];
 
-  BYTE mpio_tag[INFO_LINE];
+  CHAR mpio_tag[INFO_LINE];
   char   *mpio_tag_unicode; 
 
   iconv_t ic;
-  int fin, fout;
+  size_t fin, fout;
   char *fback, *back;
 
   if (!m->id3)
@@ -285,14 +285,14 @@ mpio_id3_end(mpio_t *m)
 }
 
 void   
-mpio_id3_format_set(mpio_t *m, BYTE *format)
+mpio_id3_format_set(mpio_t *m, CHAR *format)
 {
   strncpy(m->id3_format, format, INFO_LINE);
 }
   
 /* get format string for rewriting*/
 void
-mpio_id3_format_get(mpio_t *m, BYTE *format)
+mpio_id3_format_get(mpio_t *m, CHAR *format)
 {
   strncpy(format, m->id3_format, INFO_LINE);
 }

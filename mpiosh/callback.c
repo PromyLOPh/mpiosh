@@ -2,7 +2,7 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.c,v 1.48 2004/04/23 19:21:08 germeier Exp $
+ * $Id: callback.c,v 1.49 2006/01/21 18:33:20 germeier Exp $
  *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
@@ -150,7 +150,7 @@ mpiosh_cmd_dir(char *args[])
 {
   BYTE *p;
   BYTE month, day, hour, minute, type;
-  BYTE fname[100];
+  CHAR fname[100];
   WORD year;  
   DWORD fsize;  
   
@@ -179,7 +179,7 @@ mpiosh_cmd_dir(char *args[])
 void
 mpiosh_cmd_pwd(char *args[])
 {
-  BYTE pwd[INFO_LINE];
+  CHAR pwd[INFO_LINE];
   
   UNUSED(args);
   
@@ -193,7 +193,7 @@ mpiosh_cmd_pwd(char *args[])
 void
 mpiosh_cmd_mkdir(char *args[])
 {
-  BYTE pwd[INFO_LINE];
+  CHAR pwd[INFO_LINE];
   BYTE r;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
@@ -210,7 +210,7 @@ mpiosh_cmd_mkdir(char *args[])
 void
 mpiosh_cmd_cd(char *args[])
 {
-  BYTE pwd[INFO_LINE];
+  CHAR pwd[INFO_LINE];
   BYTE r;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
@@ -253,7 +253,7 @@ mpiosh_cmd_info(char *args[])
 void
 mpiosh_cmd_mem(char *args[])
 {
-  int free;
+  DWORD free;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
@@ -385,8 +385,8 @@ mpiosh_cmd_mget(char *args[])
   BYTE *	p;
   int		i = 0, error, ret;
   regex_t	regex;
-  BYTE		fname[100];
-  BYTE          errortext[100];
+  CHAR		fname[100];
+  CHAR          errortext[100];
   BYTE		month, day, hour, minute, type;
   WORD		year;  
   DWORD		fsize;  
@@ -483,7 +483,7 @@ mpiosh_cmd_mput(char *args[])
   struct dirent **	dentry, **run;
   struct stat		st;
   regex_t	        regex;
-  BYTE                  errortext[100];
+  CHAR                  errortext[100];
 
   MPIOSH_CHECK_CONNECTION_CLOSED;
   MPIOSH_CHECK_ARG;
@@ -579,8 +579,8 @@ mpiosh_cmd_mdel(char *args[])
   int           error;
   regex_t	regex;
   int           r;
-  BYTE		fname[100];
-  BYTE          errortext[100];
+  CHAR		fname[100];
+  CHAR          errortext[100];
   BYTE		month, day, hour, minute, type;
   WORD		year;  
   DWORD		fsize;  
@@ -646,7 +646,7 @@ mpiosh_cmd_dump(char *args[])
 {
   BYTE *p;
   BYTE month, day, hour, minute, type;
-  BYTE fname[256];
+  CHAR fname[256];
   char *arg[2];
   WORD year;  
   DWORD fsize;  
@@ -676,7 +676,8 @@ mpiosh_cmd_dump(char *args[])
 void
 mpiosh_cmd_free(char *args[])
 {
-  int free, kbytes;
+  DWORD free;
+  int kbytes;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
@@ -698,8 +699,8 @@ mpiosh_callback_format(int read, int total)
 void
 mpiosh_cmd_format(char *args[])
 {
-  char answer[512];
-  BYTE *config, *fmconfig, *rconfig, *fontconfig;
+  CHAR answer[512];
+  CHAR *config, *fmconfig, *rconfig, *fontconfig;
   int  csize, fmsize, rsize, fontsize;
   
   MPIOSH_CHECK_CONNECTION_CLOSED;
@@ -1079,7 +1080,7 @@ mpiosh_cmd_config(char *args[])
 void
 mpiosh_cmd_channel(char *args[])
 {
-  BYTE *channel_data, *p, name[17];
+  CHAR *channel_data, *p, name[17];
   int  size;
   int  i;
   int  chan;
@@ -1271,7 +1272,7 @@ mpiosh_cmd_id3(char *args[])
 void 
 mpiosh_cmd_id3_format(char *args[])
 { 
-  BYTE format[INFO_LINE];
+  CHAR format[INFO_LINE];
 
   MPIOSH_CHECK_CONNECTION_CLOSED;
 
