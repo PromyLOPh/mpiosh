@@ -40,7 +40,6 @@
 #include "mpio.h"
 #include "smartmedia.h"
 #include "fat.h"
-#include "id3.h"
 
 void mpio_bail_out(void);
 void mpio_init_internal(mpio_t *);
@@ -118,7 +117,7 @@ static const int mpio_error_num = sizeof mpio_errors / sizeof(mpio_error_t);
 
 static int _mpio_errno = 0;
 
-#define MPIO_ERR_RETURN(err) { mpio_id3_end(m); _mpio_errno = err; return -1 ; }
+#define MPIO_ERR_RETURN(err) { _mpio_errno = err; return -1 ; }
 
 #define MPIO_CHECK_FILENAME(filename) \
   if (!mpio_check_filename(filename)) { \
@@ -468,11 +467,6 @@ mpio_init(mpio_callback_init_t progress_callback)
   /* set default charset for filename conversion */
   new_mpio->charset=strdup(MPIO_CHARSET);
 
-  /* disable ID3 rewriting support */
-  new_mpio->id3=0; 
-  strncpy(new_mpio->id3_format, MPIO_ID3_FORMAT, INFO_LINE);
-  new_mpio->id3_temp[0]=0x00;
-
   return new_mpio;  
 }
 
@@ -761,7 +755,6 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
   struct stat file_stat;
   struct tm tt;
   time_t curr;
-  int id3;
   int block_size;
   
   BYTE *p = NULL;
@@ -786,8 +779,6 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
     {
       fsize=filesize=memory_size;
     } else {      
-      id3 = mpio_id3_do(m, i_filename, use_filename);
-      if (!id3)
 	strncpy(use_filename, i_filename, INFO_LINE);
       if (stat((const char *)use_filename, &file_stat)!=0) {
 	debug("could not find file: %s\n", use_filename);
@@ -978,8 +969,6 @@ mpio_file_put_real(mpio_t *m, mpio_mem_t mem, mpio_filename_t i_filename,
 		      ((memory)?mktime(&tt):file_stat.st_ctime), 
 		      fsize, start, 0x20);
     }  
-
-  mpio_id3_end(m);
 
   return fsize-filesize;
 }

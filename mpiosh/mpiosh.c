@@ -66,10 +66,6 @@ mpiosh_init(void)
   
   if ((mpiosh.dev) && (mpiosh.config->charset))
     mpio_charset_set(mpiosh.dev, mpiosh.config->charset);
-  if (mpiosh.dev) {
-    mpio_id3_set(mpiosh.dev, mpiosh.config->id3_rewriting);
-    mpio_id3_format_set(mpiosh.dev, mpiosh.config->id3_format);
-  } 
 }
 
 void
