@@ -509,20 +509,9 @@ mpio_device_open(mpio_t *m){
   struct usb_interface_descriptor *interface;
   struct usb_endpoint_descriptor *ep;
   int ret, i;
-  m->use_libusb=1;
 
   if (m->fd)
     return MPIO_OK;
-
-#ifdef USE_KMODULE
-  debugn(2, "trying kernel module\n");
-  m->fd = open(MPIO_DEVICE, O_RDWR);
-  if (m->fd > 0) {
-    debugn(2, "using kernel module\n");
-    m->use_libusb=0;
-    return MPIO_OK;
-  }
-#endif
 
   debugn(2, "trying libusb\n");
   usb_init();
@@ -596,22 +585,11 @@ mpio_device_open(mpio_t *m){
 
 int 
 mpio_device_close(mpio_t *m) {
-  if(m->use_libusb) {
     if (m->fd) {      
       debugn(2, "closing libusb\n");
       usb_close(m->usb_handle);
       m->fd=0;
     }    
-  } 
-#ifdef USE_KMODULE
-  else {
-    if (m->fd) {      
-      debugn(2, "closing kernel module\n");
-      close(m->fd);
-      m->fd=0;
-    }    
-  }
-#endif
   
   return MPIO_OK;
 }
@@ -706,18 +684,11 @@ mpio_io_bulk_write(int fd, CHAR *block, int num_bytes)
 int
 mpio_io_write(mpio_t *m, CHAR *block, int num_bytes)
 {
-  if (m->use_libusb) {
     int r;  
     r = usb_bulk_write(m->usb_handle, m->usb_out_ep, block, num_bytes, MPIO_USB_TIMEOUT);
     if (r < 0)
       debug("libusb returned error: (%08x) \"%s\"\n", r, usb_strerror());
     return r;
-  } 
-#ifdef USE_KMODULE
-  else {     
-    return mpio_io_bulk_write(m->fd, block, num_bytes);
-  }  
-#endif
 }
 
 
@@ -759,18 +730,11 @@ mpio_io_bulk_read (int fd, CHAR *block, int num_bytes)
 int
 mpio_io_read (mpio_t *m, CHAR *block, int num_bytes)
 {
-  if (m->use_libusb) {
     int r;
     r = usb_bulk_read(m->usb_handle, m->usb_in_ep, block, num_bytes, MPIO_USB_TIMEOUT);
     if (r < 0)
       debug("libusb returned error: (%08x) \"%s\"\n", r, usb_strerror());
     return r;
-  }
-#ifdef USE_KMODULE
-  else {    
-    return mpio_io_bulk_read(m->fd, block, num_bytes);
-  }
-#endif
 }
 
 

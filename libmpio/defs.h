@@ -298,7 +298,6 @@ typedef struct {
   CHAR version[CMD_SIZE];
   
   int fd;
-  int use_libusb;
   struct usb_bus *usb_busses;
   struct usb_bus *usb_bus;
   struct usb_dev_handle *usb_handle;
