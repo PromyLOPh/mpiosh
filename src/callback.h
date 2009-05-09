@@ -56,8 +56,6 @@ void mpiosh_cmd_restore(char *args[]);
 void mpiosh_cmd_config(char *args[]);
 #endif
 void mpiosh_cmd_channel(char *args[]);
-void mpiosh_cmd_id3(char *args[]);
-void mpiosh_cmd_id3_format(char *args[]);
 void mpiosh_cmd_font_upload(char *args[]);
 
 /* local command callbacks */

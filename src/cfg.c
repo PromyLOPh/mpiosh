@@ -143,22 +143,6 @@ mpiosh_config_read(struct mpiosh_config_t *config)
       config->charset = NULL;
     }
 
-    value = mpiosh_config_read_key(config, "mpiosh", "id3_rewriting");
-    if (value) {
-      if (!strcmp("on", value)) {
-	config->id3_rewriting = 1;
-      } else  {
-	config->id3_rewriting = 0;
-      }
-    }
-
-    value = mpiosh_config_read_key(config, "mpiosh", "id3_format");
-    if (value) {
-      config->id3_format = strdup(value);
-    } else {
-      config->id3_format = strdup(MPIO_ID3_FORMAT);
-    }
-    
   }
 
   return 1;
@@ -209,11 +193,6 @@ mpiosh_config_write( struct mpiosh_config_t *config )
     else
       cfg_key_set_value(config->handle_user,
 			"mpiosh", "default_mem", "internal");
-    cfg_key_set_value(config->handle_user,
-		      "mpiosh", "id3_rewriting", 
-		      (config->id3_rewriting?"on":"off"));
-    cfg_key_set_value(config->handle_user,
-		      "mpiosh", "id3_format", config->id3_format);
 
     cfg_save(config->handle_user, 0);
 

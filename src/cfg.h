@@ -32,9 +32,6 @@ struct mpiosh_config_t {
   char 		*prompt_ext;
   char          *charset;
   unsigned	default_mem;
-
-  unsigned      id3_rewriting;
-  char          *id3_format;
 };
 
 struct mpiosh_config_t *mpiosh_config_new(void);
