@@ -7,4 +7,4 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 add_executable (mpiosh mpiosh.c callback.c readline.c command.c global.c
 	cfgio.c cfg.c)
-target_link_libraries (mpiosh mpio -lreadline -lncurses)
+target_link_libraries (mpiosh mpio ${LIBNCURSES} ${LIBREADLINE})
