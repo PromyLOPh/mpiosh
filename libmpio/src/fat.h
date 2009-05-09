@@ -1,6 +1,4 @@
 /*
- * $Id: fat.h,v 1.3 2003/04/27 12:08:21 germeier Exp $
- *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
  *

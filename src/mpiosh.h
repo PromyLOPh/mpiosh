@@ -2,8 +2,6 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: mpiosh.h,v 1.8 2002/10/12 20:06:22 crunchy Exp $
- *
  * Copyright (C) 2002 Andreas Büsching <crunchy@tzi.de>
  *
  * This program is free software; you can redistribute it and/or modify

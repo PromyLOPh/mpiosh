@@ -1,6 +1,4 @@
 /*
- * $Id: debug.h,v 1.5 2003/04/27 12:08:20 germeier Exp $
- *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Dirk Meyer  <dmeyer@tzi.de> and
  *                           Andreas Büsching <crunchy@tzi.de>

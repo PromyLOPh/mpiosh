@@ -1,6 +1,4 @@
 /*
- * $Id: smartmedia.c,v 1.10 2006/01/21 18:33:20 germeier Exp $
- *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002-2004 Markus Germeier
  *

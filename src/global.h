@@ -2,8 +2,6 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: global.h,v 1.3 2003/06/27 12:21:22 crunchy Exp $
- *
  * Copyright (C) 2001-2003 Andreas Büsching <crunchy@tzi.de>
  *
  * This program is free software; you can redistribute it and/or modify

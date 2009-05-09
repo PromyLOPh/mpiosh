@@ -1,6 +1,4 @@
 /*
- * $Id: io.h,v 1.5 2006/01/21 18:33:20 germeier Exp $
- *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2002, 2003 Markus Germeier
  *

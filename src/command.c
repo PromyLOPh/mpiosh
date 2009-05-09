@@ -2,8 +2,6 @@
  *
  * Author: Andreas Buesching  <crunchy@tzi.de>
  *
- * $Id: command.c,v 1.3 2002/10/29 20:03:35 crunchy Exp $
- *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
  * This program is free software; you can redistribute it and/or modify

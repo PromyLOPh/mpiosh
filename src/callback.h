@@ -2,8 +2,6 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: callback.h,v 1.13 2003/06/27 12:21:21 crunchy Exp $
- *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
  * This program is free software; you can redistribute it and/or modify

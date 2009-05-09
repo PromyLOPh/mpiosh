@@ -1,6 +1,4 @@
 /*
- * $Id: mmc.h,v 1.1 2004/05/30 16:28:52 germeier Exp $
- *
  *  libmpio - a library for accessing Digit@lways MPIO players
  *  Copyright (C) 2004 Robert Kellington, Markus Germeier
  *

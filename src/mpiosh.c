@@ -1,9 +1,4 @@
-/* -*- linux-c -*- */
-
 /* 
- *
- * $Id: mpiosh.c,v 1.27 2003/08/25 19:38:57 crunchy Exp $
- *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
  * mpiosh - user interface of the mpio library, providing access to
@@ -23,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * */
+ */
 
 #include <signal.h>
 #include <sys/stat.h>

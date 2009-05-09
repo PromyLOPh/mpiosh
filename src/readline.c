@@ -2,8 +2,6 @@
  *
  * Author: Andreas Büsching  <crunchy@tzi.de>
  *
- * $Id: readline.c,v 1.7 2003/04/23 08:34:16 crunchy Exp $
- *
  * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
  *
  * This program is free software; you can redistribute it and/or modify
