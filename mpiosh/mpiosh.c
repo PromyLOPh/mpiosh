@@ -35,7 +35,7 @@
 
 #include "callback.h"
 #include "command.h"
-#include "config.h"
+#include "cfg.h"
 #include "readline.h"
 #include "mpiosh.h"
 

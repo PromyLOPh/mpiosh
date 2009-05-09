@@ -34,6 +34,7 @@
 
 #include "mpiosh.h"
 #include "command.h"
+#include "cfg.h"
 
 #include "libmpio/debug.h"
 

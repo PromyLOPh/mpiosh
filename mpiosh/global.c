@@ -24,6 +24,7 @@
 #include "callback.h"
 #include "global.h"
 #include "readline.h"
+#include "cfg.h"
 
 /* structure containing current state */
 struct mpiosh_t mpiosh;

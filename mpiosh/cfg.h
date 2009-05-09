@@ -4,7 +4,7 @@
  *
  * $Id: config.h,v 1.5 2003/06/27 13:40:23 crunchy Exp $
  *
- * Copyright (C) 2001 Andreas Büsching <crunchy@tzi.de>
+ * Copyright (C) 2001 Andreas BÃ¼sching <crunchy@tzi.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,3 +53,4 @@ char * mpiosh_config_check_backup_dir( struct mpiosh_config_t *config,
 #endif 
 
 /* end of config.h */
+

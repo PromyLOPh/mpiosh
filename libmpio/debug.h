@@ -31,7 +31,7 @@
 #ifdef PACKAGE
 #define DPACKAGE PACKAGE
 #else
-#define DPACKAGE unknown
+#define DPACKAGE "unknown"
 #endif
 
 #endif
