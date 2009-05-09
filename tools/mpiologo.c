@@ -109,7 +109,7 @@ main (int argc, char *argv[])
 	    break;
 
 	case 'v':
-	    version_etc (stdout, "logotool", "mpio", VERSION, "Salmoon");
+	    version_etc (stdout, "logotool", "mpio", "", "Salmoon");
 	    exit(0);
 	case '?':
 	    print_usage (stderr, argv[0], 1);

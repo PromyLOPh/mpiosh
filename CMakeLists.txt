@@ -5,3 +5,4 @@ project (${PACKAGE} C)
 
 add_subdirectory (libmpio)
 add_subdirectory (src)
+add_subdirectory (tools)
