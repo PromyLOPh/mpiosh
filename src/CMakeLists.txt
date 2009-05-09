@@ -1,8 +1,3 @@
-cmake_minimum_required (VERSION 2.4)
-
-set (PACKAGE mpiosh)
-project (${PACKAGE} C)
-
 set (CMAKE_C_FLAGS -Wall)
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
