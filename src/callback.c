@@ -641,7 +641,7 @@ mpiosh_cmd_dump(char *args[])
 {
   BYTE *p;
   BYTE month, day, hour, minute, type;
-  CHAR fname[256];
+  CHAR *fname;
   char *arg[2];
   WORD year;  
   DWORD fsize;  
@@ -654,8 +654,9 @@ mpiosh_cmd_dump(char *args[])
   
   p = mpio_directory_open(mpiosh.dev, mpiosh.card);
   while ((p != NULL) && (!mpiosh_cancel)) {
-    arg[0] = fname; /* is this a memory leak?? -mager */
-    memset(fname, '\0', 256);
+	/* memory is free'd/reallocated in mpiosh_command_regex_fix */
+  	fname = calloc (256, sizeof (*fname));
+    arg[0] = fname;
     
     mpio_dentry_get(mpiosh.dev, mpiosh.card, p,
 		    fname, 256,
@@ -665,7 +666,9 @@ mpiosh_cmd_dump(char *args[])
     mpiosh_cmd_mget(arg);
     
     p = mpio_dentry_next(mpiosh.dev, mpiosh.card, p);
-  }  
+
+	free (arg[0]);
+  }
 }
 
 void
